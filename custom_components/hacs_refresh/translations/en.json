@@ -36,7 +36,8 @@
           "total": { "name": "Repositories" },
           "updates": { "name": "Updates available" },
           "failed": { "name": "Failed" },
-          "error": { "name": "Error" }
+          "error": { "name": "Error" },
+          "checking": { "name": "Being checked" }
         }
       },
       "last_check": { "name": "Last check" }
@@ -48,6 +49,13 @@
       "description": "Checks every repository downloaded with HACS for updates. Runs in the background unless wait is set.",
       "fields": {
         "wait": { "name": "Wait", "description": "Wait until every repository has been checked before the action ends." }
+      }
+    },
+    "check_repository": {
+      "name": "Check a repository for updates",
+      "description": "Checks the repositories behind these HACS update entities for updates, and waits for the result.",
+      "fields": {
+        "entity_id": { "name": "Update entities", "description": "HACS update entities of the repositories to check." }
       }
     }
   }

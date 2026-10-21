@@ -36,7 +36,8 @@
           "total": { "name": "Dépôts" },
           "updates": { "name": "Mises à jour disponibles" },
           "failed": { "name": "En échec" },
-          "error": { "name": "Erreur" }
+          "error": { "name": "Erreur" },
+          "checking": { "name": "En cours de vérification" }
         }
       },
       "last_check": { "name": "Dernière vérification" }
@@ -48,6 +49,13 @@
       "description": "Recherche les mises à jour de tous les dépôts téléchargés avec HACS. S'exécute en arrière-plan, sauf si attendre est activé.",
       "fields": {
         "wait": { "name": "Attendre", "description": "Attendre que tous les dépôts soient vérifiés avant la fin de l'action." }
+      }
+    },
+    "check_repository": {
+      "name": "Rechercher les mises à jour d'un dépôt",
+      "description": "Recherche les mises à jour des dépôts liés à ces entités de mise à jour HACS, et attend le résultat.",
+      "fields": {
+        "entity_id": { "name": "Entités de mise à jour", "description": "Entités de mise à jour HACS des dépôts à vérifier." }
       }
     }
   }

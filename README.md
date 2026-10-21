@@ -17,6 +17,7 @@ HACS itself only checks downloaded custom repositories every 48 hours, and its o
 ## Features
 
 - **Check for updates** button and `hacs_refresh.check_updates` action: every repository downloaded with HACS is fetched again from GitHub, four at a time, and HACS' update entities are refreshed
+- **`hacs_refresh.check_repository`** action: checks only the repositories behind the HACS update entities you give, and waits for the result
 - **Automatic check** at the interval set in the integration options (24 hours by default, `0` to turn it off)
 - **Status** sensor (`idle`, `running`, `error`) with the progress (`done` / `total`), the number of updates found and the repositories that failed
 - **Last check** sensor (timestamp)
@@ -27,7 +28,7 @@ HACS itself only checks downloaded custom repositories every 48 hours, and its o
 ## Prerequisites
 
 - [HACS](https://hacs.xyz) 2.x installed and set up
-- The action is for administrators, like HACS itself
+- `hacs_refresh.check_updates` is for administrators, like HACS itself; `hacs_refresh.check_repository` (one repository at a time, like HACS' "Update information") and the button are open to every user
 
 ## Installation
 
@@ -65,7 +66,7 @@ Copy `custom_components/hacs_refresh/` to `/config/custom_components/hacs_refres
 | Entity | Description |
 |---|---|
 | `button.hacs_refresh_check_for_updates` | Starts a check. Unavailable while one is running |
-| `sensor.hacs_refresh_status` | `idle`, `running` or `error`. Attributes: `done`, `total`, `updates`, `failed` (list of `owner/repo`), `error` |
+| `sensor.hacs_refresh_status` | `idle`, `running` or `error`. Attributes: `done`, `total`, `updates`, `failed` (list of `owner/repo`), `error`, `checking` (update entities being checked by `check_repository`) |
 | `sensor.hacs_refresh_last_check` | End of the last check |
 
 ### Action `hacs_refresh.check_updates`
@@ -89,6 +90,20 @@ actions:
   - action: notify.mobile_app_phone
     data:
       message: "{{ state_attr('sensor.hacs_refresh_status', 'updates') }} HACS update(s) available"
+```
+
+### Action `hacs_refresh.check_repository`
+
+| Field | Description |
+|---|---|
+| `entity_id` | HACS update entities (`update.*` of platform `hacs`) of the repositories to check |
+
+The action ends once the repositories are checked, and fails with the reason if one could not be. It doesn't change the status or the last check, which belong to the full check.
+
+```yaml
+action: hacs_refresh.check_repository
+target:
+  entity_id: update.mushroom_update
 ```
 
 ## How it works

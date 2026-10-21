@@ -21,7 +21,8 @@ import logging
 from typing import Any
 
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 
 from .const import HACS_DOMAIN, PARALLEL_REFRESHES, STATE_ERROR, STATE_IDLE, STATE_RUNNING
@@ -63,6 +64,8 @@ class HacsRefresher:
         self.failed: list[str] = []
         self.error: str | None = None
         self.last_check: datetime | None = None
+        # Update entities of the repositories checked on their own (check_repository).
+        self.checking: set[str] = set()
         self._task: asyncio.Task | None = None
         self._listeners: list[CALLBACK_TYPE] = []
 
@@ -95,6 +98,44 @@ class HacsRefresher:
         self._notify()
         self._task = self.hass.async_create_background_task(self._async_run(), "hacs_refresh_check")
         return True
+
+    async def async_check_repositories(self, entity_ids: list[str]) -> None:
+        """Check the repositories behind these HACS update entities, and wait for the result.
+
+        Independent of the full check: it neither changes the status nor the last check,
+        the entities being checked are listed in the status sensor's `checking` attribute.
+        """
+        hacs = _hacs(self.hass)
+        registry = er.async_get(self.hass)
+        by_id = {str(repo.data.id): repo for repo in hacs.repositories.list_downloaded}
+        targets: dict[str, Any] = {}
+        for entity_id in entity_ids:
+            entry = registry.async_get(entity_id)
+            if entry is None or entry.platform != HACS_DOMAIN or entry.domain != "update":
+                raise ServiceValidationError(f"{entity_id} is not a HACS update entity")
+            repo = by_id.get(str(entry.unique_id))
+            if repo is None:
+                raise ServiceValidationError(f"{entity_id} is not a repository downloaded with HACS")
+            targets[entity_id] = repo
+        self.checking.update(targets)
+        self._notify()
+        failed: list[str] = []
+        try:
+            for entity_id, repo in targets.items():
+                try:
+                    await repo.update_repository(ignore_issues=True, force=True)
+                except Exception as err:  # noqa: BLE001 - report every failure at the end
+                    _LOGGER.warning("Could not check %s: %s", repo.data.full_name, err)
+                    failed.append(f"{repo.data.full_name}: {err}")
+            await hacs.data.async_write()
+            for category in {repo.data.category for repo in targets.values()}:
+                if coordinator := hacs.coordinators.get(category):
+                    coordinator.async_update_listeners()
+        finally:
+            self.checking.difference_update(targets)
+            self._notify()
+        if failed:
+            raise HomeAssistantError("Could not check " + "; ".join(failed))
 
     async def async_wait(self) -> None:
         """Wait for the running check, if any."""

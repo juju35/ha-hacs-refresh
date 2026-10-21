@@ -17,6 +17,7 @@ MAX_SCAN_INTERVAL: Final = 168
 PARALLEL_REFRESHES: Final = 4
 
 SERVICE_CHECK_UPDATES: Final = "check_updates"
+SERVICE_CHECK_REPOSITORY: Final = "check_repository"
 
 STATE_IDLE: Final = "idle"
 STATE_RUNNING: Final = "running"

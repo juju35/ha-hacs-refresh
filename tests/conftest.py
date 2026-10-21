@@ -16,7 +16,7 @@ def auto_enable_custom_integrations(enable_custom_integrations):
 
 def make_repo(full_name: str, category: str = "integration", pending: bool = False, fail: bool = False):
     repo = SimpleNamespace(
-        data=SimpleNamespace(full_name=full_name, category=category),
+        data=SimpleNamespace(id=abs(hash(full_name)) % 10**9, full_name=full_name, category=category),
         pending_update=pending,
         update_repository=AsyncMock(side_effect=RuntimeError("GitHub down") if fail else None),
     )

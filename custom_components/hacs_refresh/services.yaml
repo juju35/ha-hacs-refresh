@@ -4,3 +4,13 @@ check_updates:
       default: false
       selector:
         boolean:
+
+check_repository:
+  fields:
+    entity_id:
+      required: true
+      selector:
+        entity:
+          multiple: true
+          integration: hacs
+          domain: update

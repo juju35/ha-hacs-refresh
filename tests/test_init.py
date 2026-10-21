@@ -10,7 +10,8 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry, async_
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
-from homeassistant.exceptions import ServiceValidationError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 
 from custom_components.hacs_refresh.const import CONF_SCAN_INTERVAL, DOMAIN
@@ -117,3 +118,48 @@ async def test_unsupported_hacs_version(hass, fake_hacs):
     del fake_hacs.coordinators
     with pytest.raises(ServiceValidationError, match="not supported"):
         await hass.services.async_call(DOMAIN, "check_updates", {}, blocking=True)
+
+
+def _hacs_update_entity(hass: HomeAssistant, repo, platform: str = "hacs") -> str:
+    """Register the update entity HACS creates for a repository (unique_id = repository id)."""
+    entry = er.async_get(hass).async_get_or_create(
+        "update", platform, str(repo.data.id), suggested_object_id=repo.data.full_name.split("/")[1]
+    )
+    return entry.entity_id
+
+
+async def test_check_repository(hass, fake_hacs):
+    await _setup(hass)
+    parcel = fake_hacs.repositories.list_downloaded[1]
+    entity_id = _hacs_update_entity(hass, parcel)
+    await hass.services.async_call(DOMAIN, "check_repository", {"entity_id": entity_id}, blocking=True)
+
+    parcel.update_repository.assert_awaited_once_with(ignore_issues=True, force=True)
+    fake_hacs.repositories.list_downloaded[0].update_repository.assert_not_awaited()
+    fake_hacs.data.async_write.assert_awaited_once()
+    fake_hacs.coordinators["integration"].async_update_listeners.assert_called_once()
+    fake_hacs.coordinators["plugin"].async_update_listeners.assert_not_called()
+    state = hass.states.get(STATUS)
+    assert state.state == "idle"
+    assert state.attributes["checking"] == []
+    # A single repository is not a full check.
+    assert hass.states.get(LAST_CHECK).state == "unknown"
+
+
+async def test_check_repository_rejects_other_entities(hass, fake_hacs):
+    await _setup(hass)
+    other = _hacs_update_entity(hass, fake_hacs.repositories.list_downloaded[0], platform="demo")
+    with pytest.raises(ServiceValidationError, match="not a HACS update entity"):
+        await hass.services.async_call(DOMAIN, "check_repository", {"entity_id": other}, blocking=True)
+    with pytest.raises(ServiceValidationError, match="not a HACS update entity"):
+        await hass.services.async_call(DOMAIN, "check_repository", {"entity_id": "update.missing"}, blocking=True)
+
+
+async def test_check_repository_failure(hass, fake_hacs):
+    broken = make_repo("someone/broken", fail=True)
+    fake_hacs.repositories.list_downloaded.append(broken)
+    await _setup(hass)
+    entity_id = _hacs_update_entity(hass, broken)
+    with pytest.raises(HomeAssistantError, match="someone/broken"):
+        await hass.services.async_call(DOMAIN, "check_repository", {"entity_id": entity_id}, blocking=True)
+    assert hass.states.get(STATUS).attributes["checking"] == []
