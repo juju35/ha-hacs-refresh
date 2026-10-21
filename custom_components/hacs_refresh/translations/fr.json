@@ -1,0 +1,54 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "HACS Refresh",
+        "description": "Recherche les mises à jour de tous les dépôts téléchargés avec HACS, côté serveur. HACS ne vérifie lui-même les dépôts personnalisés que toutes les 48 heures.",
+        "data": { "scan_interval": "Fréquence de vérification" },
+        "data_description": { "scan_interval": "Heures entre deux vérifications automatiques. 0 désactive la vérification automatique : utilisez le bouton ou l'action." }
+      }
+    },
+    "abort": {
+      "already_configured": "HACS Refresh est déjà configuré.",
+      "single_instance_allowed": "HACS Refresh est déjà configuré.",
+      "hacs_not_loaded": "HACS n'est pas chargé. Installez et configurez HACS d'abord."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options de HACS Refresh",
+        "data": { "scan_interval": "Fréquence de vérification" },
+        "data_description": { "scan_interval": "Heures entre deux vérifications automatiques. 0 désactive la vérification automatique : utilisez le bouton ou l'action." }
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "check_updates": { "name": "Rechercher les mises à jour" }
+    },
+    "sensor": {
+      "status": {
+        "name": "Statut",
+        "state": { "idle": "En attente", "running": "Recherche en cours", "error": "Erreur" },
+        "state_attributes": {
+          "done": { "name": "Vérifiés" },
+          "total": { "name": "Dépôts" },
+          "updates": { "name": "Mises à jour disponibles" },
+          "failed": { "name": "En échec" },
+          "error": { "name": "Erreur" }
+        }
+      },
+      "last_check": { "name": "Dernière vérification" }
+    }
+  },
+  "services": {
+    "check_updates": {
+      "name": "Rechercher les mises à jour",
+      "description": "Recherche les mises à jour de tous les dépôts téléchargés avec HACS. S'exécute en arrière-plan, sauf si attendre est activé.",
+      "fields": {
+        "wait": { "name": "Attendre", "description": "Attendre que tous les dépôts soient vérifiés avant la fin de l'action." }
+      }
+    }
+  }
+}

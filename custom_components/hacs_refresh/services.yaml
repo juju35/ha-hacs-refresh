@@ -1,0 +1,6 @@
+check_updates:
+  fields:
+    wait:
+      default: false
+      selector:
+        boolean:
