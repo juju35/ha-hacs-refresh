@@ -78,8 +78,10 @@ async def test_check_updates_action(hass, fake_hacs):
 
 async def test_button_and_failed_repository(hass, fake_hacs):
     fake_hacs.repositories.list_downloaded.append(make_repo("someone/broken", fail=True))
-    await _setup(hass)
+    entry = await _setup(hass)
     await hass.services.async_call("button", "press", {"entity_id": BUTTON}, blocking=True)
+    # The check runs as a background task, which async_block_till_done doesn't wait for.
+    await entry.runtime_data.async_wait()
     await hass.async_block_till_done()
     state = hass.states.get(STATUS)
     assert state.state == "idle"
@@ -88,9 +90,10 @@ async def test_button_and_failed_repository(hass, fake_hacs):
 
 
 async def test_scheduled_check(hass, fake_hacs):
-    await _setup(hass, hours=2)
+    entry = await _setup(hass, hours=2)
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(hours=2, seconds=1))
     await hass.async_block_till_done()
+    await entry.runtime_data.async_wait()
     fake_hacs.repositories.list_downloaded[0].update_repository.assert_awaited_once()
 
 
