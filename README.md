@@ -106,6 +106,12 @@ target:
   entity_id: update.mushroom_update
 ```
 
+## Screenshots
+
+HACS Refresh has no card of its own: the [System Monitor Card](https://github.com/juju35/ha-system-monitor-card) shows the HACS extensions with their update status, and its **Check for updates** button presses this integration's button.
+
+![HACS extensions in the System Monitor Card](https://raw.githubusercontent.com/juju35/ha-system-monitor-card/main/screenshots/card-hacs.png)
+
 ## How it works
 
 HACS has no action to check everything: its frontend refreshes one repository at a time over its websocket API. HACS Refresh does, for every downloaded repository, what that websocket command does for one: it asks the repository to update its information from GitHub, saves HACS' data, then tells HACS' update entities to refresh. The update entities (`update.*` of platform `hacs`) then show the new latest versions, like after a manual refresh in HACS.

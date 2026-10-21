@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1
+
+### Maintenance
+- README: **Screenshots** section, with the HACS section of the System Monitor Card.
+
 ## 0.2.0
 
 ### What's new
