@@ -1,0 +1,17 @@
+{
+  "entity": {
+    "button": {
+      "check_updates": { "default": "mdi:archive-refresh" }
+    },
+    "sensor": {
+      "status": {
+        "default": "mdi:archive-check",
+        "state": { "running": "mdi:archive-sync", "error": "mdi:archive-alert" }
+      },
+      "last_check": { "default": "mdi:clock-check-outline" }
+    }
+  },
+  "services": {
+    "check_updates": { "service": "mdi:archive-refresh" }
+  }
+}

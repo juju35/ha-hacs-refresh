@@ -1,0 +1,54 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "HACS Refresh",
+        "description": "Checks every repository downloaded with HACS for updates, on the server. HACS itself only checks custom repositories every 48 hours.",
+        "data": { "scan_interval": "Check interval" },
+        "data_description": { "scan_interval": "Hours between two automatic checks. 0 turns the automatic check off: use the button or the action." }
+      }
+    },
+    "abort": {
+      "already_configured": "HACS Refresh is already configured.",
+      "single_instance_allowed": "HACS Refresh is already configured.",
+      "hacs_not_loaded": "HACS is not loaded. Install and set up HACS first."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "HACS Refresh options",
+        "data": { "scan_interval": "Check interval" },
+        "data_description": { "scan_interval": "Hours between two automatic checks. 0 turns the automatic check off: use the button or the action." }
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "check_updates": { "name": "Check for updates" }
+    },
+    "sensor": {
+      "status": {
+        "name": "Status",
+        "state": { "idle": "Idle", "running": "Checking", "error": "Error" },
+        "state_attributes": {
+          "done": { "name": "Checked" },
+          "total": { "name": "Repositories" },
+          "updates": { "name": "Updates available" },
+          "failed": { "name": "Failed" },
+          "error": { "name": "Error" }
+        }
+      },
+      "last_check": { "name": "Last check" }
+    }
+  },
+  "services": {
+    "check_updates": {
+      "name": "Check for updates",
+      "description": "Checks every repository downloaded with HACS for updates. Runs in the background unless wait is set.",
+      "fields": {
+        "wait": { "name": "Wait", "description": "Wait until every repository has been checked before the action ends." }
+      }
+    }
+  }
+}
