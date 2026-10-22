@@ -27,6 +27,7 @@ HACS itself only checks downloaded custom repositories every 48 hours, and its o
 
 ## Prerequisites
 
+- Home Assistant 2024.11 or later
 - [HACS](https://hacs.xyz) 2.x installed and set up
 - `hacs_refresh.check_updates` is for administrators, like HACS itself; `hacs_refresh.check_repository` (one repository at a time, like HACS' "Update information") and the button are open to every user
 
