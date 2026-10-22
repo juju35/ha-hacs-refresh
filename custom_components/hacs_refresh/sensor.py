@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, ClassVar
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.const import EntityCategory
@@ -30,7 +30,7 @@ class StatusSensor(HacsRefreshEntity, SensorEntity):
     """idle / running / error, with the progress as attributes."""
 
     _attr_device_class = SensorDeviceClass.ENUM
-    _attr_options = [STATE_IDLE, STATE_RUNNING, STATE_ERROR]
+    _attr_options: ClassVar[list[str]] = [STATE_IDLE, STATE_RUNNING, STATE_ERROR]
 
     @property
     def native_value(self) -> str:

@@ -15,9 +15,9 @@ they exist so a future HACS version fails with a clear message instead of a cras
 from __future__ import annotations
 
 import asyncio
+import logging
 from collections.abc import Callable
 from datetime import datetime
-import logging
 from typing import Any
 
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
@@ -38,7 +38,12 @@ def _hacs(hass: HomeAssistant) -> Any:
     hacs = hass.data.get(HACS_DOMAIN)
     if hacs is None:
         raise HacsNotAvailableError("HACS is not loaded")
-    for path in ("repositories.list_downloaded", "data.async_write", "coordinators", "system.disabled"):
+    for path in (
+        "repositories.list_downloaded",
+        "data.async_write",
+        "coordinators",
+        "system.disabled",
+    ):
         obj = hacs
         for attr in path.split("."):
             if not hasattr(obj, attr):
@@ -121,7 +126,7 @@ class HacsRefresher:
         self._notify()
         failed: list[str] = []
         try:
-            for entity_id, repo in targets.items():
+            for repo in targets.values():
                 try:
                     await repo.update_repository(ignore_issues=True, force=True)
                 except Exception as err:  # noqa: BLE001 - report every failure at the end
@@ -180,7 +185,7 @@ class HacsRefresher:
                 len(self.failed),
             )
         except Exception as err:  # noqa: BLE001
-            _LOGGER.error("HACS check failed: %s", err)
+            _LOGGER.exception("HACS check failed: %s", err)
             self.error = str(err)
             self.state = STATE_ERROR
         self.last_check = dt_util.utcnow()
