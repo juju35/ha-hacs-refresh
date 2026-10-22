@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
 import logging
+from datetime import datetime, timedelta
 
 import voluptuous as vol
-
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import ATTR_ENTITY_ID, Platform
 from homeassistant.core import HomeAssistant, ServiceCall
@@ -40,9 +39,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Register the actions once: the full check for administrators, one repository for everyone."""
 
     def loaded_refresher() -> HacsRefresher:
-        entries = [
-            e for e in hass.config_entries.async_entries(DOMAIN) if e.state is ConfigEntryState.LOADED
-        ]
+        entries = [e for e in hass.config_entries.async_entries(DOMAIN) if e.state is ConfigEntryState.LOADED]
         if not entries:
             raise ServiceValidationError("HACS Refresh is not loaded")
         return entries[0].runtime_data
@@ -56,9 +53,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         if call.data[ATTR_WAIT]:
             await refresher.async_wait()
 
-    async_register_admin_service(
-        hass, DOMAIN, SERVICE_CHECK_UPDATES, check_updates, CHECK_UPDATES_SCHEMA
-    )
+    async_register_admin_service(hass, DOMAIN, SERVICE_CHECK_UPDATES, check_updates, CHECK_UPDATES_SCHEMA)
 
     async def check_repository(call: ServiceCall) -> None:
         # Like the button (and HACS' own "Update information"), open to every user: one repository at a time.
@@ -67,9 +62,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         except HacsNotAvailableError as err:
             raise ServiceValidationError(str(err)) from err
 
-    hass.services.async_register(
-        DOMAIN, SERVICE_CHECK_REPOSITORY, check_repository, CHECK_REPOSITORY_SCHEMA
-    )
+    hass.services.async_register(DOMAIN, SERVICE_CHECK_REPOSITORY, check_repository, CHECK_REPOSITORY_SCHEMA)
     return True
 
 
