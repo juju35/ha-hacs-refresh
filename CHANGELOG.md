@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.2
+
+### Maintenance
+- Tooling only, no functional change: ruff/Biome/pre-commit, a Lint CI with duplication and dead-code checks, and internal modernizations.
+
 ## 0.2.1
 
 ### Maintenance
