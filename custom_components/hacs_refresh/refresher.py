@@ -185,7 +185,7 @@ class HacsRefresher:
                 len(self.failed),
             )
         except Exception as err:  # noqa: BLE001
-            _LOGGER.error("HACS check failed: %s", err)
+            _LOGGER.exception("HACS check failed: %s", err)
             self.error = str(err)
             self.state = STATE_ERROR
         self.last_check = dt_util.utcnow()
