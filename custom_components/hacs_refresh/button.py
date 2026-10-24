@@ -4,12 +4,10 @@ from __future__ import annotations
 
 from homeassistant.components.button import ButtonEntity
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import HacsRefreshConfigEntry
 from .entity import HacsRefreshEntity
-from .refresher import HacsNotAvailableError
 
 
 async def async_setup_entry(
@@ -27,7 +25,5 @@ class CheckUpdatesButton(HacsRefreshEntity, ButtonEntity):
         return not self.refresher.running
 
     async def async_press(self) -> None:
-        try:
-            self.refresher.async_start()
-        except HacsNotAvailableError as err:
-            raise HomeAssistantError(str(err)) from err
+        # HacsNotAvailableError is a HomeAssistantError with a translated message.
+        self.refresher.async_start()

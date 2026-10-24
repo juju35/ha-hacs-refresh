@@ -32,16 +32,22 @@ from .const import DOMAIN, HACS_DOMAIN, PARALLEL_REFRESHES, STATE_ERROR, STATE_I
 _LOGGER = logging.getLogger(__name__)
 
 STORAGE_VERSION = 1
+ISSUES_URL = "https://github.com/juju35/ha-hacs-refresh/issues"
 
 
 class HacsNotAvailableError(HomeAssistantError):
     """HACS is not loaded, disabled, or its internals changed."""
 
+    def __init__(self, translation_key: str, placeholders: dict[str, str] | None = None) -> None:
+        super().__init__(
+            translation_domain=DOMAIN, translation_key=translation_key, translation_placeholders=placeholders
+        )
+
 
 def _hacs(hass: HomeAssistant) -> Any:
     hacs = hass.data.get(HACS_DOMAIN)
     if hacs is None:
-        raise HacsNotAvailableError("HACS is not loaded")
+        raise HacsNotAvailableError("hacs_not_loaded")
     for path in (
         "repositories.list_downloaded",
         "data.async_write",
@@ -51,13 +57,10 @@ def _hacs(hass: HomeAssistant) -> Any:
         obj = hacs
         for attr in path.split("."):
             if not hasattr(obj, attr):
-                raise HacsNotAvailableError(
-                    f"This version of HACS is not supported (missing {path}); "
-                    "please open an issue on https://github.com/juju35/ha-hacs-refresh"
-                )
+                raise HacsNotAvailableError("hacs_not_supported", {"path": path, "issues": ISSUES_URL})
             obj = getattr(obj, attr)
     if hacs.system.disabled:
-        raise HacsNotAvailableError(f"HACS is disabled ({hacs.system.disabled_reason})")
+        raise HacsNotAvailableError("hacs_disabled", {"reason": str(getattr(hacs.system, "disabled_reason", None))})
     return hacs
 
 
@@ -144,6 +147,8 @@ class HacsRefresher:
 
         Independent of the full check: it neither changes the status nor the last check,
         the entities being checked are listed in the status sensor's `checking` attribute.
+        While a full check runs, it waits for its end; an entity already being checked by another
+        call is not checked a second time.
         """
         hacs = _hacs(self.hass)
         registry = er.async_get(self.hass)
@@ -152,11 +157,27 @@ class HacsRefresher:
         for entity_id in entity_ids:
             entry = registry.async_get(entity_id)
             if entry is None or entry.platform != HACS_DOMAIN or entry.domain != "update":
-                raise ServiceValidationError(f"{entity_id} is not a HACS update entity")
+                raise ServiceValidationError(
+                    translation_domain=DOMAIN,
+                    translation_key="not_hacs_update_entity",
+                    translation_placeholders={"entity_id": entity_id},
+                )
             repo = by_id.get(str(entry.unique_id))
             if repo is None:
-                raise ServiceValidationError(f"{entity_id} is not a repository downloaded with HACS")
-            targets[entity_id] = repo
+                raise ServiceValidationError(
+                    translation_domain=DOMAIN,
+                    translation_key="not_downloaded",
+                    translation_placeholders={"entity_id": entity_id},
+                )
+            # Already being checked by another call: that call reports its result.
+            if entity_id not in self.checking:
+                targets[entity_id] = repo
+        if self.running:
+            # The full check refreshes these repositories too: wait for its end instead of a second refresh.
+            await self.async_wait()
+            return
+        if not targets:
+            return
         self.checking.update(targets)
         self._notify()
         failed: list[str] = []
@@ -175,7 +196,11 @@ class HacsRefresher:
             self.checking.difference_update(targets)
             self._notify()
         if failed:
-            raise HomeAssistantError("Could not check " + "; ".join(failed))
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="check_failed",
+                translation_placeholders={"failed": "; ".join(failed)},
+            )
 
     async def async_wait(self) -> None:
         """Wait for the running check, if any."""
@@ -220,7 +245,7 @@ class HacsRefresher:
                 len(self.failed),
             )
         except Exception as err:  # noqa: BLE001
-            _LOGGER.exception("HACS check failed: %s", err)
+            _LOGGER.exception("HACS check failed")
             self.error = str(err)
             self.state = STATE_ERROR
         self.last_check = dt_util.utcnow()

@@ -7,11 +7,12 @@ Home Assistant custom integration that checks every repository downloaded with H
 
 ```
 custom_components/hacs_refresh/
-├── __init__.py      # Actions check_updates (admin) and check_repository (everyone), entry setup, automatic check
+├── __init__.py      # Actions check_updates and check_repository (every user, like the button), entry setup, automatic check
 │                    #   (async_call_later on last_check + interval; overdue → runs at async_at_started)
 ├── refresher.py     # HacsRefresher: runs the check (entry background task, cancelled on unload), keeps state/progress,
 │                    #   notifies entities; Store `hacs_refresh` keeps since/last_check/updates across restarts;
-│                    #   async_check_repositories: update entity → repository by unique_id (= repository id)
+│                    #   async_check_repositories: update entity → repository by unique_id (= repository id); waits for a running
+│                    #   full check, skips entities already in `checking`
 ├── config_flow.py   # Single entry, aborts without HACS; options: scan_interval (hours, 0 = off)
 ├── button.py        # button.*_check_for_updates (unavailable while running)
 ├── sensor.py        # status (enum idle/running/error + done/total/updates/failed/error), last_check
@@ -22,6 +23,7 @@ custom_components/hacs_refresh/
 ## HACS internals used (same as HACS' `hacs/repository/refresh` websocket command)
 - `hass.data["hacs"]`: `repositories.list_downloaded`, `repository.update_repository(ignore_issues=True, force=True)`, `data.async_write()`, `coordinators[category].async_update_listeners()`, `system.disabled` / `disabled_reason`, `common.categories`.
 - `_hacs()` checks these exist and raises `HacsNotAvailableError` with a clear message otherwise. Keep that check in sync if more attributes are used.
+- Error messages are translated: `translation_key` under `exceptions` in translations/{en,fr}.json (no URL in the strings: hassfest refuses them, pass them as placeholders).
 - `homeassistant.update_entity` on HACS update entities is a no-op: don't rely on it.
 
 ## Release

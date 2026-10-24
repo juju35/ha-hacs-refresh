@@ -21,7 +21,7 @@ HACS itself only checks downloaded custom repositories every 48 hours, and its o
 - **Automatic check** at the interval set in the integration options (24 hours by default, `0` to turn it off), counted from the last check and kept across restarts: an overdue check runs as soon as Home Assistant has started
 - **Status** sensor (`idle`, `running`, `error`) with the progress (`done` / `total`), the number of updates found and the repositories that failed
 - **Last check** sensor (timestamp)
-- One failing repository doesn't stop the others; a check never runs twice at the same time
+- One failing repository doesn't stop the others; a check never runs twice at the same time, and `check_repository` waits for a full check that is running instead of starting a second one
 - Used by the [System Monitor Card](https://github.com/juju35/ha-system-monitor-card) for its HACS section
 - English and French
 
@@ -29,7 +29,7 @@ HACS itself only checks downloaded custom repositories every 48 hours, and its o
 
 - Home Assistant 2024.11 or later
 - [HACS](https://hacs.xyz) 2.x installed and set up
-- `hacs_refresh.check_updates` is for administrators, like HACS itself; `hacs_refresh.check_repository` (one repository at a time, like HACS' "Update information") and the button are open to every user
+- The button and both actions are open to every user: they only fetch information, like HACS' own "Update information"; installing updates stays with HACS and its permissions
 
 ## Installation
 
@@ -99,7 +99,7 @@ actions:
 |---|---|
 | `entity_id` | HACS update entities (`update.*` of platform `hacs`) of the repositories to check |
 
-The action ends once the repositories are checked, and fails with the reason if one could not be. It doesn't change the status or the last check, which belong to the full check.
+The action ends once the repositories are checked, and fails with the reason if one could not be. It doesn't change the status or the last check, which belong to the full check. While a full check runs, it waits for that check to end; a repository already being checked by another call is not checked twice.
 
 ```yaml
 action: hacs_refresh.check_repository

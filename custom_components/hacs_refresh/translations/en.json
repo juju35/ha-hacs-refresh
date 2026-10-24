@@ -58,5 +58,14 @@
         "entity_id": { "name": "Update entities", "description": "HACS update entities of the repositories to check." }
       }
     }
+  },
+  "exceptions": {
+    "not_loaded": { "message": "HACS Refresh is not loaded." },
+    "hacs_not_loaded": { "message": "HACS is not loaded." },
+    "hacs_not_supported": { "message": "This version of HACS is not supported (missing {path}); please open an issue on {issues}." },
+    "hacs_disabled": { "message": "HACS is disabled ({reason})." },
+    "not_hacs_update_entity": { "message": "{entity_id} is not a HACS update entity." },
+    "not_downloaded": { "message": "{entity_id} is not a repository downloaded with HACS." },
+    "check_failed": { "message": "Could not check {failed}." }
   }
 }
