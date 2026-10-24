@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import timedelta
 
 import pytest
@@ -162,3 +163,79 @@ async def test_check_repository_failure(hass, fake_hacs):
     with pytest.raises(HomeAssistantError, match="someone/broken"):
         await hass.services.async_call(DOMAIN, "check_repository", {"entity_id": entity_id}, blocking=True)
     assert hass.states.get(STATUS).attributes["checking"] == []
+
+
+async def test_overdue_check_runs_at_startup(hass, fake_hacs, hass_storage):
+    """A restart doesn't postpone the automatic check: an overdue one runs once Home Assistant has started."""
+    last = dt_util.utcnow() - timedelta(hours=25)
+    hass_storage[DOMAIN] = {"version": 1, "key": DOMAIN, "data": {"last_check": last.isoformat(), "updates": 2}}
+    entry = await _setup(hass)
+    await entry.runtime_data.async_wait()
+    await hass.async_block_till_done()
+    fake_hacs.repositories.list_downloaded[0].update_repository.assert_awaited_once()
+    assert hass_storage[DOMAIN]["data"]["updates"] == 1
+    assert dt_util.parse_datetime(hass_storage[DOMAIN]["data"]["last_check"]) > last
+
+
+async def test_recent_check_is_restored_and_next_one_kept(hass, fake_hacs, hass_storage, freezer):
+    last = dt_util.utcnow() - timedelta(hours=20)
+    hass_storage[DOMAIN] = {"version": 1, "key": DOMAIN, "data": {"last_check": last.isoformat(), "updates": 2}}
+    entry = await _setup(hass)
+    repo = fake_hacs.repositories.list_downloaded[0]
+    repo.update_repository.assert_not_awaited()
+    assert hass.states.get(STATUS).attributes["updates"] == 2
+    assert dt_util.parse_datetime(hass.states.get(LAST_CHECK).state) == last.replace(microsecond=0)
+    # 24 h after the last check, i.e. 4 h after this start, not 24 h after it.
+    freezer.tick(timedelta(hours=3, minutes=59))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    repo.update_repository.assert_not_awaited()
+    freezer.tick(timedelta(minutes=2))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    await entry.runtime_data.async_wait()
+    repo.update_repository.assert_awaited_once()
+    # Then again one interval after this check.
+    freezer.tick(timedelta(hours=24, seconds=1))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    await entry.runtime_data.async_wait()
+    assert repo.update_repository.await_count == 2
+
+
+async def test_first_install_waits_one_interval(hass, fake_hacs, hass_storage, freezer):
+    entry = await _setup(hass, hours=2)
+    repo = fake_hacs.repositories.list_downloaded[0]
+    repo.update_repository.assert_not_awaited()
+    assert hass_storage[DOMAIN]["data"]["since"]
+    # Restarted an hour later: still counts from the first setup.
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    freezer.tick(timedelta(hours=1, minutes=1))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    repo.update_repository.assert_not_awaited()
+    freezer.tick(timedelta(hours=1))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    await entry.runtime_data.async_wait()
+    repo.update_repository.assert_awaited_once()
+
+
+async def test_unload_cancels_running_check(hass, fake_hacs):
+    release = asyncio.Event()
+
+    async def slow(**_kwargs):
+        await release.wait()
+
+    fake_hacs.repositories.list_downloaded[0].update_repository.side_effect = slow
+    entry = await _setup(hass, hours=0)
+    old = entry.runtime_data
+    assert old.async_start()
+    await hass.async_block_till_done()
+    assert old.running
+    task = old._task
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert task.cancelled()
+    fake_hacs.data.async_write.assert_not_awaited()
+    release.set()

@@ -18,3 +18,4 @@ async_setup_entry  # unused function (custom_components/hacs_refresh/sensor.py:1
 _.native_value  # unused property (custom_components/hacs_refresh/sensor.py:35)
 _.extra_state_attributes  # unused property (custom_components/hacs_refresh/sensor.py:39)
 _.native_value  # unused property (custom_components/hacs_refresh/sensor.py:58)
+async_remove_entry  # unused function (custom_components/hacs_refresh/__init__.py:140)

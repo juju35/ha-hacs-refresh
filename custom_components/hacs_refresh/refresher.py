@@ -20,14 +20,18 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
-from .const import HACS_DOMAIN, PARALLEL_REFRESHES, STATE_ERROR, STATE_IDLE, STATE_RUNNING
+from .const import DOMAIN, HACS_DOMAIN, PARALLEL_REFRESHES, STATE_ERROR, STATE_IDLE, STATE_RUNNING
 
 _LOGGER = logging.getLogger(__name__)
+
+STORAGE_VERSION = 1
 
 
 class HacsNotAvailableError(HomeAssistantError):
@@ -57,11 +61,20 @@ def _hacs(hass: HomeAssistant) -> Any:
     return hacs
 
 
+def _parse(value: Any) -> datetime | None:
+    return dt_util.parse_datetime(value) if isinstance(value, str) else None
+
+
 class HacsRefresher:
     """Runs the check and keeps its progress for the button and the sensor."""
 
-    def __init__(self, hass: HomeAssistant) -> None:
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         self.hass = hass
+        self.entry = entry
+        # The last full check and its result, kept across restarts for the interval and the sensors.
+        self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, DOMAIN)
+        # Called when a full check ends, whatever started it.
+        self.on_done: CALLBACK_TYPE | None = None
         self.state: str = STATE_IDLE
         self.done = 0
         self.total = 0
@@ -69,10 +82,31 @@ class HacsRefresher:
         self.failed: list[str] = []
         self.error: str | None = None
         self.last_check: datetime | None = None
+        self.since: datetime | None = None
         # Update entities of the repositories checked on their own (check_repository).
         self.checking: set[str] = set()
         self._task: asyncio.Task | None = None
         self._listeners: list[CALLBACK_TYPE] = []
+
+    async def async_load(self) -> None:
+        """Restore the last check from the previous run."""
+        data = await self._store.async_load() or {}
+        self.last_check = _parse(data.get("last_check"))
+        self.updates = data.get("updates")
+        # Before the first check, the interval counts from the first setup.
+        self.since = _parse(data.get("since"))
+        if self.since is None:
+            self.since = dt_util.utcnow()
+            await self._async_save()
+
+    async def _async_save(self) -> None:
+        await self._store.async_save(
+            {
+                "since": self.since.isoformat() if self.since else None,
+                "last_check": self.last_check.isoformat() if self.last_check else None,
+                "updates": self.updates,
+            }
+        )
 
     @property
     def running(self) -> bool:
@@ -101,7 +135,8 @@ class HacsRefresher:
         self.failed = []
         self.error = None
         self._notify()
-        self._task = self.hass.async_create_background_task(self._async_run(), "hacs_refresh_check")
+        # Tied to the entry: unloading it (options changed, removed) cancels a check still running.
+        self._task = self.entry.async_create_background_task(self.hass, self._async_run(), "hacs_refresh_check")
         return True
 
     async def async_check_repositories(self, entity_ids: list[str]) -> None:
@@ -191,3 +226,6 @@ class HacsRefresher:
         self.last_check = dt_util.utcnow()
         self._task = None
         self._notify()
+        await self._async_save()
+        if self.on_done is not None:
+            self.on_done()
