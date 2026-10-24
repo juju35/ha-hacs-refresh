@@ -18,7 +18,7 @@ HACS itself only checks downloaded custom repositories every 48 hours, and its o
 
 - **Check for updates** button and `hacs_refresh.check_updates` action: every repository downloaded with HACS is fetched again from GitHub, four at a time, and HACS' update entities are refreshed
 - **`hacs_refresh.check_repository`** action: checks only the repositories behind the HACS update entities you give, and waits for the result
-- **Automatic check** at the interval set in the integration options (24 hours by default, `0` to turn it off)
+- **Automatic check** at the interval set in the integration options (24 hours by default, `0` to turn it off), counted from the last check and kept across restarts: an overdue check runs as soon as Home Assistant has started
 - **Status** sensor (`idle`, `running`, `error`) with the progress (`done` / `total`), the number of updates found and the repositories that failed
 - **Last check** sensor (timestamp)
 - One failing repository doesn't stop the others; a check never runs twice at the same time
@@ -60,7 +60,7 @@ Copy `custom_components/hacs_refresh/` to `/config/custom_components/hacs_refres
 
 | Option | Default | Description |
 |---|---|---|
-| Check interval | 24 h | Hours between two automatic checks, from 1 to 168. `0` turns the automatic check off |
+| Check interval | 24 h | Hours between two automatic checks, from 1 to 168. `0` turns the automatic check off. Counted from the end of the last check (or from the installation before the first one), across restarts |
 
 ### Entities
 
