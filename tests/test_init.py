@@ -7,7 +7,7 @@ from datetime import timedelta
 
 import pytest
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.core import HomeAssistant
+from homeassistant.core import Context, HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import entity_registry as er
@@ -239,3 +239,69 @@ async def test_unload_cancels_running_check(hass, fake_hacs):
     assert task.cancelled()
     fake_hacs.data.async_write.assert_not_awaited()
     release.set()
+
+
+async def test_check_updates_open_to_non_admin(hass, fake_hacs, hass_read_only_user):
+    """Like the button, which runs the same check, the action is open to every user."""
+    await _setup(hass, hours=0)
+    await hass.services.async_call(
+        DOMAIN, "check_updates", {"wait": True}, blocking=True, context=Context(user_id=hass_read_only_user.id)
+    )
+    fake_hacs.repositories.list_downloaded[0].update_repository.assert_awaited_once()
+
+
+async def test_hacs_disabled_without_reason(hass, fake_hacs):
+    """A HACS version without disabled_reason still gives the clear error."""
+    await _setup(hass)
+    fake_hacs.system.disabled = True
+    del fake_hacs.system.disabled_reason
+    with pytest.raises(ServiceValidationError, match="HACS is disabled"):
+        await hass.services.async_call(DOMAIN, "check_updates", {}, blocking=True)
+
+
+async def test_check_repository_waits_for_full_check(hass, fake_hacs):
+    release = asyncio.Event()
+
+    async def slow(**_kwargs):
+        await release.wait()
+
+    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel.update_repository.side_effect = slow
+    entry = await _setup(hass, hours=0)
+    entity_id = _hacs_update_entity(hass, parcel)
+    assert entry.runtime_data.async_start()
+    await hass.async_block_till_done()
+    call = hass.async_create_task(
+        hass.services.async_call(DOMAIN, "check_repository", {"entity_id": entity_id}, blocking=True)
+    )
+    await asyncio.sleep(0.01)
+    assert not call.done()
+    release.set()
+    async with asyncio.timeout(5):
+        await call
+    # Refreshed once, by the full check only.
+    parcel.update_repository.assert_awaited_once()
+    assert not entry.runtime_data.running
+
+
+async def test_check_repository_skips_entity_already_checking(hass, fake_hacs):
+    release = asyncio.Event()
+
+    async def slow(**_kwargs):
+        await release.wait()
+
+    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel.update_repository.side_effect = slow
+    await _setup(hass, hours=0)
+    entity_id = _hacs_update_entity(hass, parcel)
+    first = hass.async_create_task(
+        hass.services.async_call(DOMAIN, "check_repository", {"entity_id": entity_id}, blocking=True)
+    )
+    await asyncio.sleep(0.01)
+    assert hass.states.get(STATUS).attributes["checking"] == [entity_id]
+    async with asyncio.timeout(5):
+        await hass.services.async_call(DOMAIN, "check_repository", {"entity_id": entity_id}, blocking=True)
+    release.set()
+    await first
+    parcel.update_repository.assert_awaited_once()
+    fake_hacs.data.async_write.assert_awaited_once()
