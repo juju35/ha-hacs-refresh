@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.0
+
+### Changes
+- Requires Home Assistant 2024.12 or later (was 2024.11): on 2024.11, **Configure** failed with an error.
+- `hacs_refresh.check_repository` called during a full check fails if that check failed or could not check one of its repositories, instead of succeeding.
+- A second `hacs_refresh.check_repository` on a repository already being checked waits for the first one's result and fails with the same reason, instead of returning at once.
+- A full check started while `hacs_refresh.check_repository` is running uses its result instead of checking the same repositories again.
+
+### Fixes
+- `hacs_refresh.check_updates` with `wait: true`, or a `hacs_refresh.check_repository` waiting for a full check, fails with "The check was cancelled" when HACS Refresh is reloaded or removed, instead of a raw error.
+
+### Maintenance
+- Tests run on Home Assistant 2026.10 and on the minimum version (2024.12), and fail on any deprecated Home Assistant call; new tests for the fixes.
+
 ## 0.3.0
 
 ### Changes
