@@ -12,7 +12,6 @@ from homeassistant.core import CALLBACK_TYPE, HomeAssistant, ServiceCall, callba
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.event import async_call_later
-from homeassistant.helpers.service import async_register_admin_service
 from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.typing import ConfigType
@@ -39,12 +38,12 @@ type HacsRefreshConfigEntry = ConfigEntry[HacsRefresher]
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Register the actions once: the full check for administrators, one repository for everyone."""
+    """Register the actions once, open to every user like the button, which runs the same full check."""
 
     def loaded_refresher() -> HacsRefresher:
         entries = [e for e in hass.config_entries.async_entries(DOMAIN) if e.state is ConfigEntryState.LOADED]
         if not entries:
-            raise ServiceValidationError("HACS Refresh is not loaded")
+            raise ServiceValidationError(translation_domain=DOMAIN, translation_key="not_loaded")
         return entries[0].runtime_data
 
     async def check_updates(call: ServiceCall) -> None:
@@ -52,21 +51,29 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         try:
             refresher.async_start()
         except HacsNotAvailableError as err:
-            raise ServiceValidationError(str(err)) from err
+            raise _validation_error(err) from err
         if call.data[ATTR_WAIT]:
             await refresher.async_wait()
 
-    async_register_admin_service(hass, DOMAIN, SERVICE_CHECK_UPDATES, check_updates, CHECK_UPDATES_SCHEMA)
+    hass.services.async_register(DOMAIN, SERVICE_CHECK_UPDATES, check_updates, CHECK_UPDATES_SCHEMA)
 
     async def check_repository(call: ServiceCall) -> None:
-        # Like the button (and HACS' own "Update information"), open to every user: one repository at a time.
         try:
             await loaded_refresher().async_check_repositories(call.data[ATTR_ENTITY_ID])
         except HacsNotAvailableError as err:
-            raise ServiceValidationError(str(err)) from err
+            raise _validation_error(err) from err
 
     hass.services.async_register(DOMAIN, SERVICE_CHECK_REPOSITORY, check_repository, CHECK_REPOSITORY_SCHEMA)
     return True
+
+
+def _validation_error(err: HacsNotAvailableError) -> ServiceValidationError:
+    """The same translated message, as a validation error of the action."""
+    return ServiceValidationError(
+        translation_domain=err.translation_domain,
+        translation_key=err.translation_key,
+        translation_placeholders=err.translation_placeholders,
+    )
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: HacsRefreshConfigEntry) -> bool:

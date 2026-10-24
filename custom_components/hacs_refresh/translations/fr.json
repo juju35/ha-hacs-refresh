@@ -58,5 +58,14 @@
         "entity_id": { "name": "Entités de mise à jour", "description": "Entités de mise à jour HACS des dépôts à vérifier." }
       }
     }
+  },
+  "exceptions": {
+    "not_loaded": { "message": "HACS Refresh n'est pas chargé." },
+    "hacs_not_loaded": { "message": "HACS n'est pas chargé." },
+    "hacs_not_supported": { "message": "Cette version de HACS n'est pas prise en charge ({path} manquant) ; merci d'ouvrir un ticket sur {issues}." },
+    "hacs_disabled": { "message": "HACS est désactivé ({reason})." },
+    "not_hacs_update_entity": { "message": "{entity_id} n'est pas une entité de mise à jour HACS." },
+    "not_downloaded": { "message": "{entity_id} n'est pas un dépôt téléchargé avec HACS." },
+    "check_failed": { "message": "Impossible de vérifier {failed}." }
   }
 }
