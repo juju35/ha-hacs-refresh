@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.3.0
+
+### Changes
+- The `hacs_refresh.check_updates` action is open to every user, like the **Check for updates** button and `hacs_refresh.check_repository`: it only fetches information, installing stays with HACS.
+- Error messages are translated (English, French).
+
+### Fixes
+- The automatic check runs even when Home Assistant restarts more often than the interval: the last check is kept across restarts and an overdue check runs at startup. `last_check` and `updates` no longer go back to unknown after a restart.
+- Unloading the entry (options changed, removed) stops a running check, so two full checks no longer run side by side.
+- `hacs_refresh.check_repository` called during a full check waits for it, and an entity already being checked is not refreshed twice.
+- A HACS version without `disabled_reason` gives the "HACS is disabled" error instead of a bare error.
+
+### Maintenance
+- New pytest tests for the fixes.
+- CI hardening: actions pinned by commit SHA, read-only token, Dependabot for actions, duplication check with PR annotations.
+
 ## 0.2.2
 
 ### Maintenance
