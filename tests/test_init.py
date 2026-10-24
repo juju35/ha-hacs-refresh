@@ -500,3 +500,56 @@ async def test_check_repository_during_full_check_in_error(hass, fake_hacs):
     with pytest.raises(HomeAssistantError, match="disk full"):
         await _await_service(call)
     assert hass.states.get(STATUS).state == "error"
+
+
+async def test_check_repository_calls_cancelled_together(hass, fake_hacs):
+    """Two check_repository calls on one repository, cancelled in the same tick, both get CancelledError."""
+    release = asyncio.Event()
+
+    async def slow(**_kwargs):
+        await release.wait()
+
+    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel.update_repository.side_effect = slow
+    entry = await _setup(hass, hours=0)
+    entity_id = _hacs_update_entity(hass, parcel)
+    refresher = entry.runtime_data
+    first = hass.async_create_task(refresher.async_check_repositories([entity_id]))
+    await asyncio.sleep(0.01)
+    second = hass.async_create_task(refresher.async_check_repositories([entity_id]))
+    await asyncio.sleep(0.01)
+    first.cancel()
+    second.cancel()
+    for call in (first, second):
+        with pytest.raises(asyncio.CancelledError):
+            await call
+    release.set()
+
+
+async def test_full_check_cancelled_with_awaited_check_repository(hass, fake_hacs):
+    """A full check cancelled together with the check_repository it waits for stops, without refreshing again."""
+    release = asyncio.Event()
+
+    async def slow(**_kwargs):
+        await release.wait()
+
+    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel.update_repository.side_effect = slow
+    entry = await _setup(hass, hours=0)
+    entity_id = _hacs_update_entity(hass, parcel)
+    refresher = entry.runtime_data
+    single = hass.async_create_task(refresher.async_check_repositories([entity_id]))
+    await asyncio.sleep(0.01)
+    assert refresher.async_start()
+    await asyncio.sleep(0.01)
+    task = refresher._task
+    single.cancel()
+    task.cancel()
+    await asyncio.sleep(0.01)
+    assert task.done()
+    parcel.update_repository.assert_awaited_once()
+    async with asyncio.timeout(1):
+        assert await hass.config_entries.async_unload(entry.entry_id)
+    with pytest.raises(asyncio.CancelledError):
+        await single
+    release.set()

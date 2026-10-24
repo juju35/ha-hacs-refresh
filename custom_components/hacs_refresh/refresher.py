@@ -73,6 +73,12 @@ def _raise_failed(failed: list[str]) -> None:
         )
 
 
+def _cancelling() -> bool:
+    """Whether the running task is being cancelled itself (not just something it waits for)."""
+    current = asyncio.current_task()
+    return current is not None and bool(current.cancelling())
+
+
 def _parse(value: Any) -> datetime | None:
     return dt_util.parse_datetime(value) if isinstance(value, str) else None
 
@@ -240,7 +246,7 @@ class HacsRefresher:
             try:
                 error = await asyncio.shield(fut)
             except asyncio.CancelledError:
-                if not fut.cancelled():
+                if not fut.cancelled() or _cancelling():
                     raise
                 raise HomeAssistantError(translation_domain=DOMAIN, translation_key="check_cancelled") from None
             if error:
@@ -259,8 +265,7 @@ class HacsRefresher:
         try:
             await asyncio.shield(task)
         except asyncio.CancelledError:
-            current = asyncio.current_task()
-            if task.cancelled() and not (current is not None and current.cancelling()):
+            if task.cancelled() and not _cancelling():
                 raise HomeAssistantError(translation_domain=DOMAIN, translation_key="check_cancelled") from None
             raise
 
@@ -289,8 +294,9 @@ class HacsRefresher:
                         self._notify()
                         return
                     except asyncio.CancelledError:
-                        # That call was interrupted before checking it: check it here.
-                        if not single.cancelled():
+                        # That call was interrupted before checking it: check it here, unless this check is
+                        # being cancelled too.
+                        if not single.cancelled() or _cancelling():
                             raise
                 async with semaphore:
                     try:
