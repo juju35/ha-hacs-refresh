@@ -299,9 +299,257 @@ async def test_check_repository_skips_entity_already_checking(hass, fake_hacs):
     )
     await asyncio.sleep(0.01)
     assert hass.states.get(STATUS).attributes["checking"] == [entity_id]
-    async with asyncio.timeout(5):
-        await hass.services.async_call(DOMAIN, "check_repository", {"entity_id": entity_id}, blocking=True)
+    second = hass.async_create_task(
+        hass.services.async_call(DOMAIN, "check_repository", {"entity_id": entity_id}, blocking=True)
+    )
+    await asyncio.sleep(0.01)
+    # The second call waits for the result of the first one instead of returning before it.
+    assert not second.done()
     release.set()
-    await first
+    async with asyncio.timeout(5):
+        await first
+        await second
     parcel.update_repository.assert_awaited_once()
     fake_hacs.data.async_write.assert_awaited_once()
+
+
+async def _await_service(call: asyncio.Task) -> None:
+    """Await a service call task; a raw CancelledError (the caller was not cancelled) fails the test."""
+    try:
+        async with asyncio.timeout(5):
+            await call
+    except asyncio.CancelledError:
+        pytest.fail("the action ended with a raw CancelledError")
+
+
+async def test_waiting_check_updates_fails_cleanly_on_unload(hass, fake_hacs):
+    """Unloading the entry cancels the check: an action waiting for it gets a Home Assistant error."""
+    release = asyncio.Event()
+
+    async def slow(**_kwargs):
+        await release.wait()
+
+    fake_hacs.repositories.list_downloaded[0].update_repository.side_effect = slow
+    entry = await _setup(hass, hours=0)
+    call = hass.async_create_task(hass.services.async_call(DOMAIN, "check_updates", {"wait": True}, blocking=True))
+    await asyncio.sleep(0.01)
+    assert not call.done()
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    with pytest.raises(HomeAssistantError, match="cancelled"):
+        await _await_service(call)
+    release.set()
+
+
+async def test_waiting_check_repository_fails_cleanly_on_unload(hass, fake_hacs):
+    release = asyncio.Event()
+
+    async def slow(**_kwargs):
+        await release.wait()
+
+    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel.update_repository.side_effect = slow
+    entry = await _setup(hass, hours=0)
+    entity_id = _hacs_update_entity(hass, parcel)
+    assert entry.runtime_data.async_start()
+    await hass.async_block_till_done()
+    call = hass.async_create_task(
+        hass.services.async_call(DOMAIN, "check_repository", {"entity_id": entity_id}, blocking=True)
+    )
+    await asyncio.sleep(0.01)
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    with pytest.raises(HomeAssistantError, match="cancelled"):
+        await _await_service(call)
+    release.set()
+
+
+async def test_full_check_waits_for_running_check_repository(hass, fake_hacs):
+    """A full check started while check_repository runs doesn't refresh that repository a second time."""
+    release = asyncio.Event()
+    running = 0
+    most = 0
+
+    async def slow(**_kwargs):
+        nonlocal running, most
+        running += 1
+        most = max(most, running)
+        await release.wait()
+        running -= 1
+
+    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel.update_repository.side_effect = slow
+    entry = await _setup(hass, hours=0)
+    entity_id = _hacs_update_entity(hass, parcel)
+    single = hass.async_create_task(
+        hass.services.async_call(DOMAIN, "check_repository", {"entity_id": entity_id}, blocking=True)
+    )
+    await asyncio.sleep(0.01)
+    assert entry.runtime_data.async_start()
+    await asyncio.sleep(0.01)
+    # The other repositories are checked, the full check waits for this one.
+    assert hass.states.get(STATUS).attributes["done"] == 2
+    release.set()
+    await _await_service(single)
+    async with asyncio.timeout(5):
+        await entry.runtime_data.async_wait()
+    assert most == 1
+    parcel.update_repository.assert_awaited_once()
+    state = hass.states.get(STATUS)
+    assert state.attributes["done"] == 3
+    assert state.attributes["failed"] == []
+
+
+async def test_full_check_reports_failure_of_awaited_check_repository(hass, fake_hacs):
+    release = asyncio.Event()
+
+    async def slow(**_kwargs):
+        await release.wait()
+        raise RuntimeError("GitHub down")
+
+    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel.update_repository.side_effect = slow
+    entry = await _setup(hass, hours=0)
+    entity_id = _hacs_update_entity(hass, parcel)
+    single = hass.async_create_task(
+        hass.services.async_call(DOMAIN, "check_repository", {"entity_id": entity_id}, blocking=True)
+    )
+    await asyncio.sleep(0.01)
+    assert entry.runtime_data.async_start()
+    release.set()
+    with pytest.raises(HomeAssistantError, match="juju35/ha-parcel"):
+        await _await_service(single)
+    async with asyncio.timeout(5):
+        await entry.runtime_data.async_wait()
+    assert hass.states.get(STATUS).attributes["failed"] == ["juju35/ha-parcel"]
+    parcel.update_repository.assert_awaited_once()
+
+
+async def test_second_check_repository_waits_for_the_first(hass, fake_hacs):
+    release = asyncio.Event()
+
+    async def slow(**_kwargs):
+        await release.wait()
+        raise RuntimeError("GitHub down")
+
+    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel.update_repository.side_effect = slow
+    await _setup(hass, hours=0)
+    entity_id = _hacs_update_entity(hass, parcel)
+    first = hass.async_create_task(
+        hass.services.async_call(DOMAIN, "check_repository", {"entity_id": entity_id}, blocking=True)
+    )
+    await asyncio.sleep(0.01)
+    second = hass.async_create_task(
+        hass.services.async_call(DOMAIN, "check_repository", {"entity_id": entity_id}, blocking=True)
+    )
+    await asyncio.sleep(0.01)
+    assert not second.done()
+    release.set()
+    # Both report the failure of the one refresh.
+    for call in (first, second):
+        with pytest.raises(HomeAssistantError, match="juju35/ha-parcel"):
+            await _await_service(call)
+    parcel.update_repository.assert_awaited_once()
+
+
+async def test_check_repository_during_failing_full_check(hass, fake_hacs):
+    """check_repository waiting for a full check fails when that check couldn't check its repository."""
+    release = asyncio.Event()
+
+    async def slow(**_kwargs):
+        await release.wait()
+        raise RuntimeError("GitHub down")
+
+    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel.update_repository.side_effect = slow
+    entry = await _setup(hass, hours=0)
+    entity_id = _hacs_update_entity(hass, parcel)
+    other = _hacs_update_entity(hass, fake_hacs.repositories.list_downloaded[0])
+    assert entry.runtime_data.async_start()
+    await hass.async_block_till_done()
+    failing = hass.async_create_task(
+        hass.services.async_call(DOMAIN, "check_repository", {"entity_id": entity_id}, blocking=True)
+    )
+    fine = hass.async_create_task(
+        hass.services.async_call(DOMAIN, "check_repository", {"entity_id": other}, blocking=True)
+    )
+    await asyncio.sleep(0.01)
+    release.set()
+    with pytest.raises(HomeAssistantError, match="juju35/ha-parcel"):
+        await _await_service(failing)
+    await _await_service(fine)
+
+
+async def test_check_repository_during_full_check_in_error(hass, fake_hacs):
+    release = asyncio.Event()
+
+    async def slow(**_kwargs):
+        await release.wait()
+
+    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel.update_repository.side_effect = slow
+    fake_hacs.data.async_write.side_effect = OSError("disk full")
+    entry = await _setup(hass, hours=0)
+    entity_id = _hacs_update_entity(hass, parcel)
+    assert entry.runtime_data.async_start()
+    await hass.async_block_till_done()
+    call = hass.async_create_task(
+        hass.services.async_call(DOMAIN, "check_repository", {"entity_id": entity_id}, blocking=True)
+    )
+    await asyncio.sleep(0.01)
+    release.set()
+    with pytest.raises(HomeAssistantError, match="disk full"):
+        await _await_service(call)
+    assert hass.states.get(STATUS).state == "error"
+
+
+async def test_check_repository_calls_cancelled_together(hass, fake_hacs):
+    """Two check_repository calls on one repository, cancelled in the same tick, both get CancelledError."""
+    release = asyncio.Event()
+
+    async def slow(**_kwargs):
+        await release.wait()
+
+    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel.update_repository.side_effect = slow
+    entry = await _setup(hass, hours=0)
+    entity_id = _hacs_update_entity(hass, parcel)
+    refresher = entry.runtime_data
+    first = hass.async_create_task(refresher.async_check_repositories([entity_id]))
+    await asyncio.sleep(0.01)
+    second = hass.async_create_task(refresher.async_check_repositories([entity_id]))
+    await asyncio.sleep(0.01)
+    first.cancel()
+    second.cancel()
+    for call in (first, second):
+        with pytest.raises(asyncio.CancelledError):
+            await call
+    release.set()
+
+
+async def test_full_check_cancelled_with_awaited_check_repository(hass, fake_hacs):
+    """A full check cancelled together with the check_repository it waits for stops, without refreshing again."""
+    release = asyncio.Event()
+
+    async def slow(**_kwargs):
+        await release.wait()
+
+    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel.update_repository.side_effect = slow
+    entry = await _setup(hass, hours=0)
+    entity_id = _hacs_update_entity(hass, parcel)
+    refresher = entry.runtime_data
+    single = hass.async_create_task(refresher.async_check_repositories([entity_id]))
+    await asyncio.sleep(0.01)
+    assert refresher.async_start()
+    await asyncio.sleep(0.01)
+    task = refresher._task
+    single.cancel()
+    task.cancel()
+    await asyncio.sleep(0.01)
+    assert task.done()
+    parcel.update_repository.assert_awaited_once()
+    async with asyncio.timeout(1):
+        assert await hass.config_entries.async_unload(entry.entry_id)
+    with pytest.raises(asyncio.CancelledError):
+        await single
+    release.set()

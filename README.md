@@ -27,7 +27,7 @@ HACS itself only checks downloaded custom repositories every 48 hours, and its o
 
 ## Prerequisites
 
-- Home Assistant 2024.11 or later
+- Home Assistant 2024.12 or later
 - [HACS](https://hacs.xyz) 2.x installed and set up
 - The button and both actions are open to every user: they only fetch information, like HACS' own "Update information"; installing updates stays with HACS and its permissions
 
@@ -99,7 +99,7 @@ actions:
 |---|---|
 | `entity_id` | HACS update entities (`update.*` of platform `hacs`) of the repositories to check |
 
-The action ends once the repositories are checked, and fails with the reason if one could not be. It doesn't change the status or the last check, which belong to the full check. While a full check runs, it waits for that check to end; a repository already being checked by another call is not checked twice.
+The action ends once the repositories are checked, and fails with the reason if one could not be. It doesn't change the status or the last check, which belong to the full check. While a full check runs, it waits for that check to end and fails if that check failed or could not check one of these repositories; a repository already being checked by another call is not checked twice: the action waits for that call's result. A full check started meanwhile waits for these repositories too instead of checking them again. If HACS Refresh is reloaded or removed while the action waits (here or with `wait: true`), it fails with "The check was cancelled".
 
 ```yaml
 action: hacs_refresh.check_repository
