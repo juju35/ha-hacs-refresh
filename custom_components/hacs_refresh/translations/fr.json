@@ -66,6 +66,8 @@
     "hacs_disabled": { "message": "HACS est désactivé ({reason})." },
     "not_hacs_update_entity": { "message": "{entity_id} n'est pas une entité de mise à jour HACS." },
     "not_downloaded": { "message": "{entity_id} n'est pas un dépôt téléchargé avec HACS." },
-    "check_failed": { "message": "Impossible de vérifier {failed}." }
+    "check_failed": { "message": "Impossible de vérifier {failed}." },
+    "check_cancelled": { "message": "La vérification a été annulée (HACS Refresh a été rechargé ou supprimé)." },
+    "full_check_failed": { "message": "La vérification complète a échoué : {error}" }
   }
 }

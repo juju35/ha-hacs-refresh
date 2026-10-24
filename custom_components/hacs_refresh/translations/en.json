@@ -66,6 +66,8 @@
     "hacs_disabled": { "message": "HACS is disabled ({reason})." },
     "not_hacs_update_entity": { "message": "{entity_id} is not a HACS update entity." },
     "not_downloaded": { "message": "{entity_id} is not a repository downloaded with HACS." },
-    "check_failed": { "message": "Could not check {failed}." }
+    "check_failed": { "message": "Could not check {failed}." },
+    "check_cancelled": { "message": "The check was cancelled (HACS Refresh was reloaded or removed)." },
+    "full_check_failed": { "message": "The full check failed: {error}" }
   }
 }

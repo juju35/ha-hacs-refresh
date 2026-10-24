@@ -64,6 +64,15 @@ def _hacs(hass: HomeAssistant) -> Any:
     return hacs
 
 
+def _raise_failed(failed: list[str]) -> None:
+    if failed:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="check_failed",
+            translation_placeholders={"failed": "; ".join(failed)},
+        )
+
+
 def _parse(value: Any) -> datetime | None:
     return dt_util.parse_datetime(value) if isinstance(value, str) else None
 
@@ -88,6 +97,9 @@ class HacsRefresher:
         self.since: datetime | None = None
         # Update entities of the repositories checked on their own (check_repository).
         self.checking: set[str] = set()
+        # Repositories being checked on their own, by repository id: resolved with the error (or None) once checked,
+        # so that another call or the full check waits for that result instead of refreshing them a second time.
+        self._single: dict[str, asyncio.Future[str | None]] = {}
         self._task: asyncio.Task | None = None
         self._listeners: list[CALLBACK_TYPE] = []
 
@@ -147,8 +159,9 @@ class HacsRefresher:
 
         Independent of the full check: it neither changes the status nor the last check,
         the entities being checked are listed in the status sensor's `checking` attribute.
-        While a full check runs, it waits for its end; an entity already being checked by another
-        call is not checked a second time.
+        While a full check runs, it waits for its end and reports its result for these repositories;
+        a repository already being checked by another call is not checked a second time: this call
+        waits for that result.
         """
         hacs = _hacs(self.hass)
         registry = er.async_get(self.hass)
@@ -169,43 +182,87 @@ class HacsRefresher:
                     translation_key="not_downloaded",
                     translation_placeholders={"entity_id": entity_id},
                 )
-            # Already being checked by another call: that call reports its result.
-            if entity_id not in self.checking:
-                targets[entity_id] = repo
+            targets[entity_id] = repo
         if self.running:
             # The full check refreshes these repositories too: wait for its end instead of a second refresh.
             await self.async_wait()
+            if self.state == STATE_ERROR:
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="full_check_failed",
+                    translation_placeholders={"error": str(self.error)},
+                )
+            _raise_failed([repo.data.full_name for repo in targets.values() if repo.data.full_name in self.failed])
             return
-        if not targets:
-            return
-        self.checking.update(targets)
-        self._notify()
+        # Already being checked by another call: wait for that result.
+        waiting: dict[str, asyncio.Future[str | None]] = {}
+        own: dict[str, Any] = {}
+        own_keys: set[str] = set()
+        for entity_id, repo in targets.items():
+            key = str(repo.data.id)
+            if key in self._single:
+                waiting[key] = self._single[key]
+            elif key not in own_keys:
+                own_keys.add(key)
+                own[entity_id] = repo
+        futures = {str(repo.data.id): self.hass.loop.create_future() for repo in own.values()}
+        self._single.update(futures)
+        self.checking.update(own)
+        if own:
+            self._notify()
         failed: list[str] = []
         try:
-            for repo in targets.values():
+            for repo in own.values():
+                error: str | None = None
                 try:
                     await repo.update_repository(ignore_issues=True, force=True)
                 except Exception as err:  # noqa: BLE001 - report every failure at the end
                     _LOGGER.warning("Could not check %s: %s", repo.data.full_name, err)
-                    failed.append(f"{repo.data.full_name}: {err}")
-            await hacs.data.async_write()
-            for category in {repo.data.category for repo in targets.values()}:
-                if coordinator := hacs.coordinators.get(category):
-                    coordinator.async_update_listeners()
+                    error = f"{repo.data.full_name}: {err}"
+                    failed.append(error)
+                futures[str(repo.data.id)].set_result(error)
+            if own:
+                await hacs.data.async_write()
+                for category in {repo.data.category for repo in own.values()}:
+                    if coordinator := hacs.coordinators.get(category):
+                        coordinator.async_update_listeners()
         finally:
-            self.checking.difference_update(targets)
-            self._notify()
-        if failed:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN,
-                translation_key="check_failed",
-                translation_placeholders={"failed": "; ".join(failed)},
-            )
+            for key, fut in futures.items():
+                # Interrupted before this repository was checked: whoever waits for it checks it or fails.
+                if not fut.done():
+                    fut.cancel()
+                if self._single.get(key) is fut:
+                    del self._single[key]
+            self.checking.difference_update(own)
+            if own:
+                self._notify()
+        for fut in waiting.values():
+            try:
+                error = await asyncio.shield(fut)
+            except asyncio.CancelledError:
+                if not fut.cancelled():
+                    raise
+                raise HomeAssistantError(translation_domain=DOMAIN, translation_key="check_cancelled") from None
+            if error:
+                failed.append(error)
+        _raise_failed(failed)
 
     async def async_wait(self) -> None:
-        """Wait for the running check, if any."""
-        if self._task is not None:
-            await asyncio.shield(self._task)
+        """Wait for the running check, if any.
+
+        Unloading the entry cancels the check: a caller that was not cancelled itself gets an error
+        instead of the check's CancelledError.
+        """
+        task = self._task
+        if task is None:
+            return
+        try:
+            await asyncio.shield(task)
+        except asyncio.CancelledError:
+            current = asyncio.current_task()
+            if task.cancelled() and not (current is not None and current.cancelling()):
+                raise HomeAssistantError(translation_domain=DOMAIN, translation_key="check_cancelled") from None
+            raise
 
     async def _async_run(self) -> None:
         try:
@@ -223,6 +280,18 @@ class HacsRefresher:
             semaphore = asyncio.Semaphore(PARALLEL_REFRESHES)
 
             async def refresh(repo: Any) -> None:
+                # Being checked by check_repository: take that result instead of refreshing it a second time.
+                if (single := self._single.get(str(repo.data.id))) is not None:
+                    try:
+                        if await asyncio.shield(single):
+                            self.failed.append(repo.data.full_name)
+                        self.done += 1
+                        self._notify()
+                        return
+                    except asyncio.CancelledError:
+                        # That call was interrupted before checking it: check it here.
+                        if not single.cancelled():
+                            raise
                 async with semaphore:
                     try:
                         await repo.update_repository(ignore_issues=True, force=True)
