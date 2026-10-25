@@ -553,3 +553,32 @@ async def test_full_check_cancelled_with_awaited_check_repository(hass, fake_hac
     with pytest.raises(asyncio.CancelledError):
         await single
     release.set()
+
+
+async def test_check_repository_checks_itself_when_the_awaited_call_is_cancelled(hass, fake_hacs):
+    """A check_repository waiting for another call's result checks the repository itself if that call is cancelled."""
+    release = asyncio.Event()
+
+    async def slow(**_kwargs):
+        await release.wait()
+
+    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel.update_repository.side_effect = slow
+    entry = await _setup(hass, hours=0)
+    entity_id = _hacs_update_entity(hass, parcel)
+    refresher = entry.runtime_data
+    first = hass.async_create_task(refresher.async_check_repositories([entity_id]))
+    await asyncio.sleep(0.01)
+    second = hass.async_create_task(refresher.async_check_repositories([entity_id]))
+    await asyncio.sleep(0.01)
+    first.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await first
+    await asyncio.sleep(0.01)
+    assert not second.done()
+    assert parcel.update_repository.await_count == 2
+    release.set()
+    async with asyncio.timeout(5):
+        await second
+    assert entry.state is ConfigEntryState.LOADED
+    assert refresher._single == {}

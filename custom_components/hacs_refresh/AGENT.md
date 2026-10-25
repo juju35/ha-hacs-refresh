@@ -13,8 +13,9 @@ custom_components/hacs_refresh/
 │                    #   notifies entities; Store `hacs_refresh` keeps since/last_check/updates across restarts;
 │                    #   async_check_repositories: update entity → repository by unique_id (= repository id); waits for a running
 │                    #   full check (fails with its error / failed repos); repositories already checked by another call: waits for
-│                    #   their future in `_single` (repo id → error|None); the full check also takes `_single` results instead of
-│                    #   refreshing twice. async_wait: entry unload cancels the task → HomeAssistantError(check_cancelled), not a
+│                    #   their future in `_single` (repo id → error|None), or check them itself if that future is cancelled;
+│                    #   the full check also takes `_single` results instead of refreshing twice.
+│                    #   async_wait: entry unload cancels the task → HomeAssistantError(check_cancelled), not a
 │                    #   raw CancelledError (unless the caller itself was cancelled)
 ├── config_flow.py   # Single entry, aborts without HACS; options: scan_interval (hours, 0 = off)
 ├── button.py        # button.*_check_for_updates (unavailable while running)

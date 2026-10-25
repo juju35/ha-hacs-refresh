@@ -167,7 +167,7 @@ class HacsRefresher:
         the entities being checked are listed in the status sensor's `checking` attribute.
         While a full check runs, it waits for its end and reports its result for these repositories;
         a repository already being checked by another call is not checked a second time: this call
-        waits for that result.
+        waits for that result, and checks it itself if that call is cancelled first.
         """
         hacs = _hacs(self.hass)
         registry = er.async_get(self.hass)
@@ -189,6 +189,11 @@ class HacsRefresher:
                     translation_placeholders={"entity_id": entity_id},
                 )
             targets[entity_id] = repo
+        _raise_failed(await self._async_check_targets(targets))
+
+    async def _async_check_targets(self, targets: dict[str, Any]) -> list[str]:
+        """Check these repositories (entity id → repository) and return the failures."""
+        hacs = _hacs(self.hass)
         if self.running:
             # The full check refreshes these repositories too: wait for its end instead of a second refresh.
             await self.async_wait()
@@ -198,16 +203,15 @@ class HacsRefresher:
                     translation_key="full_check_failed",
                     translation_placeholders={"error": str(self.error)},
                 )
-            _raise_failed([repo.data.full_name for repo in targets.values() if repo.data.full_name in self.failed])
-            return
+            return [repo.data.full_name for repo in targets.values() if repo.data.full_name in self.failed]
         # Already being checked by another call: wait for that result.
-        waiting: dict[str, asyncio.Future[str | None]] = {}
+        waiting: dict[str, tuple[asyncio.Future[str | None], str, Any]] = {}
         own: dict[str, Any] = {}
         own_keys: set[str] = set()
         for entity_id, repo in targets.items():
             key = str(repo.data.id)
             if key in self._single:
-                waiting[key] = self._single[key]
+                waiting[key] = (self._single[key], entity_id, repo)
             elif key not in own_keys:
                 own_keys.add(key)
                 own[entity_id] = repo
@@ -242,16 +246,21 @@ class HacsRefresher:
             self.checking.difference_update(own)
             if own:
                 self._notify()
-        for fut in waiting.values():
+        retry: dict[str, Any] = {}
+        for fut, entity_id, repo in waiting.values():
             try:
                 error = await asyncio.shield(fut)
             except asyncio.CancelledError:
                 if not fut.cancelled() or _cancelling():
                     raise
-                raise HomeAssistantError(translation_domain=DOMAIN, translation_key="check_cancelled") from None
+                # That call was interrupted before checking it: check it here, like the full check does.
+                retry[entity_id] = repo
+                continue
             if error:
                 failed.append(error)
-        _raise_failed(failed)
+        if retry:
+            failed.extend(await self._async_check_targets(retry))
+        return failed
 
     async def async_wait(self) -> None:
         """Wait for the running check, if any.
