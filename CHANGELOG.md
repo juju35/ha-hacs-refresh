@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.1
+
+### Fixes
+- A `hacs_refresh.check_repository` waiting for another call on the same repository checks that repository itself when the other call is cancelled (automation or script stopped, client disconnected), instead of failing with "The check was cancelled (HACS Refresh was reloaded or removed)" without checking it.
+
+### Maintenance
+- Test for the fix; the duplication check runs on Node 22.
+
 ## 0.4.0
 
 ### Changes
