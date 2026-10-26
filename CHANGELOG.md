@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.0
+
+### Maintenance
+- Removed the unused local `card-js-syntax` pre-commit hook: it was copied from the Lovelace card repositories, but HACS Refresh is a pure Python integration with no `.js` files, so the hook never checked anything and only forced `node` to be installed to run pre-commit locally.
+
 ## 0.4.1
 
 ### Fixes
