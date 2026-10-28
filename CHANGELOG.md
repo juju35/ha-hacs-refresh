@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.0
+
+### Changes
+- German and Spanish translations.
+
 ## 0.5.1
 
 ### Fixes
