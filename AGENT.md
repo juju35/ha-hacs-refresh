@@ -21,13 +21,13 @@ custom_components/hacs_refresh/
 ├── button.py        # button.*_check_for_updates (unavailable while running)
 ├── sensor.py        # status (enum idle/running/error + done/total/updates/failed/error), last_check
 ├── entity.py        # Shared service device, listener on HacsRefresher
-├── const.py / icons.json / services.yaml / translations/{en,fr}.json
+├── const.py / icons.json / services.yaml / translations/{en,fr,de,es}.json
 ```
 
 ## HACS internals used (same as HACS' `hacs/repository/refresh` websocket command)
 - `hass.data["hacs"]`: `repositories.list_downloaded`, `repository.update_repository(ignore_issues=True, force=True)`, `data.async_write()`, `coordinators[category].async_update_listeners()`, `system.disabled` / `disabled_reason`, `common.categories`.
 - `_hacs()` checks these exist and raises `HacsNotAvailableError` with a clear message otherwise. Keep that check in sync if more attributes are used.
-- Error messages are translated: `translation_key` under `exceptions` in translations/{en,fr}.json (no URL in the strings: hassfest refuses them, pass them as placeholders).
+- Error messages are translated: `translation_key` under `exceptions` in translations/{en,fr,de,es}.json (no URL in the strings: hassfest refuses them, pass them as placeholders).
 - `homeassistant.update_entity` on HACS update entities is a no-op: don't rely on it.
 
 ## Release
