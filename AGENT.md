@@ -21,7 +21,7 @@ custom_components/hacs_refresh/
 ├── button.py        # button.*_check_for_updates (unavailable while running)
 ├── sensor.py        # status (enum idle/running/error + done/total/updates/failed/error), last_check
 ├── entity.py        # Shared service device, listener on HacsRefresher
-├── const.py / icons.json / services.yaml / translations/{en,fr}.json / brand/
+├── const.py / icons.json / services.yaml / translations/{en,fr}.json
 ```
 
 ## HACS internals used (same as HACS' `hacs/repository/refresh` websocket command)
