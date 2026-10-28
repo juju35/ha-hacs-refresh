@@ -33,7 +33,7 @@ jobs:
       - name: Build zip and notes
         if: steps.version.outputs.exists == 'false'
         run: |
-          (cd custom_components/hacs_refresh && zip -r ../../hacs_refresh.zip . -x "__pycache__/*")
+          (cd custom_components/hacs_refresh && zip -r ../../hacs_refresh.zip . -x "__pycache__/*" "AGENT.md" "brand/*")
           .github/scripts/release-notes.sh "${{ steps.version.outputs.version }}" > notes.md
           test -s notes.md
 
