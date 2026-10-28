@@ -12,6 +12,7 @@
     }
   },
   "services": {
-    "check_updates": { "service": "mdi:archive-refresh" }
+    "check_updates": { "service": "mdi:archive-refresh" },
+    "check_repository": { "service": "mdi:archive-refresh-outline" }
   }
 }
