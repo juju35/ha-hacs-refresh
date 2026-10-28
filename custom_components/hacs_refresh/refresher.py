@@ -33,6 +33,9 @@ _LOGGER = logging.getLogger(__name__)
 
 STORAGE_VERSION = 1
 ISSUES_URL = "https://github.com/juju35/ha-hacs-refresh/issues"
+# Least time between two progress notifications during the full check: without it, a large
+# installation (100+ repositories) writes hundreds of states (and recorder rows) in a few seconds.
+PROGRESS_INTERVAL = 0.5
 
 
 class HacsNotAvailableError(HomeAssistantError):
@@ -60,7 +63,8 @@ def _hacs(hass: HomeAssistant) -> Any:
                 raise HacsNotAvailableError("hacs_not_supported", {"path": path, "issues": ISSUES_URL})
             obj = getattr(obj, attr)
     if hacs.system.disabled:
-        raise HacsNotAvailableError("hacs_disabled", {"reason": str(getattr(hacs.system, "disabled_reason", None))})
+        reason = getattr(hacs.system, "disabled_reason", None)
+        raise HacsNotAvailableError("hacs_disabled", {"reason": "unknown" if reason is None else str(reason)})
     return hacs
 
 
@@ -108,6 +112,8 @@ class HacsRefresher:
         self._single: dict[str, asyncio.Future[str | None]] = {}
         self._task: asyncio.Task | None = None
         self._listeners: list[CALLBACK_TYPE] = []
+        # When the entities were last notified of the full check's progress (loop time).
+        self._progress_at = 0.0
 
     async def async_load(self) -> None:
         """Restore the last check from the previous run."""
@@ -145,6 +151,19 @@ class HacsRefresher:
             update_callback()
 
     @callback
+    def _notify_progress(self) -> None:
+        """Notify the progress of the full check, at most every PROGRESS_INTERVAL seconds.
+
+        The next repository checked after the interval notifies, and the end of the check
+        always notifies (`_notify` in `_async_run`), so the final state is never skipped.
+        """
+        now = self.hass.loop.time()
+        if now - self._progress_at < PROGRESS_INTERVAL:
+            return
+        self._progress_at = now
+        self._notify()
+
+    @callback
     def async_start(self) -> bool:
         """Start a check in the background. Returns False when one is already running."""
         if self.running:
@@ -155,6 +174,7 @@ class HacsRefresher:
         self.total = 0
         self.failed = []
         self.error = None
+        self._progress_at = 0.0
         self._notify()
         # Tied to the entry: unloading it (options changed, removed) cancels a check still running.
         self._task = self.entry.async_create_background_task(self.hass, self._async_run(), "hacs_refresh_check")
@@ -305,7 +325,7 @@ class HacsRefresher:
                         if await asyncio.shield(single):
                             self.failed.append(repo.data.full_name)
                         self.done += 1
-                        self._notify()
+                        self._notify_progress()
                         return
                     except asyncio.CancelledError:
                         # That call was interrupted before checking it: check it here, unless this check is
@@ -319,7 +339,7 @@ class HacsRefresher:
                         _LOGGER.warning("Could not check %s: %s", repo.data.full_name, err)
                         self.failed.append(repo.data.full_name)
                     self.done += 1
-                    self._notify()
+                    self._notify_progress()
 
             await asyncio.gather(*(refresh(repo) for repo in repositories))
             await hacs.data.async_write()

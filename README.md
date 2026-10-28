@@ -6,7 +6,7 @@
 [![Release](https://img.shields.io/github/v/release/juju35/ha-hacs-refresh)](https://github.com/juju35/ha-hacs-refresh/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-<p align="center"><img src="custom_components/hacs_refresh/brand/icon.png" alt="HACS Refresh" width="120"></p>
+<p align="center"><img src="brand/icon.png" alt="HACS Refresh" width="120"></p>
 
 Home Assistant integration that checks every repository downloaded with [HACS](https://hacs.xyz) for updates, on the server: with a button, an action, a progress sensor and a check interval set in the integration options.
 
@@ -103,7 +103,7 @@ The action ends once the repositories are checked, and fails with the reason if 
 
 ```yaml
 action: hacs_refresh.check_repository
-target:
+data:
   entity_id: update.mushroom_update
 ```
 

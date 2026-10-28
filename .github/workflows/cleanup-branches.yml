@@ -26,8 +26,8 @@ jobs:
           default=$(gh api "repos/$REPO" --jq .default_branch)
           for branch in $(gh api "repos/$REPO/branches" --paginate --jq '.[].name'); do
             [ "$branch" = "$default" ] && continue
-            open=$(gh api "repos/$REPO/pulls?state=open&head=$owner:$branch" --jq length)
-            merged=$(gh api "repos/$REPO/pulls?state=closed&head=$owner:$branch" --jq '[.[] | select(.merged_at)] | length')
+            open=$(gh api --paginate "repos/$REPO/pulls?state=open&head=$owner:$branch" --jq '.[].number' | wc -l)
+            merged=$(gh api --paginate "repos/$REPO/pulls?state=closed&head=$owner:$branch" --jq '.[] | select(.merged_at) | .number' | wc -l)
             if [ "$open" = "0" ] && [ "$merged" != "0" ]; then
               gh api -X DELETE "repos/$REPO/git/refs/heads/$branch" >/dev/null && echo "Deleted $branch" || echo "::warning::Could not delete $branch"
             else
