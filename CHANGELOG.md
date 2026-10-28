@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.1
+
+### Fixes
+- HACS installs and updates HACS Refresh from the `hacs_refresh.zip` release asset, so development files are no longer copied to Home Assistant.
+- A `hacs_refresh.check_repository` waiting for another call on the same repository no longer reports success when saving the HACS data fails: it checks the repository itself and fails with the error.
+- On large installations, the full check updates its progress at most every 0.5 s instead of after every repository, avoiding hundreds of state and recorder writes; the final state is always reported.
+- "HACS is disabled" says "unknown" instead of "None" when HACS gives no reason.
+- The `hacs_refresh.check_repository` action has its own icon.
+
+### Maintenance
+- AGENT.md moved out of the installed integration; brand assets stay under `custom_components/hacs_refresh/brand/` for the HACS brands check but are kept out of the release zip.
+- CI: branch cleanup paginates PR lookups, ruff-action pinned to the pre-commit ruff version, stale exempts `confirmed`/`pinned` issues, Dependabot watches `requirements_test.txt`; leftover lint config from the card repositories removed.
+- README: the `check_repository` example uses `data:`.
+
 ## 0.5.0
 
 ### Maintenance
