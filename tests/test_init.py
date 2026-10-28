@@ -386,7 +386,8 @@ async def test_full_check_waits_for_running_check_repository(hass, fake_hacs):
     assert entry.runtime_data.async_start()
     await asyncio.sleep(0.01)
     # The other repositories are checked, the full check waits for this one.
-    assert hass.states.get(STATUS).attributes["done"] == 2
+    # (The refresher's counter, not the sensor's attribute: progress notifications are throttled.)
+    assert entry.runtime_data.done == 2
     release.set()
     await _await_service(single)
     async with asyncio.timeout(5):
