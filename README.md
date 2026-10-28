@@ -23,7 +23,7 @@ HACS itself only checks downloaded custom repositories every 48 hours, and its o
 - **Last check** sensor (timestamp)
 - One failing repository doesn't stop the others; a check never runs twice at the same time, and `check_repository` waits for a full check that is running instead of starting a second one
 - Used by the [System Monitor Card](https://github.com/juju35/ha-system-monitor-card) for its HACS section
-- English and French
+- English, French, German and Spanish
 
 ## Prerequisites
 
@@ -151,6 +151,8 @@ The integration follows the language of Home Assistant. Currently supported:
 |---|---|
 | English | `en` |
 | Français | `fr` |
+| Deutsch | `de` |
+| Español | `es` |
 
 Contributions for additional languages are welcome!
 
