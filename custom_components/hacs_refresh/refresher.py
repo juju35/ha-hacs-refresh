@@ -222,6 +222,7 @@ class HacsRefresher:
             self._notify()
         failed: list[str] = []
         try:
+            errors: dict[str, str | None] = {}
             for repo in own.values():
                 error: str | None = None
                 try:
@@ -230,12 +231,16 @@ class HacsRefresher:
                     _LOGGER.warning("Could not check %s: %s", repo.data.full_name, err)
                     error = f"{repo.data.full_name}: {err}"
                     failed.append(error)
-                futures[str(repo.data.id)].set_result(error)
+                errors[str(repo.data.id)] = error
             if own:
                 await hacs.data.async_write()
                 for category in {repo.data.category for repo in own.values()}:
                     if coordinator := hacs.coordinators.get(category):
                         coordinator.async_update_listeners()
+            # Only resolved once the HACS data is written and the coordinators notified: if the write
+            # fails, the futures are cancelled below and whoever waits for them checks again or fails.
+            for key, error in errors.items():
+                futures[key].set_result(error)
         finally:
             for key, fut in futures.items():
                 # Interrupted before this repository was checked: whoever waits for it checks it or fails.

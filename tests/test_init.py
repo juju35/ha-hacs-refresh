@@ -582,3 +582,29 @@ async def test_check_repository_checks_itself_when_the_awaited_call_is_cancelled
         await second
     assert entry.state is ConfigEntryState.LOADED
     assert refresher._single == {}
+
+
+async def test_waiting_check_repository_sees_the_write_failure(hass, fake_hacs):
+    """A check_repository waiting for another call must not report success when the HACS data write fails."""
+    release = asyncio.Event()
+
+    async def slow(**_kwargs):
+        await release.wait()
+
+    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel.update_repository.side_effect = slow
+    fake_hacs.data.async_write.side_effect = OSError("disk full")
+    entry = await _setup(hass, hours=0)
+    entity_id = _hacs_update_entity(hass, parcel)
+    refresher = entry.runtime_data
+    first = hass.async_create_task(refresher.async_check_repositories([entity_id]))
+    await asyncio.sleep(0.01)
+    second = hass.async_create_task(refresher.async_check_repositories([entity_id]))
+    await asyncio.sleep(0.01)
+    release.set()
+    # The first call fails on the write; the second checks the repository itself and fails on it too.
+    for call in (first, second):
+        with pytest.raises(OSError, match="disk full"):
+            async with asyncio.timeout(5):
+                await call
+    assert refresher._single == {}
