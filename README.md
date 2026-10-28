@@ -103,7 +103,7 @@ The action ends once the repositories are checked, and fails with the reason if 
 
 ```yaml
 action: hacs_refresh.check_repository
-target:
+data:
   entity_id: update.mushroom_update
 ```
 
