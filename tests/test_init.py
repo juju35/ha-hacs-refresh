@@ -609,3 +609,88 @@ async def test_waiting_check_repository_sees_the_write_failure(hass, fake_hacs):
             async with asyncio.timeout(5):
                 await call
     assert refresher._single == {}
+
+
+async def test_check_updates_wait_fails_on_failed_repository(hass, fake_hacs):
+    """With wait: true, the action fails like check_repository when a repository could not be checked."""
+    fake_hacs.repositories.list_downloaded.append(make_repo("someone/broken", fail=True))
+    await _setup(hass, hours=0)
+    with pytest.raises(HomeAssistantError, match="someone/broken"):
+        await hass.services.async_call(DOMAIN, "check_updates", {"wait": True}, blocking=True)
+    # Without wait, the action only starts the check.
+    await hass.services.async_call(DOMAIN, "check_updates", {}, blocking=True)
+
+
+async def test_check_updates_wait_fails_when_full_check_fails(hass, fake_hacs):
+    fake_hacs.data.async_write.side_effect = OSError("disk full")
+    await _setup(hass, hours=0)
+    with pytest.raises(HomeAssistantError, match="disk full"):
+        await hass.services.async_call(DOMAIN, "check_updates", {"wait": True}, blocking=True)
+    assert hass.states.get(STATUS).state == "error"
+
+
+async def test_failed_attribute_is_a_copy(hass, fake_hacs):
+    """The published `failed` attribute is not the list the running check appends to."""
+    fake_hacs.repositories.list_downloaded.append(make_repo("someone/broken", fail=True))
+    entry = await _setup(hass, hours=0)
+    await hass.services.async_call(DOMAIN, "check_updates", {"wait": True}, blocking=False)
+    await entry.runtime_data.async_wait()
+    await hass.async_block_till_done()
+    failed = hass.states.get(STATUS).attributes["failed"]
+    assert failed == ["someone/broken"]
+    assert failed is not entry.runtime_data.failed
+
+
+async def test_skipped_scheduled_check_retried_within_the_hour(hass, fake_hacs, freezer):
+    """A scheduled check skipped because HACS is disabled is tried again after an hour, not a full interval."""
+    entry = await _setup(hass, hours=24)
+    repo = fake_hacs.repositories.list_downloaded[0]
+    fake_hacs.system.disabled = True
+    fake_hacs.system.disabled_reason = "rate_limit"
+    freezer.tick(timedelta(hours=24, seconds=1))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    repo.update_repository.assert_not_awaited()
+    fake_hacs.system.disabled = False
+    freezer.tick(timedelta(minutes=59))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    repo.update_repository.assert_not_awaited()
+    freezer.tick(timedelta(minutes=1, seconds=1))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    await entry.runtime_data.async_wait()
+    repo.update_repository.assert_awaited_once()
+
+
+async def test_hacs_disabled_without_reason_has_no_placeholder(hass, fake_hacs):
+    await _setup(hass)
+    fake_hacs.system.disabled = True
+    with pytest.raises(ServiceValidationError) as err:
+        await hass.services.async_call(DOMAIN, "check_updates", {}, blocking=True)
+    assert err.value.translation_key == "hacs_disabled_unknown"
+    assert "unknown" not in str(err.value)
+
+
+async def test_check_repository_during_full_check_outside_its_categories(hass, fake_hacs):
+    """A repository whose category the full check leaves out is checked by check_repository itself."""
+    release = asyncio.Event()
+
+    async def slow(**_kwargs):
+        await release.wait()
+
+    fake_hacs.repositories.list_downloaded[1].update_repository.side_effect = slow
+    script = make_repo("someone/script", category="python_script")
+    fake_hacs.repositories.list_downloaded.append(script)
+    entry = await _setup(hass, hours=0)
+    entity_id = _hacs_update_entity(hass, script)
+    assert entry.runtime_data.async_start()
+    await hass.async_block_till_done()
+    call = hass.async_create_task(
+        hass.services.async_call(DOMAIN, "check_repository", {"entity_id": entity_id}, blocking=True)
+    )
+    await asyncio.sleep(0.01)
+    script.update_repository.assert_not_awaited()
+    release.set()
+    await _await_service(call)
+    script.update_repository.assert_awaited_once_with(ignore_issues=True, force=True)

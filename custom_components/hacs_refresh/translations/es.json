@@ -48,7 +48,7 @@
       "name": "Buscar actualizaciones",
       "description": "Busca actualizaciones de todos los repositorios descargados con HACS. Se ejecuta en segundo plano, salvo si esperar está activado.",
       "fields": {
-        "wait": { "name": "Esperar", "description": "Esperar a que se hayan comprobado todos los repositorios antes de que termine la acción." }
+        "wait": { "name": "Esperar", "description": "Esperar a que se hayan comprobado todos los repositorios antes de que termine la acción; la acción falla entonces si la comprobación falló o no se pudo comprobar un repositorio." }
       }
     },
     "check_repository": {
@@ -64,6 +64,7 @@
     "hacs_not_loaded": { "message": "HACS no está cargado." },
     "hacs_not_supported": { "message": "Esta versión de HACS no es compatible (falta {path}); abre una incidencia en {issues}." },
     "hacs_disabled": { "message": "HACS está desactivado ({reason})." },
+    "hacs_disabled_unknown": { "message": "HACS está desactivado." },
     "not_hacs_update_entity": { "message": "{entity_id} no es una entidad de actualización de HACS." },
     "not_downloaded": { "message": "{entity_id} no es un repositorio descargado con HACS." },
     "check_failed": { "message": "No se pudo comprobar {failed}." },

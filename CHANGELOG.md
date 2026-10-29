@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.6.1
+
+### Fixes
+- `hacs_refresh.check_updates` with `wait: true` fails when the check failed or could not check a repository, like `hacs_refresh.check_repository`, instead of succeeding (automations no longer act on the previous check's `updates`).
+- A scheduled check skipped because HACS is unavailable (rate-limited, still starting) is retried within the hour instead of after a full interval.
+- The `failed` attribute of the status sensor no longer changes in place while a check runs.
+- "HACS is disabled" no longer shows an untranslated "unknown" when HACS gives no reason.
+- `hacs_refresh.check_repository` during a full check also checks the repositories whose category the full check leaves out, instead of reporting success without checking them.
+
+### Maintenance
+- CI: the release is published only once Validate (hassfest, tests) has passed on the push to main; vulture is pinned in `requirements_lint.txt` so Dependabot keeps it up to date.
+- Tests for the fixes.
+
 ## 0.6.0
 
 ### Changes

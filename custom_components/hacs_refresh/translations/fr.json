@@ -48,7 +48,7 @@
       "name": "Rechercher les mises à jour",
       "description": "Recherche les mises à jour de tous les dépôts téléchargés avec HACS. S'exécute en arrière-plan, sauf si attendre est activé.",
       "fields": {
-        "wait": { "name": "Attendre", "description": "Attendre que tous les dépôts soient vérifiés avant la fin de l'action." }
+        "wait": { "name": "Attendre", "description": "Attendre que tous les dépôts soient vérifiés avant la fin de l'action ; l'action échoue alors si la vérification a échoué ou si un dépôt n'a pas pu être vérifié." }
       }
     },
     "check_repository": {
@@ -64,6 +64,7 @@
     "hacs_not_loaded": { "message": "HACS n'est pas chargé." },
     "hacs_not_supported": { "message": "Cette version de HACS n'est pas prise en charge ({path} manquant) ; merci d'ouvrir un ticket sur {issues}." },
     "hacs_disabled": { "message": "HACS est désactivé ({reason})." },
+    "hacs_disabled_unknown": { "message": "HACS est désactivé." },
     "not_hacs_update_entity": { "message": "{entity_id} n'est pas une entité de mise à jour HACS." },
     "not_downloaded": { "message": "{entity_id} n'est pas un dépôt téléchargé avec HACS." },
     "check_failed": { "message": "Impossible de vérifier {failed}." },

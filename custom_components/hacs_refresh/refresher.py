@@ -64,8 +64,16 @@ def _hacs(hass: HomeAssistant) -> Any:
             obj = getattr(obj, attr)
     if hacs.system.disabled:
         reason = getattr(hacs.system, "disabled_reason", None)
-        raise HacsNotAvailableError("hacs_disabled", {"reason": "unknown" if reason is None else str(reason)})
+        if reason is None:
+            raise HacsNotAvailableError("hacs_disabled_unknown")
+        raise HacsNotAvailableError("hacs_disabled", {"reason": str(reason)})
     return hacs
+
+
+def _in_full_check(hacs: Any, repo: Any) -> bool:
+    """Whether the full check refreshes this repository (HACS' own categories, when it lists them)."""
+    categories = getattr(getattr(hacs, "common", None), "categories", None)
+    return categories is None or repo.data.category in categories
 
 
 def _raise_failed(failed: list[str]) -> None:
@@ -216,14 +224,17 @@ class HacsRefresher:
         hacs = _hacs(self.hass)
         if self.running:
             # The full check refreshes these repositories too: wait for its end instead of a second refresh.
+            # A repository whose category it leaves out is checked here once it ends.
+            covered = {e: repo for e, repo in targets.items() if _in_full_check(hacs, repo)}
+            left_out = {e: repo for e, repo in targets.items() if e not in covered}
             await self.async_wait()
-            if self.state == STATE_ERROR:
-                raise HomeAssistantError(
-                    translation_domain=DOMAIN,
-                    translation_key="full_check_failed",
-                    translation_placeholders={"error": str(self.error)},
-                )
-            return [repo.data.full_name for repo in targets.values() if repo.data.full_name in self.failed]
+            failed: list[str] = []
+            if covered:
+                self.raise_if_full_check_failed()
+                failed = [repo.data.full_name for repo in covered.values() if repo.data.full_name in self.failed]
+            if left_out:
+                failed.extend(await self._async_check_targets(left_out))
+            return failed
         # Already being checked by another call: wait for that result.
         waiting: dict[str, tuple[asyncio.Future[str | None], str, Any]] = {}
         own: dict[str, Any] = {}
@@ -287,6 +298,20 @@ class HacsRefresher:
             failed.extend(await self._async_check_targets(retry))
         return failed
 
+    def raise_if_full_check_failed(self) -> None:
+        """Raise when the last full check failed."""
+        if self.state == STATE_ERROR:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="full_check_failed",
+                translation_placeholders={"error": str(self.error)},
+            )
+
+    def raise_for_result(self) -> None:
+        """Raise when the last full check failed or could not check some repositories."""
+        self.raise_if_full_check_failed()
+        _raise_failed(self.failed)
+
     async def async_wait(self) -> None:
         """Wait for the running check, if any.
 
@@ -306,12 +331,7 @@ class HacsRefresher:
     async def _async_run(self) -> None:
         try:
             hacs = _hacs(self.hass)
-            categories = getattr(getattr(hacs, "common", None), "categories", None)
-            repositories = [
-                repo
-                for repo in hacs.repositories.list_downloaded
-                if categories is None or repo.data.category in categories
-            ]
+            repositories = [repo for repo in hacs.repositories.list_downloaded if _in_full_check(hacs, repo)]
             self.total = len(repositories)
             self._notify()
             _LOGGER.info("Checking %s HACS repositories for updates", self.total)
