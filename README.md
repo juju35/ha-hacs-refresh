@@ -141,7 +141,7 @@ The tests use a stand-in for HACS' internal object (`tests/conftest.py`).
 
 1. Bump the version in `custom_components/hacs_refresh/manifest.json`
 2. Add a `## <version>` section at the top of [CHANGELOG.md](CHANGELOG.md)
-3. Push to `main`: the **Release** workflow creates the tag and the GitHub release with the changelog section as notes
+3. Push to `main`: once **Validate**, **Lint** and **HACS Validation** have passed on that commit, the **Release** workflow creates the tag and the GitHub release with the changelog section as notes
 
 ## Translations
 
