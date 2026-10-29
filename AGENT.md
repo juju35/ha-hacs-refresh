@@ -8,11 +8,12 @@ Home Assistant custom integration that checks every repository downloaded with H
 ```
 custom_components/hacs_refresh/
 ├── __init__.py      # Actions check_updates and check_repository (every user, like the button), entry setup, automatic check
-│                    #   (async_call_later on last_check + interval; overdue → runs at async_at_started)
+│                    #   (async_call_later on last_check + interval; overdue → runs at async_at_started; skipped because HACS
+│                    #   is unavailable → retried after min(interval, 1 h)); check_updates wait: true → raise_for_result()
 ├── refresher.py     # HacsRefresher: runs the check (entry background task, cancelled on unload), keeps state/progress,
 │                    #   notifies entities; Store `hacs_refresh` keeps since/last_check/updates across restarts;
 │                    #   async_check_repositories: update entity → repository by unique_id (= repository id); waits for a running
-│                    #   full check (fails with its error / failed repos); repositories already checked by another call: waits for
+│                    #   full check (fails with its error / failed repos; repositories outside `common.categories` are checked after it); repositories already checked by another call: waits for
 │                    #   their future in `_single` (repo id → error|None), or check them itself if that future is cancelled;
 │                    #   the full check also takes `_single` results instead of refreshing twice.
 │                    #   async_wait: entry unload cancels the task → HomeAssistantError(check_cancelled), not a

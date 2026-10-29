@@ -74,7 +74,7 @@ Copy `custom_components/hacs_refresh/` to `/config/custom_components/hacs_refres
 
 | Field | Default | Description |
 |---|---|---|
-| `wait` | `false` | Wait until every repository has been checked before the action ends |
+| `wait` | `false` | Wait until every repository has been checked before the action ends. The action then fails if the check failed or could not check a repository (the error lists them), so the steps after it only run on a complete check |
 
 Check every night and get notified of the updates found:
 
