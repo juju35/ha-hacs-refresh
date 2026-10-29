@@ -32,7 +32,7 @@ custom_components/hacs_refresh/
 - `homeassistant.update_entity` on HACS update entities is a no-op: don't rely on it.
 
 ## Release
-Bump `version` in manifest.json and add its CHANGELOG.md section; pushing to main publishes `vX.Y.Z` with `hacs_refresh.zip` when that tag doesn't exist yet. Rerun notes with the "Update release notes" workflow (input `tag`).
+Bump `version` in manifest.json and add its CHANGELOG.md section; pushing to main publishes `vX.Y.Z` with `hacs_refresh.zip` when that tag doesn't exist yet, once the Validate workflow (hassfest, tests) has passed on that push (`workflow_run`). Rerun notes with the "Update release notes" workflow (input `tag`).
 
 ## Tests
 `pip install -r requirements_test.txt && pytest` — HACS is a stand-in object (`tests/conftest.py`). Job `tests` runs on Python 3.14, i.e. the latest Home Assistant (2026.3+ needs Python 3.14; 3.13 would silently resolve to 2026.2) and prints its version as an annotation; job `pytest-min-ha` runs the suite on HA 2024.12.0. An autouse fixture (`tests/conftest.py`, `no_deprecated_calls`) fails any test during which Home Assistant reports a deprecated call naming `hacs_refresh`, and CI turns those reports into annotations.
