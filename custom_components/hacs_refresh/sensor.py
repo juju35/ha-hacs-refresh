@@ -43,7 +43,7 @@ class StatusSensor(HacsRefreshEntity, SensorEntity):
             "done": r.done,
             "total": r.total,
             "updates": r.updates,
-            "failed": r.failed,
+            "failed": list(r.failed),
             "error": r.error,
             "checking": sorted(r.checking),
         }

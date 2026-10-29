@@ -31,6 +31,8 @@ _LOGGER = logging.getLogger(__name__)
 PLATFORMS = [Platform.BUTTON, Platform.SENSOR]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 ATTR_WAIT = "wait"
+# Delay before trying again a scheduled check skipped because HACS couldn't be used.
+RETRY_INTERVAL = timedelta(hours=1)
 CHECK_UPDATES_SCHEMA = vol.Schema({vol.Optional(ATTR_WAIT, default=False): cv.boolean})
 CHECK_REPOSITORY_SCHEMA = vol.Schema({vol.Required(ATTR_ENTITY_ID): cv.entity_ids})
 
@@ -54,6 +56,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             raise _validation_error(err) from err
         if call.data[ATTR_WAIT]:
             await refresher.async_wait()
+            # Like check_repository: fail when the check failed or could not check some repositories.
+            refresher.raise_for_result()
 
     hass.services.async_register(DOMAIN, SERVICE_CHECK_UPDATES, check_updates, CHECK_UPDATES_SCHEMA)
 
@@ -126,7 +130,8 @@ def _async_schedule(
             refresher.async_start()
         except HacsNotAvailableError as err:
             _LOGGER.warning("Scheduled HACS check skipped: %s", err)
-            schedule(interval)
+            # Often temporary (HACS rate-limited or still starting): try again within the hour.
+            schedule(min(interval, RETRY_INTERVAL))
 
     @callback
     def at_started(_hass: HomeAssistant) -> None:

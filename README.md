@@ -6,7 +6,7 @@
 [![Release](https://img.shields.io/github/v/release/juju35/ha-hacs-refresh)](https://github.com/juju35/ha-hacs-refresh/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-<p align="center"><img src="brand/icon.png" alt="HACS Refresh" width="120"></p>
+<p align="center"><img src="custom_components/hacs_refresh/brand/icon.png" alt="HACS Refresh" width="120"></p>
 
 Home Assistant integration that checks every repository downloaded with [HACS](https://hacs.xyz) for updates, on the server: with a button, an action, a progress sensor and a check interval set in the integration options.
 
@@ -23,7 +23,7 @@ HACS itself only checks downloaded custom repositories every 48 hours, and its o
 - **Last check** sensor (timestamp)
 - One failing repository doesn't stop the others; a check never runs twice at the same time, and `check_repository` waits for a full check that is running instead of starting a second one
 - Used by the [System Monitor Card](https://github.com/juju35/ha-system-monitor-card) for its HACS section
-- English and French
+- English, French, German and Spanish
 
 ## Prerequisites
 
@@ -74,7 +74,7 @@ Copy `custom_components/hacs_refresh/` to `/config/custom_components/hacs_refres
 
 | Field | Default | Description |
 |---|---|---|
-| `wait` | `false` | Wait until every repository has been checked before the action ends |
+| `wait` | `false` | Wait until every repository has been checked before the action ends. The action then fails if the check failed or could not check a repository (the error lists them), so the steps after it only run on a complete check |
 
 Check every night and get notified of the updates found:
 
@@ -141,7 +141,7 @@ The tests use a stand-in for HACS' internal object (`tests/conftest.py`).
 
 1. Bump the version in `custom_components/hacs_refresh/manifest.json`
 2. Add a `## <version>` section at the top of [CHANGELOG.md](CHANGELOG.md)
-3. Push to `main`: the **Release** workflow creates the tag and the GitHub release with the changelog section as notes
+3. Push to `main`: once **Validate**, **Lint** and **HACS Validation** have passed on that commit, the **Release** workflow creates the tag and the GitHub release with the changelog section as notes
 
 ## Translations
 
@@ -151,6 +151,8 @@ The integration follows the language of Home Assistant. Currently supported:
 |---|---|
 | English | `en` |
 | Français | `fr` |
+| Deutsch | `de` |
+| Español | `es` |
 
 Contributions for additional languages are welcome!
 

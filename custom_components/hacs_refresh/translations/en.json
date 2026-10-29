@@ -48,7 +48,7 @@
       "name": "Check for updates",
       "description": "Checks every repository downloaded with HACS for updates. Runs in the background unless wait is set.",
       "fields": {
-        "wait": { "name": "Wait", "description": "Wait until every repository has been checked before the action ends." }
+        "wait": { "name": "Wait", "description": "Wait until every repository has been checked before the action ends; the action then fails if the check failed or a repository could not be checked." }
       }
     },
     "check_repository": {
@@ -64,6 +64,7 @@
     "hacs_not_loaded": { "message": "HACS is not loaded." },
     "hacs_not_supported": { "message": "This version of HACS is not supported (missing {path}); please open an issue on {issues}." },
     "hacs_disabled": { "message": "HACS is disabled ({reason})." },
+    "hacs_disabled_unknown": { "message": "HACS is disabled." },
     "not_hacs_update_entity": { "message": "{entity_id} is not a HACS update entity." },
     "not_downloaded": { "message": "{entity_id} is not a repository downloaded with HACS." },
     "check_failed": { "message": "Could not check {failed}." },

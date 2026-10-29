@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.6.1
+
+### Fixes
+- `hacs_refresh.check_updates` with `wait: true` fails when the check failed or could not check a repository, like `hacs_refresh.check_repository`, instead of succeeding (automations no longer act on the previous check's `updates`).
+- A scheduled check skipped because HACS is unavailable (rate-limited, still starting) is retried within the hour instead of after a full interval.
+- The `failed` attribute of the status sensor no longer changes in place while a check runs.
+- "HACS is disabled" no longer shows an untranslated "unknown" when HACS gives no reason.
+- `hacs_refresh.check_repository` during a full check also checks the repositories whose category the full check leaves out, instead of reporting success without checking them.
+
+### Maintenance
+- CI: the release is published only once Validate (hassfest, tests) has passed on the push to main; vulture is pinned in `requirements_lint.txt` so Dependabot keeps it up to date.
+- Tests for the fixes.
+
+## 0.6.0
+
+### Changes
+- German and Spanish translations.
+
+## 0.5.1
+
+### Fixes
+- HACS installs and updates HACS Refresh from the `hacs_refresh.zip` release asset, so development files are no longer copied to Home Assistant.
+- A `hacs_refresh.check_repository` waiting for another call on the same repository no longer reports success when saving the HACS data fails: it checks the repository itself and fails with the error.
+- On large installations, the full check updates its progress at most every 0.5 s instead of after every repository, avoiding hundreds of state and recorder writes; the final state is always reported.
+- "HACS is disabled" says "unknown" instead of "None" when HACS gives no reason.
+- The `hacs_refresh.check_repository` action has its own icon.
+
+### Maintenance
+- AGENT.md moved out of the installed integration; brand assets stay under `custom_components/hacs_refresh/brand/` for the HACS brands check but are kept out of the release zip.
+- CI: branch cleanup paginates PR lookups, ruff-action pinned to the pre-commit ruff version, stale exempts `confirmed`/`pinned` issues, Dependabot watches `requirements_test.txt`; leftover lint config from the card repositories removed.
+- README: the `check_repository` example uses `data:`.
+
 ## 0.5.0
 
 ### Maintenance
