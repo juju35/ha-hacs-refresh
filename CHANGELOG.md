@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.1
+
+### Fixes
+- Card: the visual editor only offers the **Status** sensor for "HACS Refresh sensor". Choosing the **Last check** sensor (offered before, or set in YAML) no longer shows "Up to date" / "Not checked yet" without the button or the error: any entity of the HACS Refresh device leads to its status.
+- Card: when the integration's sensors are unavailable or unknown (entry not loaded, setup retry), the card shows "Unavailable" in grey instead of "Up to date", and `hide_when_ok` no longer hides it.
+- Card: when the automatic check is already due (HACS unavailable, retried within the hour), the card no longer reads "next 3 hours ago".
+
+### Maintenance
+- Dependabot also keeps the pre-commit hooks and the Screenshots workflow's Playwright up to date; the Screenshots workflow no longer installs ffmpeg, which it doesn't use.
+
 ## 0.7.0
 
 ### What's new
