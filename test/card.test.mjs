@@ -218,3 +218,58 @@ test('editor leaves the defaults out of the YAML', () => {
   editor._form.dispatch({ ...HR_DEFAULTS, title: '', show_failed: false });
   assert.deepEqual(JSON.parse(JSON.stringify(sent.at(-1))), { show_failed: false });
 });
+
+test('the editor only offers the status sensor', () => {
+  const editor = new HacsRefreshCardEditor();
+  editor.appendChild = () => {};
+  editor.setConfig({});
+  editor.hass = makeHass();
+  const entity = editor._form.schema.find((s) => s.name === 'entity');
+  assert.deepEqual(JSON.parse(JSON.stringify(entity.selector.entity.filter)), {
+    integration: 'hacs_refresh',
+    domain: 'sensor',
+    device_class: 'enum',
+  });
+});
+
+test('any entity of the device as `entity` finds its status sensor', () => {
+  const hass = makeHass({ state: 'error', updates: [], attrs: { error: 'rate limited', failed: ['someone/broken: 404'] } });
+  const auto = html(render({}, hass));
+  for (const entity of [STATUS, LAST_CHECK, BUTTON]) {
+    const out = html(render({ entity }, hass));
+    assert.equal(out, auto, entity);
+  }
+  assert.match(auto, /lvl-alert/);
+  assert.match(auto, /Checked 3 hours ago/);
+  assert.match(auto, /class="check"/);
+});
+
+test('an entity unknown to the registry is still read as the status sensor', () => {
+  const hass = makeHass({ updates: [] });
+  const out = html(render({ entity: 'sensor.renamed_status' }, { ...hass, states: { ...hass.states, 'sensor.renamed_status': hass.states[STATUS] } }));
+  assert.match(out, /Up to date/);
+});
+
+test('status unavailable or unknown: never shown as up to date, never hidden', () => {
+  for (const state of ['unavailable', 'unknown']) {
+    const hass = makeHass({ updates: [] });
+    for (const id of [STATUS, LAST_CHECK, BUTTON]) hass.states[id] = { state, attributes: {} };
+    const card = render({ hide_when_ok: true }, hass);
+    const out = html(card);
+    assert.equal(card.style.display, '', state);
+    assert.match(out, /lvl-na/, state);
+    assert.match(out, /Unavailable/, state);
+    assert.doesNotMatch(out, /Up to date|Not checked yet|Every repository is up to date/, state);
+  }
+  const fr = makeHass({ language: 'fr' });
+  fr.states[STATUS] = { state: 'unavailable', attributes: {} };
+  assert.match(html(render({}, fr)), /Indisponible/);
+});
+
+test('a next check already due is not shown in the past', () => {
+  const hass = makeHass({ updates: [] });
+  hass.states[LAST_CHECK] = { state: minutes(-27 * 60), attributes: { scan_interval: 24, next_check: minutes(-3 * 60) } };
+  const out = html(render({}, hass));
+  assert.match(out, /Checked 27 hours ago/);
+  assert.doesNotMatch(out, /next|ago · /);
+});
