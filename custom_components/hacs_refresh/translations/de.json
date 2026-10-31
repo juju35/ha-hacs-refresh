@@ -40,7 +40,13 @@
           "checking": { "name": "Wird geprüft" }
         }
       },
-      "last_check": { "name": "Letzte Prüfung" }
+      "last_check": {
+        "name": "Letzte Prüfung",
+        "state_attributes": {
+          "scan_interval": { "name": "Prüfintervall" },
+          "next_check": { "name": "Nächste Prüfung" }
+        }
+      }
     }
   },
   "services": {

@@ -1,13 +1,13 @@
 # HACS Refresh — Agent Context
 
 ## Purpose
-Home Assistant custom integration that checks every repository downloaded with HACS for updates, on the server, on demand (button, action) and at an interval set in the options. Used by the System Monitor Card's HACS section.
+Home Assistant custom integration that checks every repository downloaded with HACS for updates, on the server, on demand (button, action) and at an interval set in the options. Used by the System Monitor Card's HACS section. It bundles a Lovelace card with the check and the updates available.
 
 ## Architecture
 
 ```
 custom_components/hacs_refresh/
-├── __init__.py      # Actions check_updates and check_repository (every user, like the button), entry setup, automatic check
+├── __init__.py      # Static path + dashboard resource for the card; actions check_updates and check_repository (every user, like the button), entry setup, automatic check
 │                    #   (async_call_later on last_check + interval; overdue → runs at async_at_started; skipped because HACS
 │                    #   is unavailable → retried after min(interval, 1 h)); check_updates wait: true → raise_for_result()
 ├── refresher.py     # HacsRefresher: runs the check (entry background task, cancelled on unload), keeps state/progress,
@@ -20,8 +20,9 @@ custom_components/hacs_refresh/
 │                    #   raw CancelledError (unless the caller itself was cancelled)
 ├── config_flow.py   # Single entry, aborts without HACS; options: scan_interval (hours, 0 = off)
 ├── button.py        # button.*_check_for_updates (unavailable while running)
-├── sensor.py        # status (enum idle/running/error + done/total/updates/failed/error), last_check
+├── sensor.py        # status (enum idle/running/error + done/total/updates/failed/error), last_check (+ scan_interval/next_check)
 ├── entity.py        # Shared service device, listener on HacsRefresher
+├── frontend/hacs-refresh-card.js   # custom:hacs-refresh-card: status sensor + last check + button, HACS update entities (platform hacs, state on)
 ├── const.py / icons.json / services.yaml / translations/{en,fr,de,es}.json
 ```
 
@@ -31,8 +32,11 @@ custom_components/hacs_refresh/
 - Error messages are translated: `translation_key` under `exceptions` in translations/{en,fr,de,es}.json (no URL in the strings: hassfest refuses them, pass them as placeholders).
 - `homeassistant.update_entity` on HACS update entities is a no-op: don't rely on it.
 
+## Card
+Served at `/hacs_refresh/hacs-refresh-card.js` and added to the dashboard resources (storage mode) or loaded with `add_extra_js_url` (YAML mode); removed with the entry. `_storage_resources()` reads `hass.data["lovelace"]` as a dict (before 2025.2) or a dataclass (`mode`, then `resource_mode` from 2026.2). The card finds its entities by `platform` and `translation_key` in `hass.entities` (entity ID suffix as fallback); the updates listed are HACS' update entities that are `on`, the sensor's `updates` count only when there are none.
+
 ## Release
-Bump `version` in manifest.json and add its CHANGELOG.md section; pushing to main publishes `vX.Y.Z` with `hacs_refresh.zip` when that tag doesn't exist yet, once the Validate (hassfest, tests), Lint and HACS Validation workflows have all passed on that commit (`workflow_run` on each, gated by the "Check required workflows" step). Rerun notes with the "Update release notes" workflow (input `tag`).
+Bump `version` in manifest.json, `VERSION` in const.py and `HACS_REFRESH_CARD_VERSION` in the card, and add its CHANGELOG.md section; pushing to main publishes `vX.Y.Z` with `hacs_refresh.zip` when that tag doesn't exist yet, once the Validate (hassfest, tests), Lint and HACS Validation workflows have all passed on that commit (`workflow_run` on each, gated by the "Check required workflows" step). Rerun notes with the "Update release notes" workflow (input `tag`).
 
 ## Tests
-`pip install -r requirements_test.txt && pytest` — HACS is a stand-in object (`tests/conftest.py`). Job `tests` runs on Python 3.14, i.e. the latest Home Assistant (2026.3+ needs Python 3.14; 3.13 would silently resolve to 2026.2) and prints its version as an annotation; job `pytest-min-ha` runs the suite on HA 2024.12.0. An autouse fixture (`tests/conftest.py`, `no_deprecated_calls`) fails any test during which Home Assistant reports a deprecated call naming `hacs_refresh`, and CI turns those reports into annotations.
+`pip install -r requirements_test.txt && pytest` — HACS is a stand-in object (`tests/conftest.py`). Card: `node --test test/*.test.mjs` (the card file is evaluated in a `vm` context with stubs). Screenshots: `python scripts/screenshots.py` (Playwright, mock data, English, pictures blocked, 16 px frame). Job `tests` runs on Python 3.14, i.e. the latest Home Assistant (2026.3+ needs Python 3.14; 3.13 would silently resolve to 2026.2) and prints its version as an annotation; job `pytest-min-ha` runs the suite on HA 2024.12.0. An autouse fixture (`tests/conftest.py`, `no_deprecated_calls`) fails any test during which Home Assistant reports a deprecated call naming `hacs_refresh`, and CI turns those reports into annotations.

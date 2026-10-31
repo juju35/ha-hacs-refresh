@@ -1,7 +1,7 @@
 name: Release
 
 # Publishes a GitHub release whenever main carries a version that has no tag yet:
-# bump the version in manifest.json, add its CHANGELOG.md section, push, and the release follows
+# bump the version in manifest.json, const.py and the card, add its CHANGELOG.md section, push, and the release follows
 # once Validate (hassfest, tests), Lint and HACS Validation have all passed on that commit,
 # so a broken main is never released. Each of them triggers this workflow when it completes;
 # the release happens on the last one, when the "Check required workflows" step sees all three green.
@@ -63,6 +63,8 @@ jobs:
         if: steps.gate.outputs.ready == 'true'
         run: |
           VERSION="$(jq -r .version custom_components/hacs_refresh/manifest.json)"
+          grep -q "VERSION: Final = \"$VERSION\"" custom_components/hacs_refresh/const.py
+          grep -q "HACS_REFRESH_CARD_VERSION = '$VERSION'" custom_components/hacs_refresh/frontend/hacs-refresh-card.js
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
             echo "exists=true" >> "$GITHUB_OUTPUT"

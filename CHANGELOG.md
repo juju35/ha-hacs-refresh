@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.0
+
+### What's new
+- **HACS Refresh Card**, bundled with the integration and added to the dashboard resources automatically: status and progress bar, last and next check, **Check for updates** button, the HACS repositories with an update (installed → new version, a row opens the update entity) and the repositories that couldn't be checked. Visual editor; English, French, German and Spanish.
+- The **Last check** sensor gives `scan_interval` and `next_check` (when the next automatic check is due).
+
+### Maintenance
+- Card unit tests, Biome lint, and a Screenshots workflow that renders the README captures (light and dark) on pull requests.
+
 ## 0.6.1
 
 ### Fixes

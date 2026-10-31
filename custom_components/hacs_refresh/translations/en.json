@@ -40,7 +40,13 @@
           "checking": { "name": "Being checked" }
         }
       },
-      "last_check": { "name": "Last check" }
+      "last_check": {
+        "name": "Last check",
+        "state_attributes": {
+          "scan_interval": { "name": "Check interval" },
+          "next_check": { "name": "Next check" }
+        }
+      }
     }
   },
   "services": {

@@ -40,7 +40,13 @@
           "checking": { "name": "En cours de vérification" }
         }
       },
-      "last_check": { "name": "Dernière vérification" }
+      "last_check": {
+        "name": "Dernière vérification",
+        "state_attributes": {
+          "scan_interval": { "name": "Intervalle de vérification" },
+          "next_check": { "name": "Prochaine vérification" }
+        }
+      }
     }
   },
   "services": {
