@@ -10,7 +10,12 @@
 
 Home Assistant integration that checks every repository downloaded with [HACS](https://hacs.xyz) for updates, on the server: with a button, an action, a progress sensor and a check interval set in the integration options.
 
-HACS itself only checks downloaded custom repositories every 48 hours, and its own "update information" button works one repository at a time from the browser. HACS Refresh checks them all at once, in the background, even when no dashboard is open.
+HACS itself only checks downloaded custom repositories every 48 hours, and its own "update information" button works one repository at a time from the browser. HACS Refresh checks them all at once, in the background, even when no dashboard is open. It comes with a Lovelace card showing the check and the updates available.
+
+<p align="center">
+  <img src="screenshots/card.png" alt="HACS Refresh card with updates available" width="420">
+  <img src="screenshots/card-dark.png" alt="HACS Refresh card, dark theme" width="420">
+</p>
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=juju35&repository=ha-hacs-refresh&category=integration)
 
@@ -20,9 +25,10 @@ HACS itself only checks downloaded custom repositories every 48 hours, and its o
 - **`hacs_refresh.check_repository`** action: checks only the repositories behind the HACS update entities you give, and waits for the result
 - **Automatic check** at the interval set in the integration options (24 hours by default, `0` to turn it off), counted from the last check and kept across restarts: an overdue check runs as soon as Home Assistant has started
 - **Status** sensor (`idle`, `running`, `error`) with the progress (`done` / `total`), the number of updates found and the repositories that failed
-- **Last check** sensor (timestamp)
+- **Last check** sensor (timestamp), with the check interval and when the next automatic check is due
+- **Lovelace card** bundled with the integration: status and progress, last and next check, the updates available and the repositories that couldn't be checked
 - One failing repository doesn't stop the others; a check never runs twice at the same time, and `check_repository` waits for a full check that is running instead of starting a second one
-- Used by the [System Monitor Card](https://github.com/juju35/ha-system-monitor-card) for its HACS section
+- Also used by the [System Monitor Card](https://github.com/juju35/ha-system-monitor-card) for its HACS section
 - English, French, German and Spanish
 
 ## Prerequisites
@@ -68,7 +74,7 @@ Copy `custom_components/hacs_refresh/` to `/config/custom_components/hacs_refres
 |---|---|
 | `button.hacs_refresh_check_for_updates` | Starts a check. Unavailable while one is running |
 | `sensor.hacs_refresh_status` | `idle`, `running` or `error`. Attributes: `done`, `total`, `updates`, `failed` (list of `owner/repo`), `error`, `checking` (update entities being checked by `check_repository`) |
-| `sensor.hacs_refresh_last_check` | End of the last check |
+| `sensor.hacs_refresh_last_check` | End of the last check. Attributes: `scan_interval` (hours, `0` = automatic check off), `next_check` (when the next automatic check is due, `null` when it is off) |
 
 ### Action `hacs_refresh.check_updates`
 
@@ -107,11 +113,37 @@ data:
   entity_id: update.mushroom_update
 ```
 
-## Screenshots
+## Card
 
-HACS Refresh has no card of its own: the [System Monitor Card](https://github.com/juju35/ha-system-monitor-card) shows the HACS extensions with their update status, and its **Check for updates** button presses this integration's button.
+The integration serves the **HACS Refresh Card** and adds it to the dashboard resources (or loads it on every page when the resources are managed in YAML): no separate install. Add it from the card picker, or:
 
-![HACS extensions in the System Monitor Card](https://raw.githubusercontent.com/juju35/ha-system-monitor-card/main/screenshots/card-hacs.png)
+```yaml
+type: custom:hacs-refresh-card
+```
+
+| Updates available | Checking | Up to date |
+|---|---|---|
+| ![Card](screenshots/card.png) | ![Card while checking](screenshots/card-checking.png) | ![Card, up to date](screenshots/card-ok.png) |
+| ![Card, dark theme](screenshots/card-dark.png) | ![Card while checking, dark theme](screenshots/card-checking-dark.png) | ![Card, up to date, dark theme](screenshots/card-ok-dark.png) |
+
+- **Header**: status (up to date, *n* updates, *n* failed, checking *done/total*, error), when the last check ran and when the next automatic one is due, and the **Check for updates** button
+- **Progress bar** while a check runs
+- **Updates available**: the HACS repositories with an update, from HACS' own update entities, with the installed and new version. A row opens the update entity, to install it or read the release notes
+- **Could not be checked**: the repositories the last check couldn't fetch, and the error of a check that failed
+
+Every option is in the visual editor:
+
+| Option | Default | Description |
+|---|---|---|
+| `entity` | found automatically | The **Status** sensor |
+| `title` | HACS updates | Card title |
+| `show_updates` | `true` | Updates available |
+| `show_failed` | `true` | Repositories that couldn't be checked, and the error of a failed check |
+| `check_button` | `true` | **Check for updates** button in the header |
+| `hide_when_ok` | `false` | Hide the card while everything is up to date (it shows while checking, and with an update or an error) |
+| `language` | Home Assistant's | `en`, `fr`, `de` or `es` |
+
+The [System Monitor Card](https://github.com/juju35/ha-system-monitor-card) also shows the HACS extensions with their update status, and its **Check for updates** button presses this integration's button.
 
 ## How it works
 
@@ -133,13 +165,15 @@ logger:
 
 ```bash
 pip install -r requirements_test.txt && pytest
+node --test test/*.test.mjs        # card
+python scripts/screenshots.py      # README screenshots (Playwright)
 ```
 
 The tests use a stand-in for HACS' internal object (`tests/conftest.py`).
 
 ### Releasing
 
-1. Bump the version in `custom_components/hacs_refresh/manifest.json`
+1. Bump the version in `custom_components/hacs_refresh/manifest.json`, `const.py` (`VERSION`) and the card (`HACS_REFRESH_CARD_VERSION`)
 2. Add a `## <version>` section at the top of [CHANGELOG.md](CHANGELOG.md)
 3. Push to `main`: once **Validate**, **Lint** and **HACS Validation** have passed on that commit, the **Release** workflow creates the tag and the GitHub release with the changelog section as notes
 

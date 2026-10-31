@@ -14,3 +14,15 @@ repos:
       - id: ruff-check
         args: [--fix]
       - id: ruff-format
+  - repo: https://github.com/biomejs/pre-commit
+    rev: "v2.6.2"
+    hooks:
+      - id: biome-check
+        additional_dependencies: ["@biomejs/biome@2.6.2"]
+  - repo: local
+    hooks:
+      - id: js-syntax
+        name: JS syntax (node --check)
+        entry: bash -c 'for f in "$@"; do node --check "$f" || exit 1; done' --
+        language: system
+        files: \.m?js$

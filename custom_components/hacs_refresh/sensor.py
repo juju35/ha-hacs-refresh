@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, ClassVar
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import HacsRefreshConfigEntry
-from .const import STATE_ERROR, STATE_IDLE, STATE_RUNNING
+from .const import CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL, STATE_ERROR, STATE_IDLE, STATE_RUNNING
 from .entity import HacsRefreshEntity
 
 
@@ -58,3 +58,12 @@ class LastCheckSensor(HacsRefreshEntity, SensorEntity):
     @property
     def native_value(self) -> datetime | None:
         return self.refresher.last_check
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """The automatic check's interval (hours, 0 = off) and when it is due, for the card."""
+        r = self.refresher
+        hours = int(r.entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL))
+        last = r.last_check or r.since
+        due = last + timedelta(hours=hours) if hours > 0 and last else None
+        return {"scan_interval": hours, "next_check": due.isoformat() if due else None}

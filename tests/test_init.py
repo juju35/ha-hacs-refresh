@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 from datetime import timedelta
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import pytest
 from homeassistant.config_entries import ConfigEntryState
@@ -11,10 +13,11 @@ from homeassistant.core import Context, HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import entity_registry as er
+from homeassistant.setup import async_setup_component
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import MockConfigEntry, async_fire_time_changed
 
-from custom_components.hacs_refresh.const import CONF_SCAN_INTERVAL, DOMAIN
+from custom_components.hacs_refresh.const import CARD_URL, CONF_SCAN_INTERVAL, DOMAIN
 
 from .conftest import make_repo
 
@@ -694,3 +697,87 @@ async def test_check_repository_during_full_check_outside_its_categories(hass, f
     release.set()
     await _await_service(call)
     script.update_repository.assert_awaited_once_with(ignore_issues=True, force=True)
+
+
+def _resources(hass: HomeAssistant):
+    """The Lovelace resources collection: hass.data["lovelace"] is a dict before 2025.2, a dataclass after."""
+    lovelace = hass.data["lovelace"]
+    return lovelace["resources"] if isinstance(lovelace, dict) else lovelace.resources
+
+
+def _card_urls(resources) -> list[str]:
+    return [i["url"] for i in resources.async_items() if i["url"].split("?")[0] == CARD_URL]
+
+
+async def test_next_check_for_the_card(hass, fake_hacs):
+    """The last check sensor gives the interval and when the next automatic check is due."""
+    await _setup(hass, hours=6)
+    attrs = hass.states.get(LAST_CHECK).attributes
+    assert attrs["scan_interval"] == 6
+    # Before the first check, the interval counts from the first setup.
+    due = dt_util.parse_datetime(attrs["next_check"])
+    assert timedelta(hours=5, minutes=59) < due - dt_util.utcnow() <= timedelta(hours=6)
+    await hass.services.async_call(DOMAIN, "check_updates", {"wait": True}, blocking=True)
+    await hass.async_block_till_done()
+    state = hass.states.get(LAST_CHECK)
+    # The timestamp state is rounded to the second.
+    due = dt_util.parse_datetime(state.attributes["next_check"]).replace(microsecond=0)
+    assert due == dt_util.parse_datetime(state.state) + timedelta(hours=6)
+
+
+async def test_next_check_when_automatic_check_is_off(hass, fake_hacs):
+    await _setup(hass, hours=0)
+    attrs = hass.states.get(LAST_CHECK).attributes
+    assert attrs["scan_interval"] == 0
+    assert attrs["next_check"] is None
+
+
+async def test_card_is_served(hass, fake_hacs, hass_client):
+    await _setup(hass)
+    client = await hass_client()
+    response = await client.get(CARD_URL)
+    assert response.status == 200
+    assert "hacs-refresh-card" in await response.text()
+
+
+async def test_card_resource_back_after_remove_and_add(hass, fake_hacs):
+    """Removing the entry drops the card resource; adding it again without a restart brings it back."""
+    assert await async_setup_component(hass, "lovelace", {})
+    resources = _resources(hass)
+    entry = await _setup(hass)
+    assert len(_card_urls(resources)) == 1
+
+    assert await hass.config_entries.async_remove(entry.entry_id)
+    await hass.async_block_till_done()
+    assert _card_urls(resources) == []
+
+    await _setup(hass)
+    assert len(_card_urls(resources)) == 1
+
+
+@pytest.mark.parametrize(
+    ("key", "container"),
+    [("mode", dict), ("resource_mode", dict), ("mode", SimpleNamespace), ("resource_mode", SimpleNamespace)],
+)
+async def test_card_resource_with_lovelace_data_variants(hass, fake_hacs, key: str, container: type):
+    """hass.data["lovelace"]: a dict before 2025.2, then a dataclass with `mode`, renamed `resource_mode` in 2026.2."""
+    assert await async_setup_component(hass, "lovelace", {})
+    resources = _resources(hass)
+    hass.data["lovelace"] = container(**{key: "storage", "resources": resources, "dashboards": {}})
+    entry = await _setup(hass)
+    assert len(_card_urls(resources)) == 1
+    assert await hass.config_entries.async_remove(entry.entry_id)
+    await hass.async_block_till_done()
+    assert _card_urls(resources) == []
+
+
+async def test_card_resource_yaml_mode_untouched(hass, fake_hacs):
+    """Resources in YAML mode are not edited (the card is loaded on every page instead)."""
+    from homeassistant.components.lovelace.resources import ResourceYAMLCollection
+
+    assert await async_setup_component(hass, "lovelace", {})
+    hass.data["lovelace"] = {"mode": "yaml", "resources": ResourceYAMLCollection([]), "dashboards": {}}
+    with patch("custom_components.hacs_refresh.add_extra_js_url") as add_js:
+        await _setup(hass)
+        await hass.async_block_till_done()
+    add_js.assert_called_once()

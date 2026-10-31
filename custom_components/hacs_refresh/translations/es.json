@@ -40,7 +40,13 @@
           "checking": { "name": "En comprobación" }
         }
       },
-      "last_check": { "name": "Última comprobación" }
+      "last_check": {
+        "name": "Última comprobación",
+        "state_attributes": {
+          "scan_interval": { "name": "Intervalo de comprobación" },
+          "next_check": { "name": "Próxima comprobación" }
+        }
+      }
     }
   },
   "services": {

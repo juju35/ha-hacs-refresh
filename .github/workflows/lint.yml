@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -29,6 +30,15 @@ jobs:
         with:
           # Same ruff as .pre-commit-config.yaml, so both jobs agree.
           version: "0.16.9"
+  biome:
+    name: Biome (card JS)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: biomejs/setup-biome@4c91541eaada48f67d7dbd7833600ce162b68f51 # v2
+        with:
+          version: 2.6.2
+      - run: biome ci --reporter=github .
   duplication:
     name: Duplication (jscpd)
     runs-on: ubuntu-latest

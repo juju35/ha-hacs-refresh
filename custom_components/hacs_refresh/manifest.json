@@ -4,11 +4,12 @@
   "after_dependencies": ["hacs"],
   "codeowners": ["@juju35"],
   "config_flow": true,
+  "dependencies": ["frontend", "http", "lovelace"],
   "documentation": "https://github.com/juju35/ha-hacs-refresh",
   "integration_type": "service",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/juju35/ha-hacs-refresh/issues",
   "requirements": [],
   "single_config_entry": true,
-  "version": "0.6.1"
+  "version": "0.7.0"
 }
