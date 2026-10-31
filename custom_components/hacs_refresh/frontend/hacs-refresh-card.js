@@ -4,7 +4,7 @@
  * Served and added to the dashboard resources by the integration.
  * https://github.com/juju35/ha-hacs-refresh
  */
-var HACS_REFRESH_CARD_VERSION = '0.7.0';
+var HACS_REFRESH_CARD_VERSION = '0.7.1';
 
 const HR_I18N = {
   en: {
@@ -18,6 +18,7 @@ const HR_I18N = {
     failed_one: '{n} failed',
     failed_many: '{n} failed',
     not_loaded: 'HACS Refresh is not set up',
+    unavailable: 'Unavailable',
     never_checked: 'Not checked yet',
     checked: 'Checked {d}',
     next: 'next {d}',
@@ -54,6 +55,7 @@ const HR_I18N = {
     failed_one: '{n} en échec',
     failed_many: '{n} en échec',
     not_loaded: 'HACS Refresh n’est pas configuré',
+    unavailable: 'Indisponible',
     never_checked: 'Pas encore vérifié',
     checked: 'Vérifié {d}',
     next: 'prochaine {d}',
@@ -90,6 +92,7 @@ const HR_I18N = {
     failed_one: '{n} fehlgeschlagen',
     failed_many: '{n} fehlgeschlagen',
     not_loaded: 'HACS Refresh ist nicht eingerichtet',
+    unavailable: 'Nicht verfügbar',
     never_checked: 'Noch nicht geprüft',
     checked: 'Geprüft {d}',
     next: 'nächste {d}',
@@ -126,6 +129,7 @@ const HR_I18N = {
     failed_one: '{n} con error',
     failed_many: '{n} con error',
     not_loaded: 'HACS Refresh no está configurado',
+    unavailable: 'No disponible',
     never_checked: 'Aún sin comprobar',
     checked: 'Comprobado {d}',
     next: 'próxima {d}',
@@ -276,8 +280,9 @@ class HacsRefreshCard extends HTMLElement {
     let status = this._config.entity;
     if (!status) status = Object.values(devices).map((d) => d.status).find((id) => this._hass.states[id]);
     if (!status) return { updates };
-    const device = Object.values(devices).find((d) => d.status === status) || {};
-    return { ...device, status, updates };
+    // Any of the device's entities (the Last check sensor, the button) leads to its status sensor.
+    const device = Object.values(devices).find((d) => Object.values(d).includes(status));
+    return device?.status ? { ...device, updates } : { ...device, status, updates };
   }
 
   _render() {
@@ -285,7 +290,10 @@ class HacsRefreshCard extends HTMLElement {
     const c = this._config;
     const ids = this._lookup();
     const states = this._hass.states;
-    const st = ids.status && states[ids.status];
+    const raw = ids.status && states[ids.status];
+    // Unavailable or unknown (entry not loaded, setup retry, restored state): nothing to read from it.
+    const unavailable = !!raw && ['unavailable', 'unknown'].includes(raw.state);
+    const st = unavailable ? null : raw;
     const lastSt = ids.last_check && states[ids.last_check];
     const buttonSt = ids.button && states[ids.button];
     this._watched = [ids.status, ids.last_check, ids.button, ...ids.updates].filter(Boolean);
@@ -294,7 +302,7 @@ class HacsRefreshCard extends HTMLElement {
     const minute = Math.floor(Date.now() / 60000);
     this._sigMinute = minute;
     const updateStates = ids.updates.map((id) => states[id]).filter((s) => s?.state === 'on');
-    const sig = JSON.stringify([c, hrLang(this._hass, c), ids, st, lastSt, buttonSt?.state, updateStates, minute]);
+    const sig = JSON.stringify([c, hrLang(this._hass, c), ids, raw, lastSt, buttonSt?.state, updateStates, minute]);
     if (sig === this._sig) return;
     this._sig = sig;
 
@@ -323,7 +331,9 @@ class HacsRefreshCard extends HTMLElement {
     this._rows = shownUpdates.length + (c.show_failed ? failed.length : 0);
 
     const last = lastSt && !['unknown', 'unavailable'].includes(lastSt.state) ? lastSt.state : null;
-    const next = lastSt?.attributes?.next_check;
+    // A check already due (overdue, or retried within the hour while HACS is unavailable) has no "next" to show.
+    const nextAt = lastSt?.attributes?.next_check;
+    const next = nextAt && new Date(nextAt).getTime() > Date.now() ? nextAt : null;
     const interval = lastSt?.attributes?.scan_interval;
     const subtitle = !st
       ? ''
@@ -346,7 +356,7 @@ class HacsRefreshCard extends HTMLElement {
             ${subtitle ? `<div class="subtitle" title="${hrEsc(last ? this._absolute(last) : '')}">${hrEsc(subtitle)}</div>` : ''}
           </div>
           ${this._checkButton(running || buttonSt?.state === 'unavailable')}
-          <div class="pill">${hrEsc(this._status(st, running, a, count, failed, error))}</div>
+          <div class="pill">${hrEsc(unavailable ? this._t('unavailable') : this._status(st, running, a, count, failed, error))}</div>
         </div>
         ${running ? `<div class="progress" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div>` : ''}
         ${c.show_failed && error ? `<div class="error"><ha-icon icon="mdi:alert-circle-outline"></ha-icon><span><b>${hrEsc(this._t('error_title'))}</b><br>${hrEsc(error)}</span></div>` : ''}
@@ -547,7 +557,7 @@ class HacsRefreshCardEditor extends HTMLElement {
     this._deps = { config: c, lang };
     this._form.data = { ...HR_DEFAULTS, ...c };
     this._form.schema = [
-      { name: 'entity', selector: { entity: { filter: { integration: 'hacs_refresh', domain: 'sensor' } } } },
+      { name: 'entity', selector: { entity: { filter: { integration: 'hacs_refresh', domain: 'sensor', device_class: 'enum' } } } },
       { name: 'title', selector: { text: {} } },
       { name: 'show_updates', selector: { boolean: {} } },
       { name: 'show_failed', selector: { boolean: {} } },
