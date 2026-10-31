@@ -246,11 +246,12 @@ class HacsRefreshCard extends HTMLElement {
     } catch {
       return new Date(t).toISOString();
     }
+    // Rounded to the nearest unit: a check due in 20 h 59 min reads "in 21 hours".
     const a = Math.abs(m);
     if (a < 1) return rtf.format(0, 'second');
-    if (a < 60) return rtf.format(Math.trunc(m), 'minute');
-    if (a < 2880) return rtf.format(Math.trunc(m / 60), 'hour');
-    return rtf.format(Math.trunc(m / 1440), 'day');
+    if (a < 59.5) return rtf.format(Math.round(m), 'minute');
+    if (a < 2850) return rtf.format(Math.round(m / 60), 'hour');
+    return rtf.format(Math.round(m / 1440), 'day');
   }
 
   _absolute(iso) {
