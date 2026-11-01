@@ -107,6 +107,8 @@ class HacsRefresher:
         self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, DOMAIN)
         # Called when a full check ends, whatever started it.
         self.on_done: CALLBACK_TYPE | None = None
+        # Called when the installs end (not when they are cancelled by an unload).
+        self.on_install_done: CALLBACK_TYPE | None = None
         self.state: str = STATE_IDLE
         self.done = 0
         self.total = 0
@@ -183,9 +185,14 @@ class HacsRefresher:
 
     @callback
     def async_start(self) -> bool:
-        """Start a check in the background. Returns False when one is already running."""
+        """Start a check in the background. Returns False when one is already running.
+
+        Refused while updates are installed: the check would refresh the repositories being downloaded.
+        """
         if self.running:
             return False
+        if self.installing_updates:
+            raise ServiceValidationError(translation_domain=DOMAIN, translation_key="check_while_installing")
         _hacs(self.hass)  # fail now, in the caller, if HACS can't be used
         self.state = STATE_RUNNING
         self.done = 0
@@ -422,6 +429,9 @@ class HacsRefresher:
             self.installing = []
             self._install_task = None
             self._notify()
+            # A check due meanwhile runs now; not after an unload, which cancels this task.
+            if self.on_install_done is not None and not _cancelling():
+                self.on_install_done()
 
     async def _async_run(self) -> None:
         try:

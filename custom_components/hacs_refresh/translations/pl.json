@@ -87,6 +87,7 @@
     "check_cancelled": { "message": "Sprawdzanie zostało anulowane (HACS Refresh został przeładowany lub usunięty)." },
     "full_check_failed": { "message": "Pełne sprawdzanie nie powiodło się: {error}" },
     "install_running": { "message": "Aktualizacje są już instalowane." },
+    "check_while_installing": { "message": "Trwa instalowanie aktualizacji: sprawdź aktualizacje po jego zakończeniu." },
     "install_failed": { "message": "Nie udało się zainstalować: {failed}." },
     "install_cancelled": { "message": "Instalacje zostały anulowane (HACS Refresh został przeładowany lub usunięty)." }
   }

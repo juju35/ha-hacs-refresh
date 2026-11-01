@@ -87,6 +87,7 @@
     "check_cancelled": { "message": "La vérification a été annulée (HACS Refresh a été rechargé ou supprimé)." },
     "full_check_failed": { "message": "La vérification complète a échoué : {error}" },
     "install_running": { "message": "Des mises à jour sont déjà en cours d’installation." },
+    "check_while_installing": { "message": "Des mises à jour sont en cours d’installation : lancez la vérification une fois qu’elles sont terminées." },
     "install_failed": { "message": "Impossible d’installer {failed}." },
     "install_cancelled": { "message": "Les installations ont été annulées (HACS Refresh a été rechargé ou supprimé)." }
   }

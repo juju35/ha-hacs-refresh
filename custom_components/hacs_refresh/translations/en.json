@@ -87,6 +87,7 @@
     "check_cancelled": { "message": "The check was cancelled (HACS Refresh was reloaded or removed)." },
     "full_check_failed": { "message": "The full check failed: {error}" },
     "install_running": { "message": "Updates are already being installed." },
+    "check_while_installing": { "message": "Updates are being installed: check for updates once they are done." },
     "install_failed": { "message": "Could not install {failed}." },
     "install_cancelled": { "message": "The installs were cancelled (HACS Refresh was reloaded or removed)." }
   }

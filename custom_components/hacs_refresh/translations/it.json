@@ -87,6 +87,7 @@
     "check_cancelled": { "message": "La verifica è stata annullata (HACS Refresh è stato ricaricato o rimosso)." },
     "full_check_failed": { "message": "La verifica completa non è riuscita: {error}" },
     "install_running": { "message": "Gli aggiornamenti sono già in fase di installazione." },
+    "check_while_installing": { "message": "Gli aggiornamenti sono in fase di installazione: avvia la verifica quando sono terminati." },
     "install_failed": { "message": "Impossibile installare {failed}." },
     "install_cancelled": { "message": "Le installazioni sono state annullate (HACS Refresh è stato ricaricato o rimosso)." }
   }

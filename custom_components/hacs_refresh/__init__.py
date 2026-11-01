@@ -201,7 +201,10 @@ def _async_schedule(
 
     async def run(_now: datetime) -> None:
         cancel.clear()
-        # When a check is already running, its end (on_done) schedules the next one.
+        # When a check is already running, its end (on_done) schedules the next one; when updates are
+        # being installed, their end (on_install_done) runs the check then.
+        if refresher.installing_updates:
+            return
         try:
             refresher.async_start()
         except HacsNotAvailableError as err:
@@ -217,6 +220,7 @@ def _async_schedule(
             schedule_next()
 
     refresher.on_done = schedule_next
+    refresher.on_install_done = schedule_next
     entry.async_on_unload(cancel_timer)
     entry.async_on_unload(async_at_started(hass, at_started))
 
