@@ -3,7 +3,7 @@
   "threshold": 0,
   "absolute": false,
   "gitignore": true,
-  "ignore": ["**/tests/**", "**/.git/**"],
+  "ignore": ["**/tests/**", "**/.git/**", "**/translations/**"],
   "reporters": ["console", "json"],
   "output": "report"
 }

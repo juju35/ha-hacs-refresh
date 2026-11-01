@@ -7,7 +7,8 @@ Home Assistant custom integration that checks every repository downloaded with H
 
 ```
 custom_components/hacs_refresh/
-├── __init__.py      # Static path + dashboard resource for the card; actions check_updates and check_repository (every user, like the button), entry setup, automatic check
+├── __init__.py      # Static path + dashboard resource for the card; actions check_updates and check_repository (every user, like the button),
+│                    #   install_updates (admin service), entry setup, automatic check
 │                    #   (async_call_later on last_check + interval; overdue → runs at async_at_started; skipped because HACS
 │                    #   is unavailable → retried after min(interval, 1 h)); check_updates wait: true → raise_for_result()
 ├── refresher.py     # HacsRefresher: runs the check (entry background task, cancelled on unload), keeps state/progress,
@@ -18,18 +19,22 @@ custom_components/hacs_refresh/
 │                    #   the full check also takes `_single` results instead of refreshing twice.
 │                    #   async_wait: entry unload cancels the task → HomeAssistantError(check_cancelled), not a
 │                    #   raw CancelledError (unless the caller itself was cancelled)
+│                    #   install: async_start_install → background task calling update.install one entity at a time
+│                    #   (waits for a running check first; context of the caller); `installing` (left, current first) /
+│                    #   `install_failed` on the status sensor; a second install → ServiceValidationError(install_running)
 ├── config_flow.py   # Single entry, aborts without HACS; options: scan_interval (hours, 0 = off)
-├── button.py        # button.*_check_for_updates (unavailable while running)
+├── button.py        # button.*_check_for_updates (unavailable while a check runs or updates are installed)
 ├── sensor.py        # status (enum idle/running/error + done/total/updates/failed/error), last_check (+ scan_interval/next_check)
 ├── entity.py        # Shared service device, listener on HacsRefresher
-├── frontend/hacs-refresh-card.js   # custom:hacs-refresh-card: status sensor + last check + button, HACS update entities (platform hacs, state on)
-├── const.py / icons.json / services.yaml / translations/{en,fr,de,es}.json
+├── frontend/hacs-refresh-card.js   # custom:hacs-refresh-card: status sensor + last check + button, HACS update entities (platform hacs, state on),
+│                                   #   "Update all (n)" for admins → confirmation at the top of the card → install_updates with the ids listed
+├── const.py / icons.json / services.yaml / translations/{en,fr,de,es,sr,sr-Latn,it,nl,pt,pt-BR,pl}.json (pt-BR = copy of pt)
 ```
 
 ## HACS internals used (same as HACS' `hacs/repository/refresh` websocket command)
 - `hass.data["hacs"]`: `repositories.list_downloaded`, `repository.update_repository(ignore_issues=True, force=True)`, `data.async_write()`, `coordinators[category].async_update_listeners()`, `system.disabled` / `disabled_reason`, `common.categories`.
 - `_hacs()` checks these exist and raises `HacsNotAvailableError` with a clear message otherwise. Keep that check in sync if more attributes are used.
-- Error messages are translated: `translation_key` under `exceptions` in translations/{en,fr,de,es}.json (no URL in the strings: hassfest refuses them, pass them as placeholders).
+- Error messages are translated: `translation_key` under `exceptions` in translations/{en,fr,de,es,sr,sr-Latn,it,nl,pt,pl}.json (no URL in the strings: hassfest refuses them, pass them as placeholders).
 - `homeassistant.update_entity` on HACS update entities is a no-op: don't rely on it.
 
 ## Card

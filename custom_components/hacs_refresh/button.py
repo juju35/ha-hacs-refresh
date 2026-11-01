@@ -21,8 +21,8 @@ class CheckUpdatesButton(HacsRefreshEntity, ButtonEntity):
 
     @property
     def available(self) -> bool:
-        # Greyed out while a check runs, so it can't be pressed twice.
-        return not self.refresher.running
+        # Greyed out while a check runs, so it can't be pressed twice, and while updates are installed.
+        return not self.refresher.running and not self.refresher.installing_updates
 
     async def async_press(self) -> None:
         # HacsNotAvailableError is a HomeAssistantError with a translated message.

@@ -37,7 +37,9 @@
           "updates": { "name": "Updates available" },
           "failed": { "name": "Failed" },
           "error": { "name": "Error" },
-          "checking": { "name": "Being checked" }
+          "checking": { "name": "Being checked" },
+          "installing": { "name": "Being installed" },
+          "install_failed": { "name": "Could not be installed" }
         }
       },
       "last_check": {
@@ -63,6 +65,14 @@
       "fields": {
         "entity_id": { "name": "Update entities", "description": "HACS update entities of the repositories to check." }
       }
+    },
+    "install_updates": {
+      "name": "Install updates",
+      "description": "Installs the updates of the HACS repositories, one after the other, in the background unless wait is set. Administrators only.",
+      "fields": {
+        "entity_id": { "name": "Update entities", "description": "HACS update entities to update; leave empty for every repository with an update." },
+        "wait": { "name": "Wait", "description": "Wait until every update has been installed before the action ends; the action then fails if an update could not be installed." }
+      }
     }
   },
   "exceptions": {
@@ -75,6 +85,9 @@
     "not_downloaded": { "message": "{entity_id} is not a repository downloaded with HACS." },
     "check_failed": { "message": "Could not check {failed}." },
     "check_cancelled": { "message": "The check was cancelled (HACS Refresh was reloaded or removed)." },
-    "full_check_failed": { "message": "The full check failed: {error}" }
+    "full_check_failed": { "message": "The full check failed: {error}" },
+    "install_running": { "message": "Updates are already being installed." },
+    "install_failed": { "message": "Could not install {failed}." },
+    "install_cancelled": { "message": "The installs were cancelled (HACS Refresh was reloaded or removed)." }
   }
 }
