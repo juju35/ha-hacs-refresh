@@ -26,6 +26,7 @@ const HR_I18N = {
     check_now: 'Check for updates',
     updates_title: 'Updates available',
     no_updates: 'Every repository is up to date',
+    no_details: 'HACS isn’t loaded: no details on these updates',
     failed_title: 'Could not be checked',
     error_title: 'The last check failed',
     version: '{from} → {to}',
@@ -63,6 +64,7 @@ const HR_I18N = {
     check_now: 'Rechercher les mises à jour',
     updates_title: 'Mises à jour disponibles',
     no_updates: 'Tous les dépôts sont à jour',
+    no_details: 'HACS n’est pas chargé : pas de détail sur ces mises à jour',
     failed_title: 'Impossible à vérifier',
     error_title: 'La dernière vérification a échoué',
     version: '{from} → {to}',
@@ -100,6 +102,7 @@ const HR_I18N = {
     check_now: 'Nach Updates suchen',
     updates_title: 'Verfügbare Updates',
     no_updates: 'Alle Repositorys sind aktuell',
+    no_details: 'HACS ist nicht geladen: keine Details zu diesen Updates',
     failed_title: 'Konnten nicht geprüft werden',
     error_title: 'Die letzte Prüfung ist fehlgeschlagen',
     version: '{from} → {to}',
@@ -137,6 +140,7 @@ const HR_I18N = {
     check_now: 'Buscar actualizaciones',
     updates_title: 'Actualizaciones disponibles',
     no_updates: 'Todos los repositorios están al día',
+    no_details: 'HACS no está cargado: sin detalles de estas actualizaciones',
     failed_title: 'No se pudieron comprobar',
     error_title: 'La última comprobación falló',
     version: '{from} → {to}',
@@ -302,7 +306,9 @@ class HacsRefreshCard extends HTMLElement {
     const minute = Math.floor(Date.now() / 60000);
     this._sigMinute = minute;
     const updateStates = ids.updates.map((id) => states[id]).filter((s) => s?.state === 'on');
-    const sig = JSON.stringify([c, hrLang(this._hass, c), ids, raw, lastSt, buttonSt?.state, updateStates, minute]);
+    // Every update entity's state, not only the ones on: one coming back from unavailable changes the count.
+    const updateSig = ids.updates.map((id) => states[id]?.state);
+    const sig = JSON.stringify([c, hrLang(this._hass, c), ids, raw, lastSt, buttonSt?.state, updateStates, updateSig, minute]);
     if (sig === this._sig) return;
     this._sig = sig;
 
@@ -320,7 +326,9 @@ class HacsRefreshCard extends HTMLElement {
         picture: s.attributes.entity_picture,
       }))
       .sort((x, y) => String(x.title).localeCompare(String(y.title)));
-    const count = ids.updates.length ? updates.length : Number(a.updates) || 0;
+    // HACS not loaded (setup retry, disabled): its entities are unavailable or gone, so they say nothing.
+    const known = ids.updates.some((id) => ['on', 'off'].includes(states[id]?.state));
+    const count = known ? updates.length : Number(a.updates) || 0;
     const level = !st ? 'na' : error ? 'alert' : failed.length ? 'warn' : running || count ? 'info' : 'ok';
 
     const hidden = c.hide_when_ok && st && level === 'ok';
@@ -346,6 +354,10 @@ class HacsRefreshCard extends HTMLElement {
     const icon = { ok: 'mdi:package-variant-closed-check', info: 'mdi:package-up', warn: 'mdi:package-variant-closed-remove', alert: 'mdi:alert-circle-outline', na: 'mdi:package-variant-closed' }[level];
     const pct = running && a.total ? Math.round((100 * (a.done || 0)) / a.total) : 0;
 
+    // innerHTML replaces the focused element: give the focus back to its new copy afterwards.
+    const active = this.shadowRoot.activeElement;
+    const focus = active?.classList?.contains('check') ? 'check' : active?.dataset?.id ? { id: active.dataset.id } : null;
+    this._busy = running || buttonSt?.state === 'unavailable';
     this.shadowRoot.innerHTML = `
       <style>${HacsRefreshCard.styles}</style>
       <ha-card class="lvl-${level}">
@@ -355,7 +367,7 @@ class HacsRefreshCard extends HTMLElement {
             <div class="title">${hrEsc(c.title || this._t('title'))}</div>
             ${subtitle ? `<div class="subtitle" title="${hrEsc(last ? this._absolute(last) : '')}">${hrEsc(subtitle)}</div>` : ''}
           </div>
-          ${this._checkButton(running || buttonSt?.state === 'unavailable')}
+          ${this._checkButton(this._busy)}
           <div class="pill">${hrEsc(unavailable ? this._t('unavailable') : this._status(st, running, a, count, failed, error))}</div>
         </div>
         ${running ? `<div class="progress" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div>` : ''}
@@ -366,16 +378,19 @@ class HacsRefreshCard extends HTMLElement {
                 'updates_title',
                 shownUpdates.length
                   ? shownUpdates.map((u) => this._updateRow(u)).join('')
-                  : `<div class="empty">${hrEsc(this._t('no_updates'))}</div>`,
+                  : `<div class="empty">${hrEsc(this._t(count ? 'no_details' : 'no_updates'))}</div>`,
               )
             : ''
         }
         ${c.show_failed && failed.length ? this._section('failed_title', failed.map((f) => this._failedRow(f)).join('')) : ''}
       </ha-card>`;
 
-    this.shadowRoot.querySelector('.check')?.addEventListener('click', () => this._check());
+    const check = this.shadowRoot.querySelector('.check');
+    check?.addEventListener('click', () => this._check());
+    if (focus === 'check') check?.focus();
     for (const el of this.shadowRoot.querySelectorAll('.row[data-id]')) {
       el.addEventListener('click', () => this._moreInfo(el.dataset.id));
+      if (focus?.id === el.dataset.id) el.focus();
     }
     // A repository picture that doesn't load falls back to the generic icon.
     for (const img of this.shadowRoot.querySelectorAll('img.pic')) {
@@ -396,11 +411,12 @@ class HacsRefreshCard extends HTMLElement {
   _checkButton(busy) {
     if (!this._config.check_button || !this._ids.button) return '';
     const label = hrEsc(this._t('check_now'));
-    return `<button class="check" title="${label}" aria-label="${label}"${busy ? ' disabled' : ''}><ha-icon icon="mdi:refresh"></ha-icon></button>`;
+    // aria-disabled rather than disabled: a disabled button would drop the keyboard focus while checking.
+    return `<button class="check" title="${label}" aria-label="${label}"${busy ? ' aria-disabled="true"' : ''}><ha-icon icon="mdi:refresh"></ha-icon></button>`;
   }
 
   _check() {
-    if (this._ids.button) this._hass.callService('button', 'press', { entity_id: this._ids.button });
+    if (this._ids.button && !this._busy) this._hass.callService('button', 'press', { entity_id: this._ids.button });
   }
 
   _moreInfo(entityId) {
@@ -452,6 +468,8 @@ class HacsRefreshCard extends HTMLElement {
         --hr-alert: var(--error-color, #db4437);
         --hr-na: var(--disabled-color, #9e9e9e);
       }
+      /* Text and status icons in a state colour are mixed with the text colour: darker on a light theme,
+         lighter on a dark one, so they stay readable (4.5:1 for text, 3:1 for icons) on their tinted background. */
       ha-card { padding: 12px; overflow: hidden; }
       ha-card.lvl-ok    { --c: var(--hr-ok); }
       ha-card.lvl-info  { --c: var(--hr-info); }
@@ -461,7 +479,7 @@ class HacsRefreshCard extends HTMLElement {
 
       .head { display: flex; align-items: center; gap: 10px; }
       .badge { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
-               background: color-mix(in srgb, var(--c) 16%, transparent); color: var(--c); }
+               background: color-mix(in srgb, var(--c) 16%, transparent); color: color-mix(in srgb, var(--c) 55%, var(--primary-text-color, #212121)); }
       .badge ha-icon { --mdc-icon-size: 24px; }
       .heading { flex: 1; min-width: 0; display: flex; flex-direction: column; }
       .title { font-size: 16px; font-weight: 500; line-height: 1.25; color: var(--primary-text-color);
@@ -469,12 +487,13 @@ class HacsRefreshCard extends HTMLElement {
       .subtitle { font-size: 12px; line-height: 1.3; color: var(--secondary-text-color);
                   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .pill { flex: none; font-size: 11px; font-weight: 500; padding: 1px 8px; border-radius: 999px;
-              color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); font-variant-numeric: tabular-nums; }
+              color: color-mix(in srgb, var(--c) 40%, var(--primary-text-color, #212121));
+              background: color-mix(in srgb, var(--c) 14%, transparent); font-variant-numeric: tabular-nums; }
       .check { all: unset; cursor: pointer; flex: none; width: 26px; height: 26px; border-radius: 50%;
                display: grid; place-items: center; color: var(--secondary-text-color); }
       .check:hover { background: color-mix(in srgb, var(--secondary-text-color) 14%, transparent); color: var(--primary-text-color); }
       .check:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
-      .check[disabled] { cursor: default; opacity: .4; background: none; }
+      .check[aria-disabled="true"] { cursor: default; opacity: .4; background: none; color: var(--secondary-text-color); }
       .check ha-icon { --mdc-icon-size: 16px; }
 
       .progress { height: 4px; margin-top: 10px; border-radius: 2px; overflow: hidden;
@@ -484,8 +503,8 @@ class HacsRefreshCard extends HTMLElement {
       .error { display: flex; gap: 8px; align-items: flex-start; margin-top: 10px; padding: 8px 10px; border-radius: 10px;
                font-size: 12px; line-height: 1.35; color: var(--primary-text-color);
                background: color-mix(in srgb, var(--hr-alert) 12%, var(--secondary-background-color, transparent)); }
-      .error ha-icon { --mdc-icon-size: 18px; color: var(--hr-alert); flex: none; }
-      .error b { font-weight: 500; color: var(--hr-alert); }
+      .error ha-icon { --mdc-icon-size: 18px; color: color-mix(in srgb, var(--hr-alert) 55%, var(--primary-text-color, #212121)); flex: none; }
+      .error b { font-weight: 500; color: color-mix(in srgb, var(--hr-alert) 40%, var(--primary-text-color, #212121)); }
       .error span { min-width: 0; overflow-wrap: anywhere; }
 
       .section { margin-top: 12px; }
@@ -502,7 +521,8 @@ class HacsRefreshCard extends HTMLElement {
       button.row:hover { background: color-mix(in srgb, var(--t) 14%, var(--secondary-background-color, transparent)); }
       .row:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
       .ic { position: relative; flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
-            color: var(--t); background: color-mix(in srgb, var(--t) 18%, transparent); overflow: hidden; }
+            color: color-mix(in srgb, var(--t) 55%, var(--primary-text-color, #212121));
+            background: color-mix(in srgb, var(--t) 18%, transparent); overflow: hidden; }
       .ic ha-icon { --mdc-icon-size: 16px; }
       .ic img.pic { position: absolute; inset: 5px; width: 18px; height: 18px; object-fit: contain; }
       .ic:not(.nopic) img.pic + ha-icon { visibility: hidden; }
@@ -512,7 +532,7 @@ class HacsRefreshCard extends HTMLElement {
               white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .sub { font-size: 11px; line-height: 1.2; color: var(--secondary-text-color); font-variant-numeric: tabular-nums;
              white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .row.warn .sub { color: var(--t); }
+      .row.warn .sub { color: color-mix(in srgb, var(--t) 40%, var(--primary-text-color, #212121)); }
       .chev { flex: none; --mdc-icon-size: 18px; color: var(--secondary-text-color); }
     `;
   }

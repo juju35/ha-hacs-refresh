@@ -273,3 +273,101 @@ test('a next check already due is not shown in the past', () => {
   assert.match(out, /Checked 27 hours ago/);
   assert.doesNotMatch(out, /next|ago · /);
 });
+
+test("HACS' update entities unavailable or missing: the status sensor's count is used, never up to date", () => {
+  for (const mode of ['unavailable', 'missing']) {
+    const hass = makeHass({ updates: [], attrs: { updates: 2 } });
+    for (const id of ['update.mushroom_update', 'update.card_mod_update', 'update.hacs_update']) {
+      if (mode === 'missing') delete hass.states[id];
+      else hass.states[id] = { entity_id: id, state: 'unavailable', attributes: {} };
+    }
+    const card = render({ hide_when_ok: true }, hass);
+    const out = html(card);
+    assert.equal(card.style.display, '', mode);
+    assert.match(out, /lvl-info/, mode);
+    assert.match(out, /2 updates/, mode);
+    assert.doesNotMatch(out, /Up to date|Every repository is up to date/, mode);
+    assert.match(out, /HACS isn’t loaded/, mode);
+  }
+});
+
+test('one HACS update entity known is enough: the entities stay the truth', () => {
+  const hass = makeHass({ updates: [], attrs: { updates: 2 } });
+  hass.states['update.hacs_update'] = { entity_id: 'update.hacs_update', state: 'unavailable', attributes: {} };
+  const out = html(render({}, hass));
+  assert.match(out, /Up to date/);
+});
+
+test('update entities coming back re-render the card', () => {
+  const hass = makeHass({ updates: [], attrs: { updates: 2 } });
+  const ids = ['update.mushroom_update', 'update.card_mod_update', 'update.hacs_update'];
+  const back = { ...hass.states };
+  for (const id of ids) hass.states[id] = { entity_id: id, state: 'unavailable', attributes: {} };
+  const card = render({}, hass);
+  assert.match(html(card), /2 updates/);
+  card.hass = { ...hass, states: back };
+  assert.match(html(card), /Up to date/);
+});
+
+test('a re-render keeps the keyboard focus on the check button and on an update row', () => {
+  const card = render({}, makeHass());
+  const check = card.shadowRoot.querySelector('.check');
+  let focused = null;
+  check.focus = () => {
+    focused = 'check';
+  };
+  card.shadowRoot.activeElement = { classList: { contains: (c) => c === 'check' }, dataset: {} };
+  // Pressing it starts a check: the button is busy, but stays focusable and ignores presses.
+  const hass = makeHass({ state: 'running', attrs: { done: 1, total: 4 } });
+  card.hass = hass;
+  assert.equal(focused, 'check');
+  assert.match(html(card), /class="check"[^>]*aria-disabled="true"/);
+  assert.doesNotMatch(html(card), /class="check"[^>]*\sdisabled/);
+  check.handlers.click();
+  assert.equal(hass.calls.length, 0);
+
+  const row = { dataset: { id: 'update.mushroom_update' }, addEventListener() {}, focus: () => (focused = row.dataset.id) };
+  card.shadowRoot.querySelectorAll = (sel) => (sel === '.row[data-id]' ? [row] : []);
+  card.shadowRoot.activeElement = { classList: { contains: () => false }, dataset: { id: 'update.mushroom_update' } };
+  card.hass = makeHass({ updates: ['update.mushroom_update', 'update.hacs_update'] });
+  assert.equal(focused, 'update.mushroom_update');
+});
+
+// WCAG contrast of the coloured text and status icons, with Home Assistant's default light and dark themes.
+test('coloured text reaches 4.5:1 and status icons 3:1, light and dark', () => {
+  const hex = (h) => [1, 3, 5].map((i) => Number.parseInt(h.slice(i, i + 2), 16));
+  const mix = (a, b, p) => a.map((v, i) => v * p + b[i] * (1 - p));
+  const lum = (c) => {
+    const [r, g, b] = c.map((v) => ((v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const ratio = (a, b) => {
+    const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m);
+    return (x + 0.05) / (y + 0.05);
+  };
+  const css = HacsRefreshCard.styles.replace(/\s+/g, ' ');
+  // The `color` of a rule: a state colour, or a color-mix of it with the text colour.
+  const colorOf = (selector, state, text) => {
+    const body = css.slice(css.indexOf(`${selector} {`)).match(/\{([^}]*)\}/)[1];
+    const value = body.match(/(?:^|;)\s*color:\s*([^;]+)/)[1].trim();
+    const m = value.match(/^color-mix\(in srgb, var\(--[\w-]+\) (\d+)%, var\(--primary-text-color, #\w+\)\)$/);
+    if (m) return mix(hex(state), hex(text), Number(m[1]) / 100);
+    assert.match(value, /^var\(--[\w-]+\)$/, selector);
+    return hex(state);
+  };
+  const themes = { light: { card: '#ffffff', text: '#212121', sec: '#e5e5e5' }, dark: { card: '#1c1c1c', text: '#e1e1e1', sec: '#282828' } };
+  const states = { ok: '#43a047', info: '#039be5', warn: '#ffa600', alert: '#db4437', na: '#9e9e9e' };
+  for (const [name, t] of Object.entries(themes)) {
+    const card = hex(t.card);
+    for (const [lvl, c] of Object.entries(states)) {
+      assert.ok(ratio(colorOf('.pill', c, t.text), mix(hex(c), card, 0.14)) >= 4.5, `${name} pill ${lvl}`);
+      assert.ok(ratio(colorOf('.badge', c, t.text), mix(hex(c), card, 0.16)) >= 3, `${name} badge ${lvl}`);
+    }
+    const warnRow = mix(hex(states.warn), hex(t.sec), 0.12);
+    assert.ok(ratio(colorOf('.row.warn .sub', states.warn, t.text), warnRow) >= 4.5, `${name} failed row`);
+    assert.ok(ratio(colorOf('.ic', states.warn, t.text), mix(hex(states.warn), warnRow, 0.18)) >= 3, `${name} failed icon`);
+    assert.ok(ratio(colorOf('.ic', states.info, t.text), mix(hex(states.info), hex(t.sec), 0.18)) >= 3, `${name} update icon`);
+    const errorBg = mix(hex(states.alert), hex(t.sec), 0.12);
+    assert.ok(ratio(colorOf('.error b', states.alert, t.text), errorBg) >= 4.5, `${name} error title`);
+  }
+});
