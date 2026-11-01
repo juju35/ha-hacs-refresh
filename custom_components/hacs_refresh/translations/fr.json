@@ -37,7 +37,9 @@
           "updates": { "name": "Mises à jour disponibles" },
           "failed": { "name": "En échec" },
           "error": { "name": "Erreur" },
-          "checking": { "name": "En cours de vérification" }
+          "checking": { "name": "En cours de vérification" },
+          "installing": { "name": "En cours d’installation" },
+          "install_failed": { "name": "Installation impossible" }
         }
       },
       "last_check": {
@@ -63,6 +65,14 @@
       "fields": {
         "entity_id": { "name": "Entités de mise à jour", "description": "Entités de mise à jour HACS des dépôts à vérifier." }
       }
+    },
+    "install_updates": {
+      "name": "Installer les mises à jour",
+      "description": "Installe les mises à jour des dépôts HACS, l’une après l’autre, en arrière-plan sauf si « Attendre » est activé. Administrateurs uniquement.",
+      "fields": {
+        "entity_id": { "name": "Entités de mise à jour", "description": "Entités de mise à jour HACS à mettre à jour ; laisser vide pour tous les dépôts avec une mise à jour." },
+        "wait": { "name": "Attendre", "description": "Attendre que toutes les mises à jour soient installées avant la fin de l’action ; l’action échoue alors si une mise à jour n’a pas pu être installée." }
+      }
     }
   },
   "exceptions": {
@@ -75,6 +85,9 @@
     "not_downloaded": { "message": "{entity_id} n'est pas un dépôt téléchargé avec HACS." },
     "check_failed": { "message": "Impossible de vérifier {failed}." },
     "check_cancelled": { "message": "La vérification a été annulée (HACS Refresh a été rechargé ou supprimé)." },
-    "full_check_failed": { "message": "La vérification complète a échoué : {error}" }
+    "full_check_failed": { "message": "La vérification complète a échoué : {error}" },
+    "install_running": { "message": "Des mises à jour sont déjà en cours d’installation." },
+    "install_failed": { "message": "Impossible d’installer {failed}." },
+    "install_cancelled": { "message": "Les installations ont été annulées (HACS Refresh a été rechargé ou supprimé)." }
   }
 }

@@ -23,6 +23,7 @@ HACS itself only checks downloaded custom repositories every 48 hours, and its o
 
 - **Check for updates** button and `hacs_refresh.check_updates` action: every repository downloaded with HACS is fetched again from GitHub, four at a time, and HACS' update entities are refreshed
 - **`hacs_refresh.check_repository`** action: checks only the repositories behind the HACS update entities you give, and waits for the result
+- **`hacs_refresh.install_updates`** action and **Update all** button on the card: installs every update available (or the ones you give), one after the other, administrators only
 - **Automatic check** at the interval set in the integration options (24 hours by default, `0` to turn it off), counted from the last check and kept across restarts: an overdue check runs as soon as Home Assistant has started
 - **Status** sensor (`idle`, `running`, `error`) with the progress (`done` / `total`), the number of updates found and the repositories that failed
 - **Last check** sensor (timestamp), with the check interval and when the next automatic check is due
@@ -73,7 +74,7 @@ Copy `custom_components/hacs_refresh/` to `/config/custom_components/hacs_refres
 | Entity | Description |
 |---|---|
 | `button.hacs_refresh_check_for_updates` | Starts a check. Unavailable while one is running |
-| `sensor.hacs_refresh_status` | `idle`, `running` or `error`. Attributes: `done`, `total`, `updates`, `failed` (list of `owner/repo`), `error`, `checking` (update entities being checked by `check_repository`) |
+| `sensor.hacs_refresh_status` | `idle`, `running` or `error`. Attributes: `done`, `total`, `updates`, `failed` (list of `owner/repo`), `error`, `checking` (update entities being checked by `check_repository`), `installing` (update entities left to install, the current one first), `install_failed` (`title: error` of the updates that couldn't be installed) |
 | `sensor.hacs_refresh_last_check` | End of the last check. Attributes: `scan_interval` (hours, `0` = automatic check off), `next_check` (when the next automatic check is due, `null` when it is off) |
 
 ### Action `hacs_refresh.check_updates`
@@ -113,6 +114,21 @@ data:
   entity_id: update.mushroom_update
 ```
 
+### Action `hacs_refresh.install_updates`
+
+| Field | Default | Description |
+|---|---|---|
+| `entity_id` | every HACS update entity with an update | HACS update entities to install |
+| `wait` | `false` | Wait until every update is installed; the action then fails if one couldn't be |
+
+Installs the updates one after the other with `update.install`, in the background (a check running ends first). One failing update doesn't stop the others; the failures are in the status sensor's `install_failed` attribute. Administrators only, like HACS; it can't run twice at the same time, and the **Check for updates** button is greyed out meanwhile. Integrations need a restart of Home Assistant afterwards, which HACS asks for in **Settings → Repairs**.
+
+```yaml
+action: hacs_refresh.install_updates
+data:
+  wait: true
+```
+
 ## Card
 
 The integration serves the **HACS Refresh Card** and adds it to the dashboard resources (or loads it on every page when the resources are managed in YAML): no separate install. Add it from the card picker, or:
@@ -121,14 +137,16 @@ The integration serves the **HACS Refresh Card** and adds it to the dashboard re
 type: custom:hacs-refresh-card
 ```
 
-| Updates available | Checking | Up to date |
-|---|---|---|
-| ![Card](screenshots/card.png) | ![Card while checking](screenshots/card-checking.png) | ![Card, up to date](screenshots/card-ok.png) |
-| ![Card, dark theme](screenshots/card-dark.png) | ![Card while checking, dark theme](screenshots/card-checking-dark.png) | ![Card, up to date, dark theme](screenshots/card-ok-dark.png) |
+| Updates available | Checking | Installing | Up to date |
+|---|---|---|---|
+| ![Card](screenshots/card.png) | ![Card while checking](screenshots/card-checking.png) | ![Card while installing](screenshots/card-installing.png) | ![Card, up to date](screenshots/card-ok.png) |
+| ![Card, dark theme](screenshots/card-dark.png) | ![Card while checking, dark theme](screenshots/card-checking-dark.png) | ![Card while installing, dark theme](screenshots/card-installing-dark.png) | ![Card, up to date, dark theme](screenshots/card-ok-dark.png) |
 
 - **Header**: status (up to date, *n* updates, *n* failed, checking *done/total*, error), when the last check ran and when the next automatic one is due, and the **Check for updates** button
 - **Progress bar** while a check runs
-- **Updates available**: the HACS repositories with an update, from HACS' own update entities, with the installed and new version. A row opens the update entity, to install it or read the release notes
+- **Updates available** (with their number): the HACS repositories with an update, from HACS' own update entities, with the installed and new version. A row opens the update entity, to install it or read the release notes
+- **Update all (*n*)**: installs every update listed, one after the other, after a confirmation at the top of the card (administrators only). The rows being installed and the number left show the progress
+- **Could not be installed**: the updates that failed, with the error
 - **Could not be checked**: the repositories the last check couldn't fetch, and the error of a check that failed
 
 Every option is in the visual editor:
@@ -140,6 +158,7 @@ Every option is in the visual editor:
 | `show_updates` | `true` | Updates available |
 | `show_failed` | `true` | Repositories that couldn't be checked, and the error of a failed check |
 | `check_button` | `true` | **Check for updates** button in the header |
+| `install_button` | `true` | **Update all** button on the updates available (administrators only) |
 | `hide_when_ok` | `false` | Hide the card while everything is up to date (it shows while checking, and with an update or an error) |
 | `language` | Home Assistant's | `en`, `fr`, `de` or `es` |
 

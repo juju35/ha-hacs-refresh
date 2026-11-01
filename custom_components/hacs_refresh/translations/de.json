@@ -37,7 +37,9 @@
           "updates": { "name": "Verfügbare Updates" },
           "failed": { "name": "Fehlgeschlagen" },
           "error": { "name": "Fehler" },
-          "checking": { "name": "Wird geprüft" }
+          "checking": { "name": "Wird geprüft" },
+          "installing": { "name": "Wird installiert" },
+          "install_failed": { "name": "Nicht installierbar" }
         }
       },
       "last_check": {
@@ -63,6 +65,14 @@
       "fields": {
         "entity_id": { "name": "Update-Entitäten", "description": "HACS-Update-Entitäten der zu prüfenden Repositorys." }
       }
+    },
+    "install_updates": {
+      "name": "Updates installieren",
+      "description": "Installiert die Updates der HACS-Repositorys nacheinander, im Hintergrund, außer wenn Warten gesetzt ist. Nur für Administratoren.",
+      "fields": {
+        "entity_id": { "name": "Update-Entitäten", "description": "Zu aktualisierende HACS-Update-Entitäten; leer lassen für alle Repositorys mit einem Update." },
+        "wait": { "name": "Warten", "description": "Warten, bis alle Updates installiert sind, bevor die Aktion endet; die Aktion schlägt dann fehl, wenn ein Update nicht installiert werden konnte." }
+      }
     }
   },
   "exceptions": {
@@ -75,6 +85,9 @@
     "not_downloaded": { "message": "{entity_id} ist kein mit HACS heruntergeladenes Repository." },
     "check_failed": { "message": "{failed} konnte nicht geprüft werden." },
     "check_cancelled": { "message": "Die Prüfung wurde abgebrochen (HACS Refresh wurde neu geladen oder entfernt)." },
-    "full_check_failed": { "message": "Die vollständige Prüfung ist fehlgeschlagen: {error}" }
+    "full_check_failed": { "message": "Die vollständige Prüfung ist fehlgeschlagen: {error}" },
+    "install_running": { "message": "Es werden bereits Updates installiert." },
+    "install_failed": { "message": "{failed} konnte nicht installiert werden." },
+    "install_cancelled": { "message": "Die Installationen wurden abgebrochen (HACS Refresh wurde neu geladen oder entfernt)." }
   }
 }

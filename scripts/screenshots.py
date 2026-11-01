@@ -134,12 +134,20 @@ def mock_hass(status, attrs, with_updates):
             },
         }
         entities[entity_id] = {"platform": "hacs"}
-    return {"states": states, "entities": entities, "language": "en", "locale": {"language": "en"}}
+    # An administrator: the card offers "Update all".
+    return {
+        "states": states,
+        "entities": entities,
+        "language": "en",
+        "locale": {"language": "en"},
+        "user": {"is_admin": True},
+    }
 
 
 UPDATES = ("idle", {"updates": 3, "failed": ["someone/abandoned-card: 404 Not Found"]}, True)
 CHECKING = ("running", {"done": 31, "total": 48}, True)
 UP_TO_DATE = ("idle", {}, False)
+INSTALLING = ("idle", {"updates": 3, "installing": ["update.card_mod_update", "update.mushroom_update"]}, True)
 SHOTS = [
     {"file": "card", "theme": "light", "hass": UPDATES},
     {"file": "card-dark", "theme": "dark", "hass": UPDATES},
@@ -147,6 +155,8 @@ SHOTS = [
     {"file": "card-checking-dark", "theme": "dark", "hass": CHECKING},
     {"file": "card-ok", "theme": "light", "hass": UP_TO_DATE},
     {"file": "card-ok-dark", "theme": "dark", "hass": UP_TO_DATE},
+    {"file": "card-installing", "theme": "light", "hass": INSTALLING},
+    {"file": "card-installing-dark", "theme": "dark", "hass": INSTALLING},
 ]
 
 

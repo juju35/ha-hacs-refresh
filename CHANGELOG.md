@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.0
+
+### What's new
+- **Update all** on the card: a button on the updates available installs every update listed, one after the other, after a confirmation at the top of the card. The rows being installed and the number of updates left show the progress; updates that couldn't be installed are listed with their error. Administrators only; option `install_button` to hide it.
+- Card: the **Updates available** section shows how many there are.
+- **`hacs_refresh.install_updates`** action (administrators only): installs the updates of every HACS update entity with one (or the ones given) in the background, or waits for them with `wait: true` and fails if one couldn't be installed. The status sensor gives `installing` and `install_failed`; the **Check for updates** button is greyed out while updates are installed.
+
 ## 0.7.2
 
 ### Fixes

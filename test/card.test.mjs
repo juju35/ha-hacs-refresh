@@ -23,8 +23,10 @@ const fakeNode = () => ({
     const elements = {};
     this.shadowRoot = {
       innerHTML: '',
+      // A class selector found in the rendered HTML (the same node across renders, like a kept focus).
       querySelector: (sel) => {
-        if (sel !== '.check' || !this.shadowRoot.innerHTML.includes('class="check"')) return null;
+        const cls = sel.startsWith('.') ? sel.slice(1) : null;
+        if (!cls || !new RegExp(`class="(?:[^"]* )?${cls}(?: [^"]*)?"`).test(this.shadowRoot.innerHTML)) return null;
         elements[sel] ||= fakeNode();
         return elements[sel];
       },
@@ -72,7 +74,7 @@ const REGISTRY = {
   'update.core': { platform: 'hassio' },
 };
 
-function makeHass({ state = 'idle', attrs = {}, updates = ['update.mushroom_update'], interval = 24, button = 'unknown', language = 'en' } = {}) {
+function makeHass({ state = 'idle', attrs = {}, updates = ['update.mushroom_update'], interval = 24, button = 'unknown', language = 'en', admin = true } = {}) {
   const calls = [];
   const states = {
     [STATUS]: { state, attributes: { done: 0, total: 0, updates: updates.length, failed: [], error: null, ...attrs } },
@@ -91,7 +93,7 @@ function makeHass({ state = 'idle', attrs = {}, updates = ['update.mushroom_upda
       attributes: { title: id.split('.')[1].replace('_update', ''), installed_version: 'v1.0.0', latest_version: on ? 'v1.1.0' : 'v1.0.0' },
     };
   }
-  return { calls, language, entities: REGISTRY, states, callService: (...args) => calls.push(args) };
+  return { calls, language, entities: REGISTRY, states, user: { is_admin: admin }, callService: (...args) => calls.push(args) };
 }
 
 function render(config, hass) {
@@ -367,7 +369,62 @@ test('coloured text reaches 4.5:1 and status icons 3:1, light and dark', () => {
     assert.ok(ratio(colorOf('.row.warn .sub', states.warn, t.text), warnRow) >= 4.5, `${name} failed row`);
     assert.ok(ratio(colorOf('.ic', states.warn, t.text), mix(hex(states.warn), warnRow, 0.18)) >= 3, `${name} failed icon`);
     assert.ok(ratio(colorOf('.ic', states.info, t.text), mix(hex(states.info), hex(t.sec), 0.18)) >= 3, `${name} update icon`);
+    assert.ok(ratio(colorOf('.install, .cbtns button', states.info, t.text), card) >= 4.5, `${name} update all button`);
+    const confirmBg = mix(hex(states.info), hex(t.sec), 0.12);
+    assert.ok(ratio(colorOf('.confirm > ha-icon', states.info, t.text), confirmBg) >= 3, `${name} confirmation icon`);
     const errorBg = mix(hex(states.alert), hex(t.sec), 0.12);
     assert.ok(ratio(colorOf('.error b', states.alert, t.text), errorBg) >= 4.5, `${name} error title`);
   }
+});
+
+test('the updates section counts the updates', () => {
+  const out = html(render({}, makeHass({ updates: ['update.mushroom_update', 'update.card_mod_update'] })));
+  assert.match(out, /Updates available <span class="count">· 2<\/span>/);
+  assert.doesNotMatch(html(render({}, makeHass({ updates: [] }))), /class="count"/);
+});
+
+test('update all: asks first, then installs the updates listed', () => {
+  const hass = makeHass({ updates: ['update.mushroom_update', 'update.card_mod_update'] });
+  const card = render({}, hass);
+  assert.match(html(card), /Update all \(2\)/);
+  card.shadowRoot.querySelector('.install').handlers.click();
+  assert.match(html(card), /Install 2 updates\?/);
+  assert.equal(hass.calls.length, 0);
+  card.shadowRoot.querySelector('.confirm-no').handlers.click();
+  assert.doesNotMatch(html(card), /class="confirm"/);
+  card.shadowRoot.querySelector('.install').handlers.click();
+  card.shadowRoot.querySelector('.confirm-yes').handlers.click();
+  assert.equal(
+    JSON.stringify(hass.calls),
+    JSON.stringify([['hacs_refresh', 'install_updates', { entity_id: ['update.card_mod_update', 'update.mushroom_update'] }]]),
+  );
+  assert.doesNotMatch(html(card), /class="confirm"/);
+});
+
+test('update all: only for administrators, with updates, and when enabled', () => {
+  assert.doesNotMatch(html(render({}, makeHass({ admin: false }))), /Update all/);
+  assert.doesNotMatch(html(render({}, makeHass({ updates: [] }))), /Update all/);
+  assert.doesNotMatch(html(render({ install_button: false }, makeHass())), /Update all/);
+});
+
+test('installing: progress in the pill and on the rows, failures listed', () => {
+  const hass = makeHass({ updates: ['update.mushroom_update', 'update.card_mod_update'], attrs: { installing: ['update.mushroom_update'] } });
+  const out = html(render({}, hass));
+  assert.match(out, /Installing… 1 left/);
+  assert.match(out, /class="install busy"/);
+  assert.doesNotMatch(out, /Update all/);
+  assert.match(out, /class="row upd busy" data-id="update\.mushroom_update"/);
+  assert.match(out, /class="row upd" data-id="update\.card_mod_update"/);
+  const failed = html(render({}, makeHass({ attrs: { install_failed: ['Mushroom: download failed'] } })));
+  assert.match(failed, /lvl-warn/);
+  assert.match(failed, /Could not be installed/);
+  assert.match(failed, /download failed/);
+});
+
+test('the confirmation closes when the updates are gone', () => {
+  const card = render({}, makeHass());
+  card.shadowRoot.querySelector('.install').handlers.click();
+  assert.match(html(card), /class="confirm"/);
+  card.hass = makeHass({ updates: [] });
+  assert.doesNotMatch(html(card), /class="confirm"/);
 });

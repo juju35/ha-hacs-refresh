@@ -4,7 +4,7 @@
  * Served and added to the dashboard resources by the integration.
  * https://github.com/juju35/ha-hacs-refresh
  */
-var HACS_REFRESH_CARD_VERSION = '0.7.2';
+var HACS_REFRESH_CARD_VERSION = '0.8.0';
 
 const HR_I18N = {
   en: {
@@ -29,6 +29,15 @@ const HR_I18N = {
     no_details: 'HACS isn’t loaded: no details on these updates',
     failed_title: 'Could not be checked',
     error_title: 'The last check failed',
+    install_all: 'Update all ({n})',
+    installing: 'Installing… {n} left',
+    installing_short: 'Installing…',
+    confirm_one: 'Install {n} update?',
+    confirm_many: 'Install {n} updates?',
+    confirm_hint: 'One after the other. Integrations need a restart of Home Assistant afterwards.',
+    cancel: 'Cancel',
+    install: 'Install',
+    install_failed_title: 'Could not be installed',
     version: '{from} → {to}',
     ed_entity: 'HACS Refresh sensor',
     ed_entity_helper: 'Status sensor; leave empty to find it automatically',
@@ -40,6 +49,8 @@ const HR_I18N = {
     ed_show_failed_helper: 'And the error of a check that failed',
     ed_check_button: '“Check for updates” button',
     ed_check_button_helper: 'Starts a check from the header',
+    ed_install_button: '“Update all” button',
+    ed_install_button_helper: 'Installs every update listed, after a confirmation (administrators only)',
     ed_hide_when_ok: 'Hide the card when everything is up to date',
     ed_hide_when_ok_helper: 'The card only appears while checking, or with an update or an error',
     ed_language: 'Language',
@@ -67,6 +78,15 @@ const HR_I18N = {
     no_details: 'HACS n’est pas chargé : pas de détail sur ces mises à jour',
     failed_title: 'Impossible à vérifier',
     error_title: 'La dernière vérification a échoué',
+    install_all: 'Tout mettre à jour ({n})',
+    installing: 'Installation… {n} restante(s)',
+    installing_short: 'Installation…',
+    confirm_one: 'Installer {n} mise à jour ?',
+    confirm_many: 'Installer {n} mises à jour ?',
+    confirm_hint: 'L’une après l’autre. Les intégrations demandent ensuite un redémarrage de Home Assistant.',
+    cancel: 'Annuler',
+    install: 'Installer',
+    install_failed_title: 'Installation impossible',
     version: '{from} → {to}',
     ed_entity: 'Capteur HACS Refresh',
     ed_entity_helper: 'Capteur de statut ; laisser vide pour le trouver automatiquement',
@@ -78,6 +98,8 @@ const HR_I18N = {
     ed_show_failed_helper: 'Et l’erreur d’une vérification qui a échoué',
     ed_check_button: 'Bouton « Rechercher les mises à jour »',
     ed_check_button_helper: 'Lance une vérification depuis l’en-tête',
+    ed_install_button: 'Bouton « Tout mettre à jour »',
+    ed_install_button_helper: 'Installe toutes les mises à jour listées, après confirmation (administrateurs uniquement)',
     ed_hide_when_ok: 'Masquer la carte quand tout est à jour',
     ed_hide_when_ok_helper: 'La carte n’apparaît que pendant une vérification, ou avec une mise à jour ou une erreur',
     ed_language: 'Langue',
@@ -105,6 +127,15 @@ const HR_I18N = {
     no_details: 'HACS ist nicht geladen: keine Details zu diesen Updates',
     failed_title: 'Konnten nicht geprüft werden',
     error_title: 'Die letzte Prüfung ist fehlgeschlagen',
+    install_all: 'Alle aktualisieren ({n})',
+    installing: 'Installation… {n} übrig',
+    installing_short: 'Installation…',
+    confirm_one: '{n} Update installieren?',
+    confirm_many: '{n} Updates installieren?',
+    confirm_hint: 'Nacheinander. Integrationen erfordern danach einen Neustart von Home Assistant.',
+    cancel: 'Abbrechen',
+    install: 'Installieren',
+    install_failed_title: 'Nicht installierbar',
     version: '{from} → {to}',
     ed_entity: 'HACS-Refresh-Sensor',
     ed_entity_helper: 'Statussensor; leer lassen, um ihn automatisch zu finden',
@@ -116,6 +147,8 @@ const HR_I18N = {
     ed_show_failed_helper: 'Und der Fehler einer fehlgeschlagenen Prüfung',
     ed_check_button: 'Schaltfläche „Nach Updates suchen“',
     ed_check_button_helper: 'Startet eine Prüfung aus der Kopfzeile',
+    ed_install_button: 'Schaltfläche „Alle aktualisieren“',
+    ed_install_button_helper: 'Installiert alle aufgeführten Updates nach einer Bestätigung (nur Administratoren)',
     ed_hide_when_ok: 'Karte ausblenden, wenn alles aktuell ist',
     ed_hide_when_ok_helper: 'Die Karte erscheint nur während einer Prüfung oder bei einem Update oder Fehler',
     ed_language: 'Sprache',
@@ -143,6 +176,15 @@ const HR_I18N = {
     no_details: 'HACS no está cargado: sin detalles de estas actualizaciones',
     failed_title: 'No se pudieron comprobar',
     error_title: 'La última comprobación falló',
+    install_all: 'Actualizar todo ({n})',
+    installing: 'Instalando… quedan {n}',
+    installing_short: 'Instalando…',
+    confirm_one: '¿Instalar {n} actualización?',
+    confirm_many: '¿Instalar {n} actualizaciones?',
+    confirm_hint: 'Una tras otra. Las integraciones requieren después reiniciar Home Assistant.',
+    cancel: 'Cancelar',
+    install: 'Instalar',
+    install_failed_title: 'No se pudieron instalar',
     version: '{from} → {to}',
     ed_entity: 'Sensor de HACS Refresh',
     ed_entity_helper: 'Sensor de estado; déjalo vacío para encontrarlo automáticamente',
@@ -154,6 +196,8 @@ const HR_I18N = {
     ed_show_failed_helper: 'Y el error de una comprobación fallida',
     ed_check_button: 'Botón «Buscar actualizaciones»',
     ed_check_button_helper: 'Lanza una comprobación desde la cabecera',
+    ed_install_button: 'Botón «Actualizar todo»',
+    ed_install_button_helper: 'Instala todas las actualizaciones listadas, tras una confirmación (solo administradores)',
     ed_hide_when_ok: 'Ocultar la tarjeta cuando todo esté al día',
     ed_hide_when_ok_helper: 'La tarjeta solo aparece durante una comprobación, o con una actualización o un error',
     ed_language: 'Idioma',
@@ -174,7 +218,7 @@ const hrT = (lang, key, vars = {}) =>
 const hrEsc = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-const HR_DEFAULTS = { show_updates: true, show_failed: true, check_button: true, hide_when_ok: false };
+const HR_DEFAULTS = { show_updates: true, show_failed: true, check_button: true, install_button: true, hide_when_ok: false };
 
 // The integration's entities, from the entity registry: { device: { status, last_check, button } }.
 // Each entity is told apart by its translation key, else by the end of its entity ID (renamed IDs keep the key).
@@ -308,13 +352,16 @@ class HacsRefreshCard extends HTMLElement {
     const updateStates = ids.updates.map((id) => states[id]).filter((s) => s?.state === 'on');
     // Every update entity's state, not only the ones on: one coming back from unavailable changes the count.
     const updateSig = ids.updates.map((id) => states[id]?.state);
-    const sig = JSON.stringify([c, hrLang(this._hass, c), ids, raw, lastSt, buttonSt?.state, updateStates, updateSig, minute]);
+    const admin = !!this._hass.user?.is_admin;
+    const sig = JSON.stringify([c, hrLang(this._hass, c), ids, raw, lastSt, buttonSt?.state, updateStates, updateSig, minute, admin, !!this._confirm]);
     if (sig === this._sig) return;
     this._sig = sig;
 
     const a = st?.attributes || {};
     const running = st?.state === 'running';
     const failed = Array.isArray(a.failed) ? a.failed : [];
+    const installing = Array.isArray(a.installing) ? a.installing : [];
+    const installFailed = Array.isArray(a.install_failed) ? a.install_failed : [];
     const error = st?.state === 'error' ? a.error || this._t('error') : null;
     // The update entities are the truth; the sensor's count is the fallback when HACS' entities aren't there.
     const updates = updateStates
@@ -329,14 +376,17 @@ class HacsRefreshCard extends HTMLElement {
     // HACS not loaded (setup retry, disabled): its entities are unavailable or gone, so they say nothing.
     const known = ids.updates.some((id) => ['on', 'off'].includes(states[id]?.state));
     const count = known ? updates.length : Number(a.updates) || 0;
-    const level = !st ? 'na' : error ? 'alert' : failed.length ? 'warn' : running || count ? 'info' : 'ok';
+    const level = !st ? 'na' : error ? 'alert' : failed.length || installFailed.length ? 'warn' : running || installing.length || count ? 'info' : 'ok';
 
     const hidden = c.hide_when_ok && st && level === 'ok';
     this.style.display = hidden ? 'none' : '';
     if (hidden) return;
 
     const shownUpdates = c.show_updates && st ? updates : [];
-    this._rows = shownUpdates.length + (c.show_failed ? failed.length : 0);
+    this._rows = shownUpdates.length + (c.show_failed ? failed.length + installFailed.length : 0);
+    // Installed from the card: what it lists (and the confirmation counts) is what gets installed.
+    this._installable = st && admin && c.install_button && !installing.length ? updates.map((u) => u.id) : [];
+    if (!this._installable.length) this._confirm = false;
 
     const last = lastSt && !['unknown', 'unavailable'].includes(lastSt.state) ? lastSt.state : null;
     // A check already due (overdue, or retried within the hour while HACS is unavailable) has no "next" to show.
@@ -356,7 +406,8 @@ class HacsRefreshCard extends HTMLElement {
 
     // innerHTML replaces the focused element: give the focus back to its new copy afterwards.
     const active = this.shadowRoot.activeElement;
-    const focus = active?.classList?.contains('check') ? 'check' : active?.dataset?.id ? { id: active.dataset.id } : null;
+    const focusCls = ['check', 'install', 'confirm-yes', 'confirm-no'].find((k) => active?.classList?.contains(k));
+    const focus = focusCls || (active?.dataset?.id ? { id: active.dataset.id } : null);
     this._busy = running || buttonSt?.state === 'unavailable';
     this.shadowRoot.innerHTML = `
       <style>${HacsRefreshCard.styles}</style>
@@ -368,8 +419,9 @@ class HacsRefreshCard extends HTMLElement {
             ${subtitle ? `<div class="subtitle" title="${hrEsc(last ? this._absolute(last) : '')}">${hrEsc(subtitle)}</div>` : ''}
           </div>
           ${this._checkButton(this._busy)}
-          <div class="pill">${hrEsc(unavailable ? this._t('unavailable') : this._status(st, running, a, count, failed, error))}</div>
+          <div class="pill">${hrEsc(unavailable ? this._t('unavailable') : this._status(st, running, a, count, failed, error, installing))}</div>
         </div>
+        ${this._confirm ? this._confirmBox(this._installable.length) : ''}
         ${running ? `<div class="progress" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div>` : ''}
         ${c.show_failed && error ? `<div class="error"><ha-icon icon="mdi:alert-circle-outline"></ha-icon><span><b>${hrEsc(this._t('error_title'))}</b><br>${hrEsc(error)}</span></div>` : ''}
         ${
@@ -377,17 +429,28 @@ class HacsRefreshCard extends HTMLElement {
             ? this._section(
                 'updates_title',
                 shownUpdates.length
-                  ? shownUpdates.map((u) => this._updateRow(u)).join('')
+                  ? shownUpdates.map((u) => this._updateRow(u, installing.includes(u.id))).join('')
                   : `<div class="empty">${hrEsc(this._t(count ? 'no_details' : 'no_updates'))}</div>`,
+                count,
+                this._installButton(installing),
               )
             : ''
         }
         ${c.show_failed && failed.length ? this._section('failed_title', failed.map((f) => this._failedRow(f)).join('')) : ''}
+        ${c.show_failed && installFailed.length ? this._section('install_failed_title', installFailed.map((f) => this._failedRow(f)).join('')) : ''}
       </ha-card>`;
 
     const check = this.shadowRoot.querySelector('.check');
     check?.addEventListener('click', () => this._check());
     if (focus === 'check') check?.focus();
+    const on = (cls, fn) => {
+      const el = this.shadowRoot.querySelector(`.${cls}`);
+      el?.addEventListener('click', fn);
+      if (focus === cls) el?.focus();
+    };
+    on('install', () => this._askInstall());
+    on('confirm-yes', () => this._install());
+    on('confirm-no', () => this._setConfirm(false));
     for (const el of this.shadowRoot.querySelectorAll('.row[data-id]')) {
       el.addEventListener('click', () => this._moreInfo(el.dataset.id));
       if (focus?.id === el.dataset.id) el.focus();
@@ -398,9 +461,10 @@ class HacsRefreshCard extends HTMLElement {
     }
   }
 
-  _status(st, running, a, count, failed, error) {
+  _status(st, running, a, count, failed, error, installing = []) {
     if (!st) return this._t('not_loaded');
     if (running) return a.total ? this._t('checking', { done: a.done || 0, total: a.total }) : this._t('checking_short');
+    if (installing.length) return this._t('installing', { n: installing.length });
     if (error) return this._t('error');
     const parts = [];
     if (count) parts.push(this._t(count > 1 ? 'updates_many' : 'updates_one', { n: count }));
@@ -419,22 +483,68 @@ class HacsRefreshCard extends HTMLElement {
     if (this._ids.button && !this._busy) this._hass.callService('button', 'press', { entity_id: this._ids.button });
   }
 
+  // The updates section's button: "Update all (n)", or the installs' progress while they run.
+  _installButton(installing) {
+    if (installing.length) {
+      return `<span class="install busy" aria-live="polite"><ha-icon icon="mdi:progress-download"></ha-icon>${hrEsc(this._t('installing_short'))}</span>`;
+    }
+    const n = this._installable.length;
+    if (!n) return '';
+    const label = hrEsc(this._t('install_all', { n }));
+    return `<button class="install"${this._confirm ? ' aria-expanded="true"' : ''}><ha-icon icon="mdi:package-down"></ha-icon>${label}</button>`;
+  }
+
+  // Confirmation at the top of the card, like the other cards' popups.
+  _confirmBox(n) {
+    return `
+        <div class="confirm" role="alertdialog" aria-label="${hrEsc(this._t(n > 1 ? 'confirm_many' : 'confirm_one', { n }))}">
+          <ha-icon icon="mdi:package-down"></ha-icon>
+          <span class="ctext"><b>${hrEsc(this._t(n > 1 ? 'confirm_many' : 'confirm_one', { n }))}</b><br>${hrEsc(this._t('confirm_hint'))}</span>
+          <span class="cbtns">
+            <button class="confirm-no">${hrEsc(this._t('cancel'))}</button>
+            <button class="confirm-yes">${hrEsc(this._t('install'))}</button>
+          </span>
+        </div>`;
+  }
+
+  _setConfirm(on) {
+    this._confirm = on;
+    this._sig = null;
+    this._render();
+    // Keyboard focus on the safe choice when it opens, back on the button when it closes.
+    this.shadowRoot?.querySelector(on ? '.confirm-no' : '.install')?.focus?.();
+  }
+
+  _askInstall() {
+    if (this._installable.length) this._setConfirm(true);
+  }
+
+  _install() {
+    const ids = this._installable;
+    this._setConfirm(false);
+    if (!ids.length) return;
+    // Home Assistant shows the error of a failed call; nothing more to do with it here.
+    Promise.resolve(this._hass.callService('hacs_refresh', 'install_updates', { entity_id: ids })).catch(() => {});
+  }
+
   _moreInfo(entityId) {
     const ev = new Event('hass-more-info', { bubbles: true, composed: true });
     ev.detail = { entityId };
     this.dispatchEvent(ev);
   }
 
-  _section(key, body) {
-    return `<div class="section"><div class="stitle">${hrEsc(this._t(key))}</div><div class="list">${body}</div></div>`;
+  // A section, with its number of items in the title ("Updates available · 3") and an action on its right.
+  _section(key, body, count = 0, action = '') {
+    const n = count ? ` <span class="count">· ${count}</span>` : '';
+    return `<div class="section"><div class="shead"><div class="stitle">${hrEsc(this._t(key))}${n}</div>${action}</div><div class="list">${body}</div></div>`;
   }
 
-  _updateRow(u) {
+  _updateRow(u, busy = false) {
     const version = u.from && u.to ? this._t('version', { from: u.from, to: u.to }) : u.to || '';
-    const pic = u.picture ? `<img class="pic" src="${hrEsc(u.picture)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '';
+    const pic = u.picture && !busy ? `<img class="pic" src="${hrEsc(u.picture)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '';
     return `
-          <button class="row upd" data-id="${hrEsc(u.id)}" title="${hrEsc(u.title)}">
-            <span class="ic${pic ? '' : ' nopic'}">${pic}<ha-icon icon="mdi:package-up"></ha-icon></span>
+          <button class="row upd${busy ? ' busy' : ''}" data-id="${hrEsc(u.id)}" title="${hrEsc(u.title)}">
+            <span class="ic${pic ? '' : ' nopic'}">${pic}<ha-icon icon="${busy ? 'mdi:progress-download' : 'mdi:package-up'}"></ha-icon></span>
             <span class="txt">
               <span class="name">${hrEsc(u.title)}</span>
               ${version ? `<span class="sub">${hrEsc(version)}</span>` : ''}
@@ -508,8 +618,33 @@ class HacsRefreshCard extends HTMLElement {
       .error span { min-width: 0; overflow-wrap: anywhere; }
 
       .section { margin-top: 12px; }
-      .stitle { font-size: 12px; font-weight: 500; color: var(--secondary-text-color); margin: 0 2px 6px;
+      .shead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 2px 6px; min-height: 24px; }
+      .stitle { font-size: 12px; font-weight: 500; color: var(--secondary-text-color);
                 text-transform: uppercase; letter-spacing: .04em; }
+      .stitle .count { font-variant-numeric: tabular-nums; }
+      /* No filled button: a tinted outline, the accent colour for the text. */
+      .install, .cbtns button { all: unset; box-sizing: border-box; cursor: pointer; flex: none; display: inline-flex; align-items: center; gap: 4px;
+               font-size: 12px; font-weight: 500; line-height: 1; padding: 5px 10px; border-radius: 999px; font-variant-numeric: tabular-nums;
+               color: color-mix(in srgb, var(--hr-info) 45%, var(--primary-text-color, #212121));
+               border: 1px solid color-mix(in srgb, var(--hr-info) 45%, transparent); }
+      .install ha-icon { --mdc-icon-size: 16px; }
+      button.install:hover, .cbtns button:hover { background: color-mix(in srgb, var(--hr-info) 12%, transparent); }
+      .install:focus-visible, .cbtns button:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+      .install.busy { cursor: default; border-color: transparent; color: var(--secondary-text-color); }
+      .cbtns .confirm-no { color: var(--secondary-text-color); border-color: color-mix(in srgb, var(--secondary-text-color) 40%, transparent); }
+      .cbtns .confirm-no:hover { background: color-mix(in srgb, var(--secondary-text-color) 12%, transparent); }
+
+      .confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: 10px; padding: 8px 10px; border-radius: 10px;
+                 font-size: 12px; line-height: 1.35; color: var(--primary-text-color);
+                 background: color-mix(in srgb, var(--hr-info) 12%, var(--secondary-background-color, transparent)); }
+      .confirm > ha-icon { --mdc-icon-size: 18px; flex: none; color: color-mix(in srgb, var(--hr-info) 55%, var(--primary-text-color, #212121)); }
+      .confirm b { font-weight: 500; }
+      .ctext { flex: 1 1 180px; min-width: 0; }
+      .cbtns { display: flex; gap: 6px; margin-left: auto; }
+      .row.busy .ic { color: color-mix(in srgb, var(--hr-info) 55%, var(--primary-text-color, #212121)); }
+      .row.busy .ic ha-icon { animation: hr-pulse 1.2s ease-in-out infinite; }
+      @keyframes hr-pulse { 50% { opacity: .35; } }
+      @media (prefers-reduced-motion: reduce) { .row.busy .ic ha-icon { animation: none; } }
       .list { display: flex; flex-direction: column; gap: 6px; }
       .empty { font-size: 13px; color: var(--secondary-text-color); padding: 8px 10px; border-radius: 10px;
                background: var(--secondary-background-color, rgba(127,127,127,.08)); }
@@ -539,7 +674,7 @@ class HacsRefreshCard extends HTMLElement {
 }
 
 // ── Editor ───────────────────────────────────────────────────────────────────
-const HR_HELPERS = ['entity', 'title', 'show_updates', 'show_failed', 'check_button', 'hide_when_ok', 'language'];
+const HR_HELPERS = ['entity', 'title', 'show_updates', 'show_failed', 'check_button', 'install_button', 'hide_when_ok', 'language'];
 
 class HacsRefreshCardEditor extends HTMLElement {
   setConfig(config) {
@@ -582,6 +717,7 @@ class HacsRefreshCardEditor extends HTMLElement {
       { name: 'show_updates', selector: { boolean: {} } },
       { name: 'show_failed', selector: { boolean: {} } },
       { name: 'check_button', selector: { boolean: {} } },
+      { name: 'install_button', selector: { boolean: {} } },
       { name: 'hide_when_ok', selector: { boolean: {} } },
       {
         name: 'language',
