@@ -108,15 +108,61 @@ function render(config, hass) {
 
 const html = (card) => card.shadowRoot.innerHTML;
 
-test('every language has the English keys', () => {
+const placeholders = (s) => [...String(s).matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
+
+test('every language has the English keys, arrays of the same length and the same placeholders', () => {
   const keys = Object.keys(HR_I18N.en).sort();
-  for (const [lang, strings] of Object.entries(HR_I18N)) assert.deepEqual(Object.keys(strings).sort(), keys, lang);
+  for (const [lang, strings] of Object.entries(HR_I18N)) {
+    assert.deepEqual(Object.keys(strings).sort(), keys, lang);
+    for (const k of keys) {
+      const en = HR_I18N.en[k];
+      if (Array.isArray(en)) assert.equal(strings[k].length, en.length, `${lang}.${k}`);
+      assert.deepEqual(placeholders(strings[k]), placeholders(en), `${lang}.${k}`);
+    }
+  }
+});
+
+test('Serbian is there in Cyrillic (sr) and Latin (sr-Latn)', () => {
+  assert.ok(HR_I18N.sr && HR_I18N['sr-Latn']);
+  // Proper nouns, brands and placeholders are left out of the script check.
+  const strip = (s) => String(s).replace(/\{\w+\}|HACS|Refresh|Home Assistant/g, '');
+  for (const [k, s] of Object.entries(HR_I18N.sr)) assert.doesNotMatch(strip(s), /[A-Za-z]/, `sr.${k}: ${s}`);
+  for (const [k, s] of Object.entries(HR_I18N['sr-Latn'])) assert.doesNotMatch(s, /[Ѐ-ӿ]/, `sr-Latn.${k}: ${s}`);
 });
 
 test('language follows Home Assistant, then the config, with English as fallback', () => {
   assert.equal(hrLang({ language: 'fr-FR' }, {}), 'fr');
   assert.equal(hrLang({ language: 'fr' }, { language: 'es' }), 'es');
   assert.equal(hrLang({ language: 'ja' }, {}), 'en');
+  assert.equal(hrLang({ language: 'sr-Latn' }, {}), 'sr-Latn');
+  assert.equal(hrLang({ language: 'sr' }, {}), 'sr');
+  assert.equal(hrLang({ language: 'pt-BR' }, {}), 'en');
+  assert.equal(hrLang({ locale: { language: 'sr-Latn' }, language: 'en' }, {}), 'sr-Latn');
+  assert.equal(hrLang({ language: 'sr-Latn' }, { language: 'sr' }), 'sr');
+});
+
+test('Serbian in Latin script: card strings and relative dates', () => {
+  const lat = html(render({}, makeHass({ language: 'sr-Latn' })));
+  assert.match(lat, /Proveri ažuriranja/);
+  assert.match(lat, /Provereno pre \d+ sat/);
+  assert.doesNotMatch(lat.replace(/<style>[\s\S]*?<\/style>/, ''), /[Ѐ-ӿ]/);
+  const cyr = html(render({}, makeHass({ language: 'sr' })));
+  assert.match(cyr, /Провери ажурирања/);
+  assert.match(cyr, /Проверено пре \d+ сат/);
+});
+
+test('editor offers Serbian in both scripts', () => {
+  const editor = new HacsRefreshCardEditor();
+  editor.appendChild = () => {};
+  editor.dispatchEvent = () => {};
+  editor.setConfig({});
+  editor.hass = makeHass();
+  const options = editor._form.schema.find((s) => s.name === 'language').selector.select.options;
+  const sr = options.filter((o) => o.value.startsWith('sr')).map((o) => [o.value, o.label]);
+  assert.deepEqual(JSON.parse(JSON.stringify(sr)), [
+    ['sr', 'Српски'],
+    ['sr-Latn', 'Srpski (latinica)'],
+  ]);
 });
 
 test('entities found by translation key, or by entity ID when it is missing', () => {

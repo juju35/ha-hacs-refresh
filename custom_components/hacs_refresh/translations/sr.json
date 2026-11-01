@@ -1,0 +1,93 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "HACS Refresh",
+        "description": "Проверава ажурирања за сваки репозиторијум преузет помоћу HACS-а, на серверу. Сам HACS проверава прилагођене репозиторијуме само на сваких 48 сати.",
+        "data": { "scan_interval": "Интервал провере" },
+        "data_description": { "scan_interval": "Број сати између две аутоматске провере. 0 искључује аутоматску проверу: користите дугме или акцију." }
+      }
+    },
+    "abort": {
+      "already_configured": "HACS Refresh је већ подешен.",
+      "single_instance_allowed": "HACS Refresh је већ подешен.",
+      "hacs_not_loaded": "HACS није учитан. Прво инсталирајте и подесите HACS."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Опције за HACS Refresh",
+        "data": { "scan_interval": "Интервал провере" },
+        "data_description": { "scan_interval": "Број сати између две аутоматске провере. 0 искључује аутоматску проверу: користите дугме или акцију." }
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "check_updates": { "name": "Провери ажурирања" }
+    },
+    "sensor": {
+      "status": {
+        "name": "Статус",
+        "state": { "idle": "Мировање", "running": "Проверавање", "error": "Грешка" },
+        "state_attributes": {
+          "done": { "name": "Проверено" },
+          "total": { "name": "Репозиторијуми" },
+          "updates": { "name": "Доступна ажурирања" },
+          "failed": { "name": "Неуспешно" },
+          "error": { "name": "Грешка" },
+          "checking": { "name": "Проверава се" },
+          "installing": { "name": "Инсталира се" },
+          "install_failed": { "name": "Није могуће инсталирати" }
+        }
+      },
+      "last_check": {
+        "name": "Последња провера",
+        "state_attributes": {
+          "scan_interval": { "name": "Интервал провере" },
+          "next_check": { "name": "Следећа провера" }
+        }
+      }
+    }
+  },
+  "services": {
+    "check_updates": {
+      "name": "Провери ажурирања",
+      "description": "Проверава ажурирања за сваки репозиторијум преузет помоћу HACS-а. Ради у позадини, осим ако је постављено чекање.",
+      "fields": {
+        "wait": { "name": "Чекај", "description": "Чекај да сви репозиторијуми буду проверени пре него што се акција заврши; акција тада не успева ако провера није успела или ако неки репозиторијум није могао да буде проверен." }
+      }
+    },
+    "check_repository": {
+      "name": "Провери ажурирања репозиторијума",
+      "description": "Проверава ажурирања репозиторијума иза ових HACS ентитета ажурирања и чека резултат.",
+      "fields": {
+        "entity_id": { "name": "Ентитети ажурирања", "description": "HACS ентитети ажурирања репозиторијума које треба проверити." }
+      }
+    },
+    "install_updates": {
+      "name": "Инсталирај ажурирања",
+      "description": "Инсталира ажурирања HACS репозиторијума, једно за другим, у позадини, осим ако је постављено чекање. Само за администраторе.",
+      "fields": {
+        "entity_id": { "name": "Ентитети ажурирања", "description": "HACS ентитети ажурирања које треба ажурирати; оставите празно за сваки репозиторијум са ажурирањем." },
+        "wait": { "name": "Чекај", "description": "Чекај да сва ажурирања буду инсталирана пре него што се акција заврши; акција тада не успева ако неко ажурирање није могло да буде инсталирано." }
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": { "message": "HACS Refresh није учитан." },
+    "hacs_not_loaded": { "message": "HACS није учитан." },
+    "hacs_not_supported": { "message": "Ова верзија HACS-а није подржана (недостаје {path}); пријавите проблем на {issues}." },
+    "hacs_disabled": { "message": "HACS је онемогућен ({reason})." },
+    "hacs_disabled_unknown": { "message": "HACS је онемогућен." },
+    "not_hacs_update_entity": { "message": "{entity_id} није HACS ентитет ажурирања." },
+    "not_downloaded": { "message": "{entity_id} није репозиторијум преузет помоћу HACS-а." },
+    "check_failed": { "message": "Није могуће проверити {failed}." },
+    "check_cancelled": { "message": "Провера је отказана (HACS Refresh је поново учитан или уклоњен)." },
+    "full_check_failed": { "message": "Потпуна провера није успела: {error}" },
+    "install_running": { "message": "Ажурирања се већ инсталирају." },
+    "install_failed": { "message": "Није могуће инсталирати {failed}." },
+    "install_cancelled": { "message": "Инсталације су отказане (HACS Refresh је поново учитан или уклоњен)." }
+  }
+}
