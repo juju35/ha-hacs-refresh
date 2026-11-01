@@ -22,6 +22,8 @@ custom_components/hacs_refresh/
 │                    #   install: async_start_install → background task calling update.install one entity at a time
 │                    #   (waits for a running check first; context of the caller); `installing` (left, current first) /
 │                    #   `install_failed` on the status sensor; a second install → ServiceValidationError(install_running)
+│                    #   while installing, async_start → ServiceValidationError(check_while_installing); the scheduler skips
+│                    #   and `on_install_done` (not called on unload) reschedules, so a check due meanwhile runs after the installs
 ├── config_flow.py   # Single entry, aborts without HACS; options: scan_interval (hours, 0 = off)
 ├── button.py        # button.*_check_for_updates (unavailable while a check runs or updates are installed)
 ├── sensor.py        # status (enum idle/running/error + done/total/updates/failed/error), last_check (+ scan_interval/next_check)
@@ -38,7 +40,7 @@ custom_components/hacs_refresh/
 - `homeassistant.update_entity` on HACS update entities is a no-op: don't rely on it.
 
 ## Card
-Served at `/hacs_refresh/hacs-refresh-card.js` and added to the dashboard resources (storage mode) or loaded with `add_extra_js_url` (YAML mode); removed with the entry. `_storage_resources()` reads `hass.data["lovelace"]` as a dict (before 2025.2) or a dataclass (`mode`, then `resource_mode` from 2026.2). The card finds its entities by `platform` and `translation_key` in `hass.entities` (entity ID suffix as fallback); the updates listed are HACS' update entities that are `on`, the sensor's `updates` count only when there are none.
+Served at `/hacs_refresh/hacs-refresh-card.js` and added to the dashboard resources (storage mode) or loaded with `add_extra_js_url` (YAML mode); removed with the entry. `_storage_resources()` reads `hass.data["lovelace"]` as a dict (before 2025.2) or a dataclass (`mode`, then `resource_mode` from 2026.2). Counts go through `hrPlural` (Intl.PluralRules: `<key>_one`, `<key>_few` for sr/pl when present, else `<key>_many`). Narrow header: `.heading` flex 1 1 0% with min-width 6ch, `.pill` max 50% and ellipsis, only its dot under a 300 px container query; icon buttons `flex: none`. The card finds its entities by `platform` and `translation_key` in `hass.entities` (entity ID suffix as fallback); the updates listed are HACS' update entities that are `on`, the sensor's `updates` count only when there are none.
 
 ## Release
 Bump `version` in manifest.json, `VERSION` in const.py and `HACS_REFRESH_CARD_VERSION` in the card, and add its CHANGELOG.md section; pushing to main publishes `vX.Y.Z` with `hacs_refresh.zip` when that tag doesn't exist yet, once the Validate (hassfest, tests), Lint and HACS Validation workflows have all passed on that commit (`workflow_run` on each, gated by the "Check required workflows" step). Rerun notes with the "Update release notes" workflow (input `tag`).
