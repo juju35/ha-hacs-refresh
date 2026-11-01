@@ -591,3 +591,34 @@ test('plurals: a locale Intl refuses still renders (singular for 1)', () => {
   assert.equal(pill('pl-@@', { updates: 1 }), '1 aktualizacja');
   assert.equal(pill('pl-@@', { updates: 5 }), '5 aktualizacji');
 });
+
+test('narrow header: the title keeps a few characters, the pill shrinks to a dot, nothing leaves the card', () => {
+  const css = HacsRefreshCard.styles.replace(/\s+/g, ' ');
+  const rule = (selector, from = 0) => {
+    const i = css.indexOf(` ${selector} {`, from);
+    assert.ok(i >= 0, `${selector} rule`);
+    return css.slice(i).match(/\{([^}]*)\}/)[1];
+  };
+  assert.match(rule('.heading'), /flex: 1 1 0%/);
+  assert.match(rule('.heading'), /min-width: [4-9]ch/);
+  assert.match(rule('.title'), /text-overflow: ellipsis/);
+  const pillRule = rule('.pill');
+  assert.match(pillRule, /flex: 0 1 auto/);
+  assert.match(pillRule, /min-width: 0/);
+  assert.match(pillRule, /max-width: 50%/);
+  assert.match(rule('.ptext'), /text-overflow: ellipsis/);
+  assert.match(rule('.check'), /flex: none/);
+  assert.match(rule('.install, .cbtns button'), /flex: none/);
+  assert.match(rule('.install'), /max-width: 100%/);
+  assert.match(rule('.shead'), /flex-wrap: wrap/);
+  assert.match(rule('ha-card'), /container-type: inline-size/);
+  // Under the threshold: the dot, the text kept for screen readers (not display: none).
+  const cq = css.indexOf('@container (max-width:');
+  assert.ok(cq >= 0, 'container query');
+  assert.match(rule('.dot', cq), /display: block/);
+  assert.doesNotMatch(rule('.ptext', cq), /display: none/);
+  assert.match(rule('.ptext', cq), /clip-path: inset\(50%\)/);
+  // The pill's full text in its tooltip.
+  const out = html(render({}, makeHass({ updates: ['update.mushroom_update', 'update.card_mod_update'], attrs: { failed: ['a/b'] } })));
+  assert.match(out, /<div class="pill" title="2 updates · 1 failed"><span class="dot" aria-hidden="true"><\/span><span class="ptext">2 updates · 1 failed<\/span><\/div>/);
+});
