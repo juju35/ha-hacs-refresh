@@ -412,6 +412,7 @@ test('installing: progress in the pill and on the rows, failures listed', () => 
   const out = html(render({}, hass));
   assert.match(out, /Installing… 1 left/);
   assert.match(out, /class="install busy"/);
+  assert.match(out, /class="check"[^>]*aria-disabled="true"/);
   assert.doesNotMatch(out, /Update all/);
   assert.match(out, /class="row upd busy" data-id="update\.mushroom_update"/);
   assert.match(out, /class="row upd" data-id="update\.card_mod_update"/);

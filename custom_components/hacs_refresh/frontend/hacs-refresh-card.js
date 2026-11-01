@@ -408,7 +408,8 @@ class HacsRefreshCard extends HTMLElement {
     const active = this.shadowRoot.activeElement;
     const focusCls = ['check', 'install', 'confirm-yes', 'confirm-no'].find((k) => active?.classList?.contains(k));
     const focus = focusCls || (active?.dataset?.id ? { id: active.dataset.id } : null);
-    this._busy = running || buttonSt?.state === 'unavailable';
+    // The button is also unavailable while updates are installed: grey it out right away, without waiting for its state.
+    this._busy = running || installing.length > 0 || buttonSt?.state === 'unavailable';
     this.shadowRoot.innerHTML = `
       <style>${HacsRefreshCard.styles}</style>
       <ha-card class="lvl-${level}">
