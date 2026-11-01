@@ -118,7 +118,37 @@ test('every language has the English keys, arrays of the same length and the sam
       const en = HR_I18N.en[k];
       if (Array.isArray(en)) assert.equal(strings[k].length, en.length, `${lang}.${k}`);
       assert.deepEqual(placeholders(strings[k]), placeholders(en), `${lang}.${k}`);
+      assert.ok(String(strings[k]).trim(), `${lang}.${k} is empty`);
     }
+  }
+});
+
+test('every language of the integration is in the card', () => {
+  assert.deepEqual(Object.keys(HR_I18N).sort(), ['de', 'en', 'es', 'fr', 'it', 'nl', 'pl', 'pt', 'sr', 'sr-Latn']);
+});
+
+test('Italian, Dutch, Portuguese and Polish: full code, then the part before the dash, else English', () => {
+  assert.equal(hrLang({ language: 'it-IT' }, {}), 'it');
+  assert.equal(hrLang({ language: 'nl-BE' }, {}), 'nl');
+  assert.equal(hrLang({ language: 'pt' }, {}), 'pt');
+  // Brazilian Portuguese falls back to European Portuguese.
+  assert.equal(hrLang({ language: 'pt-BR' }, {}), 'pt');
+  assert.equal(hrLang({ language: 'pl-PL' }, {}), 'pl');
+  assert.equal(hrLang({ language: 'sr-Latn' }, {}), 'sr-Latn');
+  assert.equal(hrLang({ language: 'ja' }, {}), 'en');
+  assert.equal(hrLang({ language: 'en' }, { language: 'pl' }), 'pl');
+});
+
+test('Italian, Dutch, Portuguese and Polish: card strings and relative dates', () => {
+  const cases = {
+    it: [/Cerca aggiornamenti/, /Verificato \d+ ore fa/],
+    nl: [/Controleren op updates/, /Gecontroleerd \d+ uur geleden/],
+    pt: [/Procurar atualizações/, /Verificado há \d+ horas/],
+    pl: [/Sprawdź aktualizacje/, /Sprawdzono \d+ godzin\w* temu/],
+  };
+  for (const [language, patterns] of Object.entries(cases)) {
+    const out = html(render({}, makeHass({ language })));
+    for (const re of patterns) assert.match(out, re, language);
   }
 });
 
@@ -136,7 +166,6 @@ test('language follows Home Assistant, then the config, with English as fallback
   assert.equal(hrLang({ language: 'ja' }, {}), 'en');
   assert.equal(hrLang({ language: 'sr-Latn' }, {}), 'sr-Latn');
   assert.equal(hrLang({ language: 'sr' }, {}), 'sr');
-  assert.equal(hrLang({ language: 'pt-BR' }, {}), 'en');
   assert.equal(hrLang({ locale: { language: 'sr-Latn' }, language: 'en' }, {}), 'sr-Latn');
   assert.equal(hrLang({ language: 'sr-Latn' }, { language: 'sr' }), 'sr');
 });
@@ -151,18 +180,27 @@ test('Serbian in Latin script: card strings and relative dates', () => {
   assert.match(cyr, /Проверено пре \d+ сат/);
 });
 
-test('editor offers Serbian in both scripts', () => {
+test('editor offers every language, Serbian in both scripts', () => {
   const editor = new HacsRefreshCardEditor();
   editor.appendChild = () => {};
   editor.dispatchEvent = () => {};
   editor.setConfig({});
   editor.hass = makeHass();
   const options = editor._form.schema.find((s) => s.name === 'language').selector.select.options;
-  const sr = options.filter((o) => o.value.startsWith('sr')).map((o) => [o.value, o.label]);
-  assert.deepEqual(JSON.parse(JSON.stringify(sr)), [
+  assert.deepEqual(JSON.parse(JSON.stringify(options.map((o) => [o.value, o.label]))), [
+    ['en', 'English'],
+    ['fr', 'Français'],
+    ['de', 'Deutsch'],
+    ['es', 'Español'],
     ['sr', 'Српски'],
     ['sr-Latn', 'Srpski (latinica)'],
+    ['it', 'Italiano'],
+    ['nl', 'Nederlands'],
+    ['pt', 'Português'],
+    ['pl', 'Polski'],
   ]);
+  // Every language of the card is offered.
+  assert.deepEqual(JSON.parse(JSON.stringify(options.map((o) => o.value).sort())), Object.keys(HR_I18N).sort());
 });
 
 test('entities found by translation key, or by entity ID when it is missing', () => {

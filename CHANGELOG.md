@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.2 - 2026-11-01
+
+### What's new
+- Added Italian, Dutch, European Portuguese and Polish translations: the integration (`it`, `nl`, `pt`, `pl`) and the card, whose editor offers **Italiano**, **Nederlands**, **Português** and **Polski**. Brazilian Portuguese (`pt-BR`) falls back to European Portuguese.
+
+### Maintenance
+- Tests: every language of the card and of the integration has the English keys and placeholders and no empty string; the card resolves `it-IT`, `nl-BE`, `pt-BR` and `pl-PL`, and its editor offers every language.
+
 ## 0.8.1 - 2026-11-01
 
 ### What's new

@@ -30,6 +30,11 @@ def _flatten(data: dict, prefix: str = "") -> dict[str, str]:
 LANGUAGES = sorted(p.stem for p in TRANSLATIONS.glob("*.json") if p.stem != "en")
 
 
+def test_every_language_exists() -> None:
+    """Same languages as the card."""
+    assert set(LANGUAGES) == {"de", "es", "fr", "it", "nl", "pl", "pt", "sr", "sr-Latn"}
+
+
 def test_serbian_files_exist() -> None:
     """Home Assistant uses sr for Cyrillic and sr-Latn for Latin."""
     assert {"sr", "sr-Latn"} <= set(LANGUAGES)
@@ -43,6 +48,7 @@ def test_same_keys_and_placeholders_as_english(lang: str) -> None:
     assert sorted(other) == sorted(en)
     for path, text in en.items():
         assert sorted(PLACEHOLDER.findall(other[path])) == sorted(PLACEHOLDER.findall(text)), path
+        assert isinstance(other[path], str) and other[path].strip(), f"{lang} {path} is empty"
 
 
 def test_serbian_scripts() -> None:
