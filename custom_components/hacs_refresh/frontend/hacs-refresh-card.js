@@ -932,10 +932,14 @@ class HacsRefreshCard extends HTMLElement {
       }
       /* Text and status icons in a state colour are mixed with the text colour: darker on a light theme,
          lighter on a dark one, so they stay readable (4.5:1 for text, 3:1 for icons) on their tinted background. */
-      /* A size container: the header's pill turns into a dot on a narrow card. Size containment gives the card no
-         intrinsic width: without contain-intrinsic-inline-size it would collapse to its padding in a shrink-to-fit parent
-         (inline-block, auto grid column, layout-card). */
-      ha-card { padding: 12px; overflow: hidden; container-type: inline-size; contain-intrinsic-inline-size: 296px; }
+      /* A size container: the header's pill turns into a dot on a narrow card. */
+      ha-card { padding: 12px; overflow: hidden; container-type: inline-size; }
+      /* A size container has no width of its own content: in a parent that sizes to its content (an inline-block, an
+         "auto" grid column, some layout-card set-ups) the card would fall to its padding. This empty, zero-height grid
+         gives it a natural (max-content) width without any minimum (its min-content width is 0): in a "1fr 1fr" grid,
+         wrapped in a div or not, the card still shrinks to its track. contain-intrinsic-inline-size or a min-width on
+         the host would be a minimum and overflow there. */
+      :host::before { content: ""; display: grid; grid-template-columns: minmax(0, 322px); height: 0; }
       ha-card.lvl-ok    { --c: var(--hr-ok); }
       ha-card.lvl-info  { --c: var(--hr-info); }
       ha-card.lvl-warn  { --c: var(--hr-warn); }
