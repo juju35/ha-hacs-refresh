@@ -12,6 +12,7 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import Context, HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
 from homeassistant.util import dt as dt_util
@@ -781,3 +782,98 @@ async def test_card_resource_yaml_mode_untouched(hass, fake_hacs):
         await _setup(hass)
         await hass.async_block_till_done()
     add_js.assert_called_once()
+
+
+def _hacs_update_entities(hass: HomeAssistant, states: dict[str, str]) -> None:
+    """HACS update entities in the registry, with these states."""
+    registry = er.async_get(hass)
+    for object_id, state in states.items():
+        registry.async_get_or_create("update", "hacs", object_id, suggested_object_id=object_id)
+        hass.states.async_set(f"update.{object_id}", state, {"title": object_id.replace("_", " ").title()})
+
+
+def _fake_update_install(hass: HomeAssistant, fail: set[str] | None = None) -> list[str]:
+    """update.install stand-in: turns the entity off, or fails for the ones in `fail`. Returns the calls, in order."""
+    calls: list[str] = []
+
+    async def install(call) -> None:
+        for entity_id in cv.entity_ids(call.data["entity_id"]):
+            calls.append(entity_id)
+            await asyncio.sleep(0)
+            if entity_id in (fail or set()):
+                raise HomeAssistantError("download failed")
+            hass.states.async_set(entity_id, "off", hass.states.get(entity_id).attributes)
+
+    hass.services.async_register("update", "install", install)
+    return calls
+
+
+async def test_install_updates_installs_every_update_one_by_one(hass, fake_hacs):
+    await _setup(hass)
+    _hacs_update_entities(hass, {"mushroom": "on", "card_mod": "on", "parcel": "off"})
+    calls = _fake_update_install(hass)
+    await hass.services.async_call(DOMAIN, "install_updates", {"wait": True}, blocking=True)
+    await hass.async_block_till_done()
+    assert calls == ["update.card_mod", "update.mushroom"]
+    state = hass.states.get(STATUS)
+    assert state.attributes["installing"] == []
+    assert state.attributes["install_failed"] == []
+    assert hass.states.get(BUTTON).state != "unavailable"
+
+
+async def test_install_updates_only_the_entities_given(hass, fake_hacs):
+    await _setup(hass)
+    _hacs_update_entities(hass, {"mushroom": "on", "card_mod": "on"})
+    calls = _fake_update_install(hass)
+    await hass.services.async_call(
+        DOMAIN, "install_updates", {"entity_id": "update.mushroom", "wait": True}, blocking=True
+    )
+    assert calls == ["update.mushroom"]
+
+
+async def test_install_updates_reports_failures_and_goes_on(hass, fake_hacs):
+    await _setup(hass)
+    _hacs_update_entities(hass, {"mushroom": "on", "card_mod": "on"})
+    calls = _fake_update_install(hass, fail={"update.card_mod"})
+    with pytest.raises(HomeAssistantError, match="Card Mod: download failed"):
+        await hass.services.async_call(DOMAIN, "install_updates", {"wait": True}, blocking=True)
+    assert calls == ["update.card_mod", "update.mushroom"]
+    assert hass.states.get(STATUS).attributes["install_failed"] == ["Card Mod: download failed"]
+
+
+async def test_install_updates_progress_and_no_second_run(hass, fake_hacs):
+    await _setup(hass)
+    _hacs_update_entities(hass, {"mushroom": "on", "card_mod": "on"})
+    release = asyncio.Event()
+
+    async def install(call) -> None:
+        await release.wait()
+        hass.states.async_set(call.data["entity_id"], "off")
+
+    hass.services.async_register("update", "install", install)
+    await hass.services.async_call(DOMAIN, "install_updates", {}, blocking=True)
+    await hass.async_block_till_done(wait_background_tasks=False)
+    assert hass.states.get(STATUS).attributes["installing"] == ["update.card_mod", "update.mushroom"]
+    assert hass.states.get(BUTTON).state == "unavailable"
+    with pytest.raises(ServiceValidationError):
+        await hass.services.async_call(DOMAIN, "install_updates", {}, blocking=True)
+    release.set()
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert hass.states.get(STATUS).attributes["installing"] == []
+
+
+async def test_install_updates_rejects_other_entities(hass, fake_hacs):
+    await _setup(hass)
+    hass.states.async_set("update.core", "on")
+    with pytest.raises(ServiceValidationError):
+        await hass.services.async_call(DOMAIN, "install_updates", {"entity_id": "update.core"}, blocking=True)
+
+
+async def test_install_updates_admin_only(hass, fake_hacs, hass_read_only_user):
+    from homeassistant.exceptions import Unauthorized
+
+    await _setup(hass)
+    with pytest.raises(Unauthorized):
+        await hass.services.async_call(
+            DOMAIN, "install_updates", {}, blocking=True, context=Context(user_id=hass_read_only_user.id)
+        )

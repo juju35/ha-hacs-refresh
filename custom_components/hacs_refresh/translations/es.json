@@ -37,7 +37,9 @@
           "updates": { "name": "Actualizaciones disponibles" },
           "failed": { "name": "Fallidos" },
           "error": { "name": "Error" },
-          "checking": { "name": "En comprobación" }
+          "checking": { "name": "En comprobación" },
+          "installing": { "name": "Instalándose" },
+          "install_failed": { "name": "No se pudieron instalar" }
         }
       },
       "last_check": {
@@ -63,6 +65,14 @@
       "fields": {
         "entity_id": { "name": "Entidades de actualización", "description": "Entidades de actualización de HACS de los repositorios que se van a comprobar." }
       }
+    },
+    "install_updates": {
+      "name": "Instalar actualizaciones",
+      "description": "Instala las actualizaciones de los repositorios de HACS, una tras otra, en segundo plano salvo si se activa Esperar. Solo administradores.",
+      "fields": {
+        "entity_id": { "name": "Entidades de actualización", "description": "Entidades de actualización de HACS que actualizar; déjalo vacío para todos los repositorios con una actualización." },
+        "wait": { "name": "Esperar", "description": "Esperar a que se instalen todas las actualizaciones antes de que termine la acción; la acción falla entonces si no se pudo instalar alguna." }
+      }
     }
   },
   "exceptions": {
@@ -75,6 +85,9 @@
     "not_downloaded": { "message": "{entity_id} no es un repositorio descargado con HACS." },
     "check_failed": { "message": "No se pudo comprobar {failed}." },
     "check_cancelled": { "message": "La comprobación se canceló (HACS Refresh se recargó o se eliminó)." },
-    "full_check_failed": { "message": "La comprobación completa falló: {error}" }
+    "full_check_failed": { "message": "La comprobación completa falló: {error}" },
+    "install_running": { "message": "Ya se están instalando actualizaciones." },
+    "install_failed": { "message": "No se pudo instalar {failed}." },
+    "install_cancelled": { "message": "Las instalaciones se cancelaron (HACS Refresh se recargó o se eliminó)." }
   }
 }

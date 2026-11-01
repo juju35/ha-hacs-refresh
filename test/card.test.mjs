@@ -23,8 +23,10 @@ const fakeNode = () => ({
     const elements = {};
     this.shadowRoot = {
       innerHTML: '',
+      // A class selector found in the rendered HTML (the same node across renders, like a kept focus).
       querySelector: (sel) => {
-        if (sel !== '.check' || !this.shadowRoot.innerHTML.includes('class="check"')) return null;
+        const cls = sel.startsWith('.') ? sel.slice(1) : null;
+        if (!cls || !new RegExp(`class="(?:[^"]* )?${cls}(?: [^"]*)?"`).test(this.shadowRoot.innerHTML)) return null;
         elements[sel] ||= fakeNode();
         return elements[sel];
       },
@@ -54,8 +56,8 @@ const context = {
   Date,
 };
 vm.createContext(context);
-vm.runInContext(`${source}\nthis.hr = { HacsRefreshCard, HacsRefreshCardEditor, HR_I18N, hrEsc, hrLang, hrDevices, HR_DEFAULTS };`, context);
-const { HacsRefreshCard, HacsRefreshCardEditor, HR_I18N, hrEsc, hrLang, hrDevices, HR_DEFAULTS } = context.hr;
+vm.runInContext(`${source}\nthis.hr = { HacsRefreshCard, HacsRefreshCardEditor, HR_I18N, hrEsc, hrLang, hrLocale, hrDevices, HR_DEFAULTS };`, context);
+const { HacsRefreshCard, HacsRefreshCardEditor, HR_I18N, hrEsc, hrLang, hrLocale, hrDevices, HR_DEFAULTS } = context.hr;
 
 const STATUS = 'sensor.hacs_refresh_status';
 const LAST_CHECK = 'sensor.hacs_refresh_last_check';
@@ -72,7 +74,7 @@ const REGISTRY = {
   'update.core': { platform: 'hassio' },
 };
 
-function makeHass({ state = 'idle', attrs = {}, updates = ['update.mushroom_update'], interval = 24, button = 'unknown', language = 'en' } = {}) {
+function makeHass({ state = 'idle', attrs = {}, updates = ['update.mushroom_update'], interval = 24, button = 'unknown', language = 'en', admin = true } = {}) {
   const calls = [];
   const states = {
     [STATUS]: { state, attributes: { done: 0, total: 0, updates: updates.length, failed: [], error: null, ...attrs } },
@@ -91,7 +93,7 @@ function makeHass({ state = 'idle', attrs = {}, updates = ['update.mushroom_upda
       attributes: { title: id.split('.')[1].replace('_update', ''), installed_version: 'v1.0.0', latest_version: on ? 'v1.1.0' : 'v1.0.0' },
     };
   }
-  return { calls, language, entities: REGISTRY, states, callService: (...args) => calls.push(args) };
+  return { calls, language, entities: REGISTRY, states, user: { is_admin: admin }, callService: (...args) => calls.push(args) };
 }
 
 function render(config, hass) {
@@ -106,15 +108,113 @@ function render(config, hass) {
 
 const html = (card) => card.shadowRoot.innerHTML;
 
-test('every language has the English keys', () => {
+const placeholders = (s) => [...String(s).matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
+
+test('every language has the English keys, arrays of the same length and the same placeholders', () => {
   const keys = Object.keys(HR_I18N.en).sort();
-  for (const [lang, strings] of Object.entries(HR_I18N)) assert.deepEqual(Object.keys(strings).sort(), keys, lang);
+  for (const [lang, strings] of Object.entries(HR_I18N)) {
+    assert.deepEqual(Object.keys(strings).sort(), keys, lang);
+    for (const k of keys) {
+      const en = HR_I18N.en[k];
+      if (Array.isArray(en)) assert.equal(strings[k].length, en.length, `${lang}.${k}`);
+      assert.deepEqual(placeholders(strings[k]), placeholders(en), `${lang}.${k}`);
+      assert.ok(String(strings[k]).trim(), `${lang}.${k} is empty`);
+    }
+  }
+});
+
+test('every language of the integration is in the card', () => {
+  assert.deepEqual(Object.keys(HR_I18N).sort(), ['de', 'en', 'es', 'fr', 'it', 'nl', 'pl', 'pt', 'sr', 'sr-Latn']);
+});
+
+test('Italian, Dutch, Portuguese and Polish: full code, then the part before the dash, else English', () => {
+  assert.equal(hrLang({ language: 'it-IT' }, {}), 'it');
+  assert.equal(hrLang({ language: 'nl-BE' }, {}), 'nl');
+  assert.equal(hrLang({ language: 'pt' }, {}), 'pt');
+  // Brazilian Portuguese falls back to European Portuguese.
+  assert.equal(hrLang({ language: 'pt-BR' }, {}), 'pt');
+  assert.equal(hrLang({ language: 'pl-PL' }, {}), 'pl');
+  assert.equal(hrLang({ language: 'sr-Latn' }, {}), 'sr-Latn');
+  assert.equal(hrLang({ language: 'ja' }, {}), 'en');
+  assert.equal(hrLang({ language: 'en' }, { language: 'pl' }), 'pl');
+});
+
+test('Italian, Dutch, Portuguese and Polish: card strings and relative dates', () => {
+  const cases = {
+    it: [/Cerca aggiornamenti/, /Verificato \d+ ore fa/],
+    nl: [/Controleren op updates/, /Gecontroleerd \d+ uur geleden/],
+    pt: [/Procurar atualizações/, /Verificado há \d+ horas/],
+    pl: [/Sprawdź aktualizacje/, /Sprawdzono \d+ godzin\w* temu/],
+  };
+  for (const [language, patterns] of Object.entries(cases)) {
+    const out = html(render({}, makeHass({ language })));
+    for (const re of patterns) assert.match(out, re, language);
+  }
+});
+
+test('dates use Home Assistant\'s full locale when its base is the card\'s language', () => {
+  assert.equal(hrLocale({ language: 'pt-BR' }, {}), 'pt-BR');
+  assert.equal(hrLocale({ locale: { language: 'pt-BR' }, language: 'pt' }, {}), 'pt-BR');
+  assert.equal(hrLocale({ language: 'fr-CA' }, {}), 'fr-CA');
+  assert.equal(hrLocale({ language: 'pt' }, {}), 'pt-PT');
+  assert.equal(hrLocale({ locale: { language: 'pt' }, language: 'pt' }, {}), 'pt-PT');
+  assert.equal(hrLocale({ language: 'en' }, { language: 'pt' }), 'pt-PT');
+  assert.equal(hrLocale({ language: 'pt' }, { language: 'fr' }), 'fr');
+  assert.equal(hrLocale({ language: 'pt-BR' }, { language: 'pl' }), 'pl');
+  assert.equal(hrLocale({ language: 'ja' }, {}), 'en');
+  assert.equal(hrLocale({ language: 'sr-Latn' }, { language: 'sr' }), 'sr');
+  assert.equal(hrLocale({ language: 'sr-Latn' }, {}), 'sr-Latn');
+});
+
+test('Serbian is there in Cyrillic (sr) and Latin (sr-Latn)', () => {
+  assert.ok(HR_I18N.sr && HR_I18N['sr-Latn']);
+  // Proper nouns, brands and placeholders are left out of the script check.
+  const strip = (s) => String(s).replace(/\{\w+\}|HACS|Refresh|Home Assistant/g, '');
+  for (const [k, s] of Object.entries(HR_I18N.sr)) assert.doesNotMatch(strip(s), /[A-Za-z]/, `sr.${k}: ${s}`);
+  for (const [k, s] of Object.entries(HR_I18N['sr-Latn'])) assert.doesNotMatch(s, /[Ѐ-ӿ]/, `sr-Latn.${k}: ${s}`);
 });
 
 test('language follows Home Assistant, then the config, with English as fallback', () => {
   assert.equal(hrLang({ language: 'fr-FR' }, {}), 'fr');
   assert.equal(hrLang({ language: 'fr' }, { language: 'es' }), 'es');
   assert.equal(hrLang({ language: 'ja' }, {}), 'en');
+  assert.equal(hrLang({ language: 'sr-Latn' }, {}), 'sr-Latn');
+  assert.equal(hrLang({ language: 'sr' }, {}), 'sr');
+  assert.equal(hrLang({ locale: { language: 'sr-Latn' }, language: 'en' }, {}), 'sr-Latn');
+  assert.equal(hrLang({ language: 'sr-Latn' }, { language: 'sr' }), 'sr');
+});
+
+test('Serbian in Latin script: card strings and relative dates', () => {
+  const lat = html(render({}, makeHass({ language: 'sr-Latn' })));
+  assert.match(lat, /Proveri ažuriranja/);
+  assert.match(lat, /Provereno pre \d+ sat/);
+  assert.doesNotMatch(lat.replace(/<style>[\s\S]*?<\/style>/, ''), /[Ѐ-ӿ]/);
+  const cyr = html(render({}, makeHass({ language: 'sr' })));
+  assert.match(cyr, /Провери ажурирања/);
+  assert.match(cyr, /Проверено пре \d+ сат/);
+});
+
+test('editor offers every language, Serbian in both scripts', () => {
+  const editor = new HacsRefreshCardEditor();
+  editor.appendChild = () => {};
+  editor.dispatchEvent = () => {};
+  editor.setConfig({});
+  editor.hass = makeHass();
+  const options = editor._form.schema.find((s) => s.name === 'language').selector.select.options;
+  assert.deepEqual(JSON.parse(JSON.stringify(options.map((o) => [o.value, o.label]))), [
+    ['en', 'English'],
+    ['fr', 'Français'],
+    ['de', 'Deutsch'],
+    ['es', 'Español'],
+    ['sr', 'Српски'],
+    ['sr-Latn', 'Srpski (latinica)'],
+    ['it', 'Italiano'],
+    ['nl', 'Nederlands'],
+    ['pt', 'Português (Portugal)'],
+    ['pl', 'Polski'],
+  ]);
+  // Every language of the card is offered.
+  assert.deepEqual(JSON.parse(JSON.stringify(options.map((o) => o.value).sort())), Object.keys(HR_I18N).sort());
 });
 
 test('entities found by translation key, or by entity ID when it is missing', () => {
@@ -272,4 +372,158 @@ test('a next check already due is not shown in the past', () => {
   const out = html(render({}, hass));
   assert.match(out, /Checked 27 hours ago/);
   assert.doesNotMatch(out, /next|ago · /);
+});
+
+test("HACS' update entities unavailable or missing: the status sensor's count is used, never up to date", () => {
+  for (const mode of ['unavailable', 'missing']) {
+    const hass = makeHass({ updates: [], attrs: { updates: 2 } });
+    for (const id of ['update.mushroom_update', 'update.card_mod_update', 'update.hacs_update']) {
+      if (mode === 'missing') delete hass.states[id];
+      else hass.states[id] = { entity_id: id, state: 'unavailable', attributes: {} };
+    }
+    const card = render({ hide_when_ok: true }, hass);
+    const out = html(card);
+    assert.equal(card.style.display, '', mode);
+    assert.match(out, /lvl-info/, mode);
+    assert.match(out, /2 updates/, mode);
+    assert.doesNotMatch(out, /Up to date|Every repository is up to date/, mode);
+    assert.match(out, /HACS isn’t loaded/, mode);
+  }
+});
+
+test('one HACS update entity known is enough: the entities stay the truth', () => {
+  const hass = makeHass({ updates: [], attrs: { updates: 2 } });
+  hass.states['update.hacs_update'] = { entity_id: 'update.hacs_update', state: 'unavailable', attributes: {} };
+  const out = html(render({}, hass));
+  assert.match(out, /Up to date/);
+});
+
+test('update entities coming back re-render the card', () => {
+  const hass = makeHass({ updates: [], attrs: { updates: 2 } });
+  const ids = ['update.mushroom_update', 'update.card_mod_update', 'update.hacs_update'];
+  const back = { ...hass.states };
+  for (const id of ids) hass.states[id] = { entity_id: id, state: 'unavailable', attributes: {} };
+  const card = render({}, hass);
+  assert.match(html(card), /2 updates/);
+  card.hass = { ...hass, states: back };
+  assert.match(html(card), /Up to date/);
+});
+
+test('a re-render keeps the keyboard focus on the check button and on an update row', () => {
+  const card = render({}, makeHass());
+  const check = card.shadowRoot.querySelector('.check');
+  let focused = null;
+  check.focus = () => {
+    focused = 'check';
+  };
+  card.shadowRoot.activeElement = { classList: { contains: (c) => c === 'check' }, dataset: {} };
+  // Pressing it starts a check: the button is busy, but stays focusable and ignores presses.
+  const hass = makeHass({ state: 'running', attrs: { done: 1, total: 4 } });
+  card.hass = hass;
+  assert.equal(focused, 'check');
+  assert.match(html(card), /class="check"[^>]*aria-disabled="true"/);
+  assert.doesNotMatch(html(card), /class="check"[^>]*\sdisabled/);
+  check.handlers.click();
+  assert.equal(hass.calls.length, 0);
+
+  const row = { dataset: { id: 'update.mushroom_update' }, addEventListener() {}, focus: () => (focused = row.dataset.id) };
+  card.shadowRoot.querySelectorAll = (sel) => (sel === '.row[data-id]' ? [row] : []);
+  card.shadowRoot.activeElement = { classList: { contains: () => false }, dataset: { id: 'update.mushroom_update' } };
+  card.hass = makeHass({ updates: ['update.mushroom_update', 'update.hacs_update'] });
+  assert.equal(focused, 'update.mushroom_update');
+});
+
+// WCAG contrast of the coloured text and status icons, with Home Assistant's default light and dark themes.
+test('coloured text reaches 4.5:1 and status icons 3:1, light and dark', () => {
+  const hex = (h) => [1, 3, 5].map((i) => Number.parseInt(h.slice(i, i + 2), 16));
+  const mix = (a, b, p) => a.map((v, i) => v * p + b[i] * (1 - p));
+  const lum = (c) => {
+    const [r, g, b] = c.map((v) => ((v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const ratio = (a, b) => {
+    const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m);
+    return (x + 0.05) / (y + 0.05);
+  };
+  const css = HacsRefreshCard.styles.replace(/\s+/g, ' ');
+  // The `color` of a rule: a state colour, or a color-mix of it with the text colour.
+  const colorOf = (selector, state, text) => {
+    const body = css.slice(css.indexOf(`${selector} {`)).match(/\{([^}]*)\}/)[1];
+    const value = body.match(/(?:^|;)\s*color:\s*([^;]+)/)[1].trim();
+    const m = value.match(/^color-mix\(in srgb, var\(--[\w-]+\) (\d+)%, var\(--primary-text-color, #\w+\)\)$/);
+    if (m) return mix(hex(state), hex(text), Number(m[1]) / 100);
+    assert.match(value, /^var\(--[\w-]+\)$/, selector);
+    return hex(state);
+  };
+  const themes = { light: { card: '#ffffff', text: '#212121', sec: '#e5e5e5' }, dark: { card: '#1c1c1c', text: '#e1e1e1', sec: '#282828' } };
+  const states = { ok: '#43a047', info: '#039be5', warn: '#ffa600', alert: '#db4437', na: '#9e9e9e' };
+  for (const [name, t] of Object.entries(themes)) {
+    const card = hex(t.card);
+    for (const [lvl, c] of Object.entries(states)) {
+      assert.ok(ratio(colorOf('.pill', c, t.text), mix(hex(c), card, 0.14)) >= 4.5, `${name} pill ${lvl}`);
+      assert.ok(ratio(colorOf('.badge', c, t.text), mix(hex(c), card, 0.16)) >= 3, `${name} badge ${lvl}`);
+    }
+    const warnRow = mix(hex(states.warn), hex(t.sec), 0.12);
+    assert.ok(ratio(colorOf('.row.warn .sub', states.warn, t.text), warnRow) >= 4.5, `${name} failed row`);
+    assert.ok(ratio(colorOf('.ic', states.warn, t.text), mix(hex(states.warn), warnRow, 0.18)) >= 3, `${name} failed icon`);
+    assert.ok(ratio(colorOf('.ic', states.info, t.text), mix(hex(states.info), hex(t.sec), 0.18)) >= 3, `${name} update icon`);
+    assert.ok(ratio(colorOf('.install, .cbtns button', states.info, t.text), card) >= 4.5, `${name} update all button`);
+    const confirmBg = mix(hex(states.info), hex(t.sec), 0.12);
+    assert.ok(ratio(colorOf('.confirm > ha-icon', states.info, t.text), confirmBg) >= 3, `${name} confirmation icon`);
+    const errorBg = mix(hex(states.alert), hex(t.sec), 0.12);
+    assert.ok(ratio(colorOf('.error b', states.alert, t.text), errorBg) >= 4.5, `${name} error title`);
+  }
+});
+
+test('the updates section counts the updates', () => {
+  const out = html(render({}, makeHass({ updates: ['update.mushroom_update', 'update.card_mod_update'] })));
+  assert.match(out, /Updates available <span class="count">· 2<\/span>/);
+  assert.doesNotMatch(html(render({}, makeHass({ updates: [] }))), /class="count"/);
+});
+
+test('update all: asks first, then installs the updates listed', () => {
+  const hass = makeHass({ updates: ['update.mushroom_update', 'update.card_mod_update'] });
+  const card = render({}, hass);
+  assert.match(html(card), /Update all \(2\)/);
+  card.shadowRoot.querySelector('.install').handlers.click();
+  assert.match(html(card), /Install 2 updates\?/);
+  assert.equal(hass.calls.length, 0);
+  card.shadowRoot.querySelector('.confirm-no').handlers.click();
+  assert.doesNotMatch(html(card), /class="confirm"/);
+  card.shadowRoot.querySelector('.install').handlers.click();
+  card.shadowRoot.querySelector('.confirm-yes').handlers.click();
+  assert.equal(
+    JSON.stringify(hass.calls),
+    JSON.stringify([['hacs_refresh', 'install_updates', { entity_id: ['update.card_mod_update', 'update.mushroom_update'] }]]),
+  );
+  assert.doesNotMatch(html(card), /class="confirm"/);
+});
+
+test('update all: only for administrators, with updates, and when enabled', () => {
+  assert.doesNotMatch(html(render({}, makeHass({ admin: false }))), /Update all/);
+  assert.doesNotMatch(html(render({}, makeHass({ updates: [] }))), /Update all/);
+  assert.doesNotMatch(html(render({ install_button: false }, makeHass())), /Update all/);
+});
+
+test('installing: progress in the pill and on the rows, failures listed', () => {
+  const hass = makeHass({ updates: ['update.mushroom_update', 'update.card_mod_update'], attrs: { installing: ['update.mushroom_update'] } });
+  const out = html(render({}, hass));
+  assert.match(out, /Installing… 1 left/);
+  assert.match(out, /class="install busy"/);
+  assert.match(out, /class="check"[^>]*aria-disabled="true"/);
+  assert.doesNotMatch(out, /Update all/);
+  assert.match(out, /class="row upd busy" data-id="update\.mushroom_update"/);
+  assert.match(out, /class="row upd" data-id="update\.card_mod_update"/);
+  const failed = html(render({}, makeHass({ attrs: { install_failed: ['Mushroom: download failed'] } })));
+  assert.match(failed, /lvl-warn/);
+  assert.match(failed, /Could not be installed/);
+  assert.match(failed, /download failed/);
+});
+
+test('the confirmation closes when the updates are gone', () => {
+  const card = render({}, makeHass());
+  card.shadowRoot.querySelector('.install').handlers.click();
+  assert.match(html(card), /class="confirm"/);
+  card.hass = makeHass({ updates: [] });
+  assert.doesNotMatch(html(card), /class="confirm"/);
 });
