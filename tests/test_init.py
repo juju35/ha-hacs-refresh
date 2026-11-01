@@ -877,3 +877,75 @@ async def test_install_updates_admin_only(hass, fake_hacs, hass_read_only_user):
         await hass.services.async_call(
             DOMAIN, "install_updates", {}, blocking=True, context=Context(user_id=hass_read_only_user.id)
         )
+
+
+async def _blocked_install(hass: HomeAssistant) -> asyncio.Event:
+    """Start install_updates on two HACS updates whose install waits for the event returned."""
+    _hacs_update_entities(hass, {"mushroom": "on", "card_mod": "on"})
+    release = asyncio.Event()
+
+    async def install(call) -> None:
+        await release.wait()
+        hass.states.async_set(call.data["entity_id"], "off")
+
+    hass.services.async_register("update", "install", install)
+    await hass.services.async_call(DOMAIN, "install_updates", {}, blocking=True)
+    await hass.async_block_till_done(wait_background_tasks=False)
+    assert hass.states.get(STATUS).attributes["installing"] == ["update.card_mod", "update.mushroom"]
+    return release
+
+
+async def test_check_updates_refused_while_installing(hass, fake_hacs):
+    """check_updates doesn't start a full check (refreshing the repositories being downloaded) during installs."""
+    await _setup(hass)
+    release = await _blocked_install(hass)
+    with pytest.raises(ServiceValidationError, match="being installed"):
+        await hass.services.async_call(DOMAIN, "check_updates", {}, blocking=True)
+    assert hass.states.get(STATUS).state == "idle"
+    assert hass.states.get(STATUS).attributes["installing"] == ["update.card_mod", "update.mushroom"]
+    fake_hacs.repositories.list_downloaded[0].update_repository.assert_not_awaited()
+    release.set()
+    await hass.async_block_till_done(wait_background_tasks=True)
+    # Once the installs are done, a check starts again.
+    await hass.services.async_call(DOMAIN, "check_updates", {"wait": True}, blocking=True)
+    fake_hacs.repositories.list_downloaded[0].update_repository.assert_awaited_once()
+
+
+async def test_scheduled_check_due_during_installs_runs_after_them(hass, fake_hacs, freezer):
+    """A scheduled check due while updates are installed runs once they are done, not during them."""
+    entry = await _setup(hass, hours=2)
+    repo = fake_hacs.repositories.list_downloaded[0]
+    release = await _blocked_install(hass)
+    freezer.tick(timedelta(hours=2, seconds=1))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done(wait_background_tasks=False)
+    assert hass.states.get(STATUS).state == "idle"
+    repo.update_repository.assert_not_awaited()
+    release.set()
+    await hass.async_block_till_done(wait_background_tasks=True)
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    await entry.runtime_data.async_wait()
+    repo.update_repository.assert_awaited_once()
+    # And the next one is scheduled an interval later as usual.
+    freezer.tick(timedelta(hours=2, seconds=1))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    await entry.runtime_data.async_wait()
+    assert repo.update_repository.await_count == 2
+
+
+async def test_unload_during_installs_leaves_no_scheduled_check(hass, fake_hacs, freezer):
+    """Unloading while installing cancels the installs without scheduling a check on the unloaded entry."""
+    entry = await _setup(hass, hours=2)
+    repo = fake_hacs.repositories.list_downloaded[0]
+    await _blocked_install(hass)
+    freezer.tick(timedelta(hours=2, seconds=1))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done(wait_background_tasks=False)
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+    freezer.tick(timedelta(hours=5))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    repo.update_repository.assert_not_awaited()
