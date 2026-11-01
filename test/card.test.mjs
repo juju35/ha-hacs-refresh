@@ -463,6 +463,20 @@ test('focus given back after a re-render never scrolls the page', () => {
   for (const [name, opts] of calls) assert.equal(JSON.stringify(opts), '{"preventScroll":true}', name);
 });
 
+test('intrinsic width: never collapses in an inline-block or auto column, still shrinks in a 1fr grid', () => {
+  const css = HacsRefreshCard.styles.replace(/\/\*.*?\*\//g, '').replace(/\s+/g, ' ');
+  const host = css.match(/:host \{([^}]*)\}/)[1];
+  const card = css.match(/ ha-card \{([^}]*)\}/)[1];
+  // The size container is ha-card (inside the host), with an intrinsic width so a shrink-to-fit parent doesn't drop it to its padding.
+  assert.match(card, /container-type: inline-size/);
+  assert.match(card, /contain-intrinsic-inline-size: \d+px/);
+  assert.doesNotMatch(host, /container/);
+  // That intrinsic width must not become a minimum: the host shrinks in a 1fr 1fr grid (no px min-width on it).
+  assert.match(host, /min-width: 0;/);
+  assert.doesNotMatch(host, /min-width: [1-9]/);
+  assert.doesNotMatch(host, /contain-intrinsic/);
+});
+
 // WCAG contrast of the coloured text and status icons, with Home Assistant's default light and dark themes.
 test('coloured text reaches 4.5:1 and status icons 3:1, light and dark', () => {
   const hex = (h) => [1, 3, 5].map((i) => Number.parseInt(h.slice(i, i + 2), 16));
@@ -631,7 +645,8 @@ test('narrow header: the title keeps a few characters, the pill shrinks to a dot
   const pillRule = rule('.pill');
   assert.match(pillRule, /flex: 0 1 auto/);
   assert.match(pillRule, /min-width: 0/);
-  assert.match(pillRule, /max-width: 50%/);
+  // No cap on the pill: it is only truncated when the header really has no room for its label.
+  assert.doesNotMatch(pillRule, /max-width/);
   assert.match(rule('.ptext'), /text-overflow: ellipsis/);
   assert.match(rule('.check'), /flex: none/);
   assert.match(rule('.install, .cbtns button'), /flex: none/);
@@ -644,6 +659,16 @@ test('narrow header: the title keeps a few characters, the pill shrinks to a dot
   assert.match(rule('.dot', cq), /display: block/);
   assert.doesNotMatch(rule('.ptext', cq), /display: none/);
   assert.match(rule('.ptext', cq), /clip-path: inset\(50%\)/);
+  // The text gives way to the dot only on a narrow card (not on a 320 px phone card: 296 px of content).
+  const dotAt = Number(css.slice(cq).match(/@container \(max-width: (\d+)px\) \{ \.pill/)[1]);
+  assert.ok(dotAt < 296, `dot under ${dotAt}px`);
+  // A phone's 6 columns (156 px card, 132 px of content): the dot sits on the badge's corner, out of the header's row,
+  // so badge + title + check button fit (it was pushed 13 px out of the card at 160 px).
+  const six = css.indexOf('@container (max-width: 170px)');
+  assert.ok(six >= 0, '6-column container query');
+  assert.match(rule('.pill', six), /position: absolute/);
+  assert.match(rule('.badge', six), /width: 32px/);
+  assert.match(rule('.head'), /position: relative/);
   // The pill's full text in its tooltip.
   const out = html(render({}, makeHass({ updates: ['update.mushroom_update', 'update.card_mod_update'], attrs: { failed: ['a/b'] } })));
   assert.match(out, /<div class="pill" title="2 updates · 1 failed"><span class="dot" aria-hidden="true"><\/span><span class="ptext">2 updates · 1 failed<\/span><\/div>/);
