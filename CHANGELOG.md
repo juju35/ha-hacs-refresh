@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.8.3 - 2026-11-01
+
+### Fixes
+- A full check no longer starts while updates are being installed: `hacs_refresh.check_updates` fails with "Updates are being installed", and an automatic check that falls due meanwhile runs once the installs are done (it used to refresh the repositories being downloaded, and the card switched from "Installing…" to "Checking").
+- HACS Refresh shows its own icon in **Settings → Devices & services** on Home Assistant 2026.3 and later: the release zip now includes the `brand/` folder.
+- Card: on a narrow card (its minimum width, small phones), the title stays readable, the status pill is truncated and shrinks to a coloured dot (its text stays in the tooltip and for screen readers), and the **Update all** button moves under the section title instead of being cut off.
+- Card: counts follow each language's plural rules: "1 rimanente" / "queda 1" / "falta 1" / "1 restante" for the last install (Italian, Spanish, Portuguese, French), and Serbian and Polish use their 2-4 form ("2 неуспешна", "2 aktualizacje", "5 aktualizacji", "21 неуспешан").
+
+### Maintenance
+- README: only `install_updates` is for administrators; the button, `check_updates` and `check_repository` are open to every user.
+
 ## 0.8.2 - 2026-11-01
 
 ### What's new
