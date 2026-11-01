@@ -437,6 +437,32 @@ test('a re-render keeps the keyboard focus on the check button and on an update 
   assert.equal(focused, 'update.mushroom_update');
 });
 
+test('focus given back after a re-render never scrolls the page', () => {
+  // A hass update re-renders the card while the user scrolled away: focus({ preventScroll: true }) keeps the page still.
+  const card = render({}, makeHass({ updates: ['update.mushroom_update', 'update.card_mod_update'] }));
+  const calls = [];
+  const spy = (name) => (opts) => calls.push([name, opts]);
+  card.shadowRoot.querySelector('.check').focus = spy('check');
+  card.shadowRoot.activeElement = { classList: { contains: (c) => c === 'check' }, dataset: {} };
+  card.hass = makeHass({ state: 'running', attrs: { done: 1, total: 4 } });
+  const row = { dataset: { id: 'update.mushroom_update' }, addEventListener() {}, focus: spy('row') };
+  card.shadowRoot.querySelectorAll = (sel) => (sel === '.row[data-id]' ? [row] : []);
+  card.shadowRoot.activeElement = { classList: { contains: () => false }, dataset: { id: 'update.mushroom_update' } };
+  card.hass = makeHass({ updates: ['update.mushroom_update', 'update.hacs_update'] });
+  // The confirmation: focus on its safe choice when it opens, back on the button when it closes, kept across a re-render.
+  card.shadowRoot.querySelectorAll = () => [];
+  card.shadowRoot.querySelector('.install').focus = spy('install');
+  card.shadowRoot.querySelector('.install').handlers.click();
+  card.shadowRoot.querySelector('.confirm-no').focus = spy('confirm-no');
+  card.shadowRoot.querySelector('.install').handlers.click();
+  card.shadowRoot.activeElement = { classList: { contains: (c) => c === 'confirm-no' }, dataset: {} };
+  card.hass = makeHass({ updates: ['update.mushroom_update', 'update.card_mod_update', 'update.hacs_update'] });
+  card.shadowRoot.querySelector('.confirm-no').handlers.click();
+  const names = calls.map(([n]) => n);
+  for (const n of ['check', 'row', 'confirm-no', 'install']) assert.ok(names.includes(n), n);
+  for (const [name, opts] of calls) assert.equal(JSON.stringify(opts), '{"preventScroll":true}', name);
+});
+
 // WCAG contrast of the coloured text and status icons, with Home Assistant's default light and dark themes.
 test('coloured text reaches 4.5:1 and status icons 3:1, light and dark', () => {
   const hex = (h) => [1, 3, 5].map((i) => Number.parseInt(h.slice(i, i + 2), 16));
