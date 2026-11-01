@@ -552,6 +552,8 @@ const hrPlural = (lang, locale, key, n) => {
 const hrEsc = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
+// The focus the card gives back itself (after a re-render, a confirmation) never scrolls the page.
+const HR_FOCUS = { preventScroll: true };
 const HR_DEFAULTS = { show_updates: true, show_failed: true, check_button: true, install_button: true, hide_when_ok: false };
 
 // The integration's entities, from the entity registry: { device: { status, last_check, button } }.
@@ -741,7 +743,8 @@ class HacsRefreshCard extends HTMLElement {
     const icon = { ok: 'mdi:package-variant-closed-check', info: 'mdi:package-up', warn: 'mdi:package-variant-closed-remove', alert: 'mdi:alert-circle-outline', na: 'mdi:package-variant-closed' }[level];
     const pct = running && a.total ? Math.round((100 * (a.done || 0)) / a.total) : 0;
 
-    // innerHTML replaces the focused element: give the focus back to its new copy afterwards.
+    // innerHTML replaces the focused element: give the focus back to its new copy afterwards, without scrolling the
+    // page (a hass update re-renders the card while the user may have scrolled it out of view).
     const active = this.shadowRoot.activeElement;
     const focusCls = ['check', 'install', 'confirm-yes', 'confirm-no'].find((k) => active?.classList?.contains(k));
     const focus = focusCls || (active?.dataset?.id ? { id: active.dataset.id } : null);
@@ -780,18 +783,18 @@ class HacsRefreshCard extends HTMLElement {
 
     const check = this.shadowRoot.querySelector('.check');
     check?.addEventListener('click', () => this._check());
-    if (focus === 'check') check?.focus();
+    if (focus === 'check') check?.focus(HR_FOCUS);
     const on = (cls, fn) => {
       const el = this.shadowRoot.querySelector(`.${cls}`);
       el?.addEventListener('click', fn);
-      if (focus === cls) el?.focus();
+      if (focus === cls) el?.focus(HR_FOCUS);
     };
     on('install', () => this._askInstall());
     on('confirm-yes', () => this._install());
     on('confirm-no', () => this._setConfirm(false));
     for (const el of this.shadowRoot.querySelectorAll('.row[data-id]')) {
       el.addEventListener('click', () => this._moreInfo(el.dataset.id));
-      if (focus?.id === el.dataset.id) el.focus();
+      if (focus?.id === el.dataset.id) el.focus(HR_FOCUS);
     }
     // A repository picture that doesn't load falls back to the generic icon.
     for (const img of this.shadowRoot.querySelectorAll('img.pic')) {
@@ -858,7 +861,7 @@ class HacsRefreshCard extends HTMLElement {
     this._sig = null;
     this._render();
     // Keyboard focus on the safe choice when it opens, back on the button when it closes.
-    this.shadowRoot?.querySelector(on ? '.confirm-no' : '.install')?.focus?.();
+    this.shadowRoot?.querySelector(on ? '.confirm-no' : '.install')?.focus?.(HR_FOCUS);
   }
 
   _askInstall() {
