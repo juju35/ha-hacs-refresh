@@ -757,7 +757,7 @@ class HacsRefreshCard extends HTMLElement {
             ${subtitle ? `<div class="subtitle" title="${hrEsc(last ? this._absolute(last) : '')}">${hrEsc(subtitle)}</div>` : ''}
           </div>
           ${this._checkButton(this._busy)}
-          <div class="pill">${hrEsc(unavailable ? this._t('unavailable') : this._status(st, running, a, count, failed, error, installing))}</div>
+          ${this._pill(unavailable ? this._t('unavailable') : this._status(st, running, a, count, failed, error, installing))}
         </div>
         ${this._confirm ? this._confirmBox(this._installable.length) : ''}
         ${running ? `<div class="progress" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div>` : ''}
@@ -799,6 +799,13 @@ class HacsRefreshCard extends HTMLElement {
     }
   }
 
+  // The status pill: truncated when the header is short, only its dot on a narrow card (the text stays for screen
+  // readers and in the tooltip).
+  _pill(text) {
+    const t = hrEsc(text);
+    return `<div class="pill" title="${t}"><span class="dot" aria-hidden="true"></span><span class="ptext">${t}</span></div>`;
+  }
+
   _status(st, running, a, count, failed, error, installing = []) {
     if (!st) return this._t('not_loaded');
     if (running) return a.total ? this._t('checking', { done: a.done || 0, total: a.total }) : this._t('checking_short');
@@ -824,12 +831,12 @@ class HacsRefreshCard extends HTMLElement {
   // The updates section's button: "Update all (n)", or the installs' progress while they run.
   _installButton(installing) {
     if (installing.length) {
-      return `<span class="install busy" aria-live="polite"><ha-icon icon="mdi:progress-download"></ha-icon>${hrEsc(this._t('installing_short'))}</span>`;
+      return `<span class="install busy" aria-live="polite"><ha-icon icon="mdi:progress-download"></ha-icon><span class="ilabel">${hrEsc(this._t('installing_short'))}</span></span>`;
     }
     const n = this._installable.length;
     if (!n) return '';
     const label = hrEsc(this._t('install_all', { n }));
-    return `<button class="install"${this._confirm ? ' aria-expanded="true"' : ''}><ha-icon icon="mdi:package-down"></ha-icon>${label}</button>`;
+    return `<button class="install"${this._confirm ? ' aria-expanded="true"' : ''}><ha-icon icon="mdi:package-down"></ha-icon><span class="ilabel">${label}</span></button>`;
   }
 
   // Confirmation at the top of the card, like the other cards' popups.
@@ -919,7 +926,8 @@ class HacsRefreshCard extends HTMLElement {
       }
       /* Text and status icons in a state colour are mixed with the text colour: darker on a light theme,
          lighter on a dark one, so they stay readable (4.5:1 for text, 3:1 for icons) on their tinted background. */
-      ha-card { padding: 12px; overflow: hidden; }
+      /* A size container: the header's pill turns into a dot on a narrow card. */
+      ha-card { padding: 12px; overflow: hidden; container-type: inline-size; }
       ha-card.lvl-ok    { --c: var(--hr-ok); }
       ha-card.lvl-info  { --c: var(--hr-info); }
       ha-card.lvl-warn  { --c: var(--hr-warn); }
@@ -930,14 +938,24 @@ class HacsRefreshCard extends HTMLElement {
       .badge { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
                background: color-mix(in srgb, var(--c) 16%, transparent); color: color-mix(in srgb, var(--c) 55%, var(--primary-text-color, #212121)); }
       .badge ha-icon { --mdc-icon-size: 24px; }
-      .heading { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+      /* The title takes the room left (a long subtitle never squeezes the pill) and keeps about four characters;
+         the buttons never shrink, the pill takes at most half of the header and is truncated. */
+      .heading { flex: 1 1 0%; min-width: 6ch; font-size: 16px; display: flex; flex-direction: column; }
       .title { font-size: 16px; font-weight: 500; line-height: 1.25; color: var(--primary-text-color);
                white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .subtitle { font-size: 12px; line-height: 1.3; color: var(--secondary-text-color);
                   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .pill { flex: none; font-size: 11px; font-weight: 500; padding: 1px 8px; border-radius: 999px;
+      .pill { position: relative; flex: 0 1 auto; min-width: 0; max-width: 50%; box-sizing: border-box; display: flex; align-items: center; gap: 5px;
+              font-size: 11px; font-weight: 500; padding: 1px 8px; border-radius: 999px;
               color: color-mix(in srgb, var(--c) 40%, var(--primary-text-color, #212121));
               background: color-mix(in srgb, var(--c) 14%, transparent); font-variant-numeric: tabular-nums; }
+      .ptext { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .dot { display: none; flex: none; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+      @container (max-width: 300px) {
+        .pill { padding: 5px; }
+        .dot { display: block; }
+        .ptext { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+      }
       .check { all: unset; cursor: pointer; flex: none; width: 26px; height: 26px; border-radius: 50%;
                display: grid; place-items: center; color: var(--secondary-text-color); }
       .check:hover { background: color-mix(in srgb, var(--secondary-text-color) 14%, transparent); color: var(--primary-text-color); }
@@ -957,8 +975,9 @@ class HacsRefreshCard extends HTMLElement {
       .error span { min-width: 0; overflow-wrap: anywhere; }
 
       .section { margin-top: 12px; }
-      .shead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 2px 6px; min-height: 24px; }
-      .stitle { font-size: 12px; font-weight: 500; color: var(--secondary-text-color);
+      /* The section's button goes under its title when both don't fit on one line. */
+      .shead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 8px; margin: 0 2px 6px; min-height: 24px; }
+      .stitle { min-width: 0; font-size: 12px; font-weight: 500; color: var(--secondary-text-color);
                 text-transform: uppercase; letter-spacing: .04em; }
       .stitle .count { font-variant-numeric: tabular-nums; }
       /* No filled button: a tinted outline, the accent colour for the text. */
@@ -966,7 +985,10 @@ class HacsRefreshCard extends HTMLElement {
                font-size: 12px; font-weight: 500; line-height: 1; padding: 5px 10px; border-radius: 999px; font-variant-numeric: tabular-nums;
                color: color-mix(in srgb, var(--hr-info) 45%, var(--primary-text-color, #212121));
                border: 1px solid color-mix(in srgb, var(--hr-info) 45%, transparent); }
-      .install ha-icon { --mdc-icon-size: 16px; }
+      .install ha-icon { --mdc-icon-size: 16px; flex: none; }
+      /* On its own line under the section title, it never gets wider than the card. */
+      .install { max-width: 100%; }
+      .ilabel { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       button.install:hover, .cbtns button:hover { background: color-mix(in srgb, var(--hr-info) 12%, transparent); }
       .install:focus-visible, .cbtns button:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
       .install.busy { cursor: default; border-color: transparent; color: var(--secondary-text-color); }
@@ -979,7 +1001,7 @@ class HacsRefreshCard extends HTMLElement {
       .confirm > ha-icon { --mdc-icon-size: 18px; flex: none; color: color-mix(in srgb, var(--hr-info) 55%, var(--primary-text-color, #212121)); }
       .confirm b { font-weight: 500; }
       .ctext { flex: 1 1 180px; min-width: 0; }
-      .cbtns { display: flex; gap: 6px; margin-left: auto; }
+      .cbtns { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; margin-left: auto; max-width: 100%; }
       .row.busy .ic { color: color-mix(in srgb, var(--hr-info) 55%, var(--primary-text-color, #212121)); }
       .row.busy .ic ha-icon { animation: hr-pulse 1.2s ease-in-out infinite; }
       @keyframes hr-pulse { 50% { opacity: .35; } }
