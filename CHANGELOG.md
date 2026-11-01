@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.1 - 2026-11-01
+
+### What's new
+- Added Serbian (Cyrillic and Latin) translations: the integration (`sr`, `sr-Latn`) and the card, whose editor offers **Српски** and **Srpski (latinica)**. The card picks `sr-Latn` when Home Assistant is set to it.
+
+### Maintenance
+- Tests: the languages of the card and of the integration have the English keys and placeholders; Serbian is checked for its script.
+
 ## 0.8.0
 
 ### What's new
