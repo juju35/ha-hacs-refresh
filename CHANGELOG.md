@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.2
+
+### Fixes
+- Card: when HACS isn't loaded (setup retry after a GitHub rate limit at startup, disabled), its update entities are unavailable: the card now shows the number of updates found by the last check instead of "Up to date", and `hide_when_ok` no longer hides it. It updates as soon as HACS' entities are back.
+- Card: the status pill, the error of a repository that couldn't be checked and the title of a failed check are readable on a light theme (they were orange or green text on a pale background); the status icons are a little darker too (and slightly lighter on a dark theme).
+- Card: the keyboard focus stays on the **Check for updates** button, or on an update row, when the card refreshes; the button stays focusable while a check runs.
+
+### Maintenance
+- One ruff and Biome version for pre-commit and the Lint workflow, read from the pre-commit configuration; the release now runs Lint, Validate and HACS Validation itself before publishing.
+
 ## 0.7.1
 
 ### Fixes
