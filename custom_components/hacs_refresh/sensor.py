@@ -46,6 +46,8 @@ class StatusSensor(HacsRefreshEntity, SensorEntity):
             "failed": list(r.failed),
             "error": r.error,
             "checking": sorted(r.checking),
+            "installing": list(r.installing),
+            "install_failed": list(r.install_failed),
         }
 
 

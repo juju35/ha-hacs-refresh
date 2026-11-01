@@ -16,6 +16,7 @@ from homeassistant.core import CALLBACK_TYPE, CoreState, Event, HomeAssistant, S
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.event import async_call_later
+from homeassistant.helpers.service import async_register_admin_service
 from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.typing import ConfigType
@@ -28,6 +29,7 @@ from .const import (
     DOMAIN,
     SERVICE_CHECK_REPOSITORY,
     SERVICE_CHECK_UPDATES,
+    SERVICE_INSTALL_UPDATES,
     VERSION,
 )
 from .refresher import STORAGE_VERSION, HacsNotAvailableError, HacsRefresher
@@ -41,12 +43,15 @@ ATTR_WAIT = "wait"
 RETRY_INTERVAL = timedelta(hours=1)
 CHECK_UPDATES_SCHEMA = vol.Schema({vol.Optional(ATTR_WAIT, default=False): cv.boolean})
 CHECK_REPOSITORY_SCHEMA = vol.Schema({vol.Required(ATTR_ENTITY_ID): cv.entity_ids})
+INSTALL_UPDATES_SCHEMA = vol.Schema(
+    {vol.Optional(ATTR_ENTITY_ID): cv.entity_ids, vol.Optional(ATTR_WAIT, default=False): cv.boolean}
+)
 
 type HacsRefreshConfigEntry = ConfigEntry[HacsRefresher]
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Serve the card, load it on every dashboard, and register the actions (every user, like the button)."""
+    """Serve the card, load it on every dashboard, and register the actions (checks: every user, like the button)."""
     await hass.http.async_register_static_paths(
         [StaticPathConfig(CARD_URL, str(Path(__file__).parent / "frontend" / "hacs-refresh-card.js"), True)]
     )
@@ -87,6 +92,18 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             raise _validation_error(err) from err
 
     hass.services.async_register(DOMAIN, SERVICE_CHECK_REPOSITORY, check_repository, CHECK_REPOSITORY_SCHEMA)
+
+    async def install_updates(call: ServiceCall) -> None:
+        refresher = loaded_refresher()
+        try:
+            refresher.async_start_install(call.data.get(ATTR_ENTITY_ID), call.context)
+        except HacsNotAvailableError as err:
+            raise _validation_error(err) from err
+        if call.data[ATTR_WAIT]:
+            await refresher.async_wait_install()
+
+    # Installing code on the server: administrators only, like HACS itself.
+    async_register_admin_service(hass, DOMAIN, SERVICE_INSTALL_UPDATES, install_updates, INSTALL_UPDATES_SCHEMA)
     return True
 
 

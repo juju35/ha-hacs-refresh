@@ -14,3 +14,16 @@ check_repository:
           multiple: true
           integration: hacs
           domain: update
+
+install_updates:
+  fields:
+    entity_id:
+      selector:
+        entity:
+          multiple: true
+          integration: hacs
+          domain: update
+    wait:
+      default: false
+      selector:
+        boolean:

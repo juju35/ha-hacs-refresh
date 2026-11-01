@@ -13,6 +13,7 @@
   },
   "services": {
     "check_updates": { "service": "mdi:archive-refresh" },
-    "check_repository": { "service": "mdi:archive-refresh-outline" }
+    "check_repository": { "service": "mdi:archive-refresh-outline" },
+    "install_updates": { "service": "mdi:package-down" }
   }
 }
