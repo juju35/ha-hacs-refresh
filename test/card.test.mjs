@@ -464,17 +464,22 @@ test('focus given back after a re-render never scrolls the page', () => {
 });
 
 test('intrinsic width: never collapses in an inline-block or auto column, still shrinks in a 1fr grid', () => {
-  const css = HacsRefreshCard.styles.replace(/\/\*.*?\*\//g, '').replace(/\s+/g, ' ');
+  const css = HacsRefreshCard.styles.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ');
   const host = css.match(/:host \{([^}]*)\}/)[1];
   const card = css.match(/ ha-card \{([^}]*)\}/)[1];
-  // The size container is ha-card (inside the host), with an intrinsic width so a shrink-to-fit parent doesn't drop it to its padding.
+  // The size container is ha-card (inside the host); an empty zero-height grid gives the host a natural width so a
+  // shrink-to-fit parent doesn't drop the card to its padding...
   assert.match(card, /container-type: inline-size/);
-  assert.match(card, /contain-intrinsic-inline-size: \d+px/);
   assert.doesNotMatch(host, /container/);
-  // That intrinsic width must not become a minimum: the host shrinks in a 1fr 1fr grid (no px min-width on it).
+  const before = css.match(/:host::before \{([^}]*)\}/)?.[1];
+  assert.ok(before, ':host::before');
+  assert.match(before, /display: grid;/);
+  assert.match(before, /grid-template-columns: minmax\(0, \d+px\)/);
+  assert.match(before, /height: 0/);
+  // ...without a minimum: in a 1fr 1fr grid, even wrapped in a div, the card shrinks (no px min-width, no contain-intrinsic).
   assert.match(host, /min-width: 0;/);
   assert.doesNotMatch(host, /min-width: [1-9]/);
-  assert.doesNotMatch(host, /contain-intrinsic/);
+  assert.doesNotMatch(css, /contain-intrinsic/);
 });
 
 // WCAG contrast of the coloured text and status icons, with Home Assistant's default light and dark themes.
