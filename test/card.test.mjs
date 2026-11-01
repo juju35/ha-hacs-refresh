@@ -156,7 +156,10 @@ test('dates use Home Assistant\'s full locale when its base is the card\'s langu
   assert.equal(hrLocale({ language: 'pt-BR' }, {}), 'pt-BR');
   assert.equal(hrLocale({ locale: { language: 'pt-BR' }, language: 'pt' }, {}), 'pt-BR');
   assert.equal(hrLocale({ language: 'fr-CA' }, {}), 'fr-CA');
-  assert.equal(hrLocale({ language: 'pt' }, {}), 'pt');
+  assert.equal(hrLocale({ language: 'pt' }, {}), 'pt-PT');
+  assert.equal(hrLocale({ locale: { language: 'pt' }, language: 'pt' }, {}), 'pt-PT');
+  assert.equal(hrLocale({ language: 'en' }, { language: 'pt' }), 'pt-PT');
+  assert.equal(hrLocale({ language: 'pt' }, { language: 'fr' }), 'fr');
   assert.equal(hrLocale({ language: 'pt-BR' }, { language: 'pl' }), 'pl');
   assert.equal(hrLocale({ language: 'ja' }, {}), 'en');
   assert.equal(hrLocale({ language: 'sr-Latn' }, { language: 'sr' }), 'sr');

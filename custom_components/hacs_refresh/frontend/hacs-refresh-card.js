@@ -509,10 +509,12 @@ const hrLang = (hass, config) => {
 
 // Locale for Intl: Home Assistant's full locale (pt-BR, fr-CA…) when its base is the card's language, else the card's
 // language (option `language:` set to another one, or a code the card has its own strings for: sr vs sr-Latn).
+// A bare `pt` is Home Assistant's European Portuguese: Intl reads it as Brazilian, so it becomes pt-PT.
 const hrLocale = (hass, config) => {
   const lang = hrLang(hass, config);
   const full = String(hass?.locale?.language || hass?.language || '');
-  return full === lang || (!HR_I18N[full] && full.split('-')[0] === lang) ? full || lang : lang;
+  const loc = full === lang || (!HR_I18N[full] && full.split('-')[0] === lang) ? full || lang : lang;
+  return loc === 'pt' ? 'pt-PT' : loc;
 };
 
 const hrT = (lang, key, vars = {}) =>
