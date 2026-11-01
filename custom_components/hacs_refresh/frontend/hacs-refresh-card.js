@@ -926,38 +926,52 @@ class HacsRefreshCard extends HTMLElement {
         --hr-warn: var(--warning-color, #ffa600);
         --hr-alert: var(--error-color, #db4437);
         --hr-na: var(--disabled-color, #9e9e9e);
+        /* A block that a flex or grid parent may shrink (the card has no minimum width of its own). */
+        display: block;
+        min-width: 0;
       }
       /* Text and status icons in a state colour are mixed with the text colour: darker on a light theme,
          lighter on a dark one, so they stay readable (4.5:1 for text, 3:1 for icons) on their tinted background. */
-      /* A size container: the header's pill turns into a dot on a narrow card. */
-      ha-card { padding: 12px; overflow: hidden; container-type: inline-size; }
+      /* A size container: the header's pill turns into a dot on a narrow card. Size containment gives the card no
+         intrinsic width: without contain-intrinsic-inline-size it would collapse to its padding in a shrink-to-fit parent
+         (inline-block, auto grid column, layout-card). */
+      ha-card { padding: 12px; overflow: hidden; container-type: inline-size; contain-intrinsic-inline-size: 296px; }
       ha-card.lvl-ok    { --c: var(--hr-ok); }
       ha-card.lvl-info  { --c: var(--hr-info); }
       ha-card.lvl-warn  { --c: var(--hr-warn); }
       ha-card.lvl-alert { --c: var(--hr-alert); }
       ha-card.lvl-na    { --c: var(--hr-na); }
 
-      .head { display: flex; align-items: center; gap: 10px; }
+      .head { position: relative; display: flex; align-items: center; gap: 10px; }
       .badge { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
                background: color-mix(in srgb, var(--c) 16%, transparent); color: color-mix(in srgb, var(--c) 55%, var(--primary-text-color, #212121)); }
       .badge ha-icon { --mdc-icon-size: 24px; }
       /* The title takes the room left (a long subtitle never squeezes the pill) and keeps about four characters;
-         the buttons never shrink, the pill takes at most half of the header and is truncated. */
+         the buttons never shrink, the pill keeps its whole label and is only truncated when there is really no room. */
       .heading { flex: 1 1 0%; min-width: 6ch; font-size: 16px; display: flex; flex-direction: column; }
       .title { font-size: 16px; font-weight: 500; line-height: 1.25; color: var(--primary-text-color);
                white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .subtitle { font-size: 12px; line-height: 1.3; color: var(--secondary-text-color);
                   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .pill { position: relative; flex: 0 1 auto; min-width: 0; max-width: 50%; box-sizing: border-box; display: flex; align-items: center; gap: 5px;
+      .pill { position: relative; flex: 0 1 auto; min-width: 0; box-sizing: border-box; display: flex; align-items: center; gap: 5px;
               font-size: 11px; font-weight: 500; padding: 1px 8px; border-radius: 999px;
               color: color-mix(in srgb, var(--c) 40%, var(--primary-text-color, #212121));
               background: color-mix(in srgb, var(--c) 14%, transparent); font-variant-numeric: tabular-nums; }
       .ptext { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .dot { display: none; flex: none; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
-      @container (max-width: 300px) {
+      /* The pill keeps its words on a card wider than 264 px (8 px gaps under 324 px); narrower, only its dot, and on a
+         phone's 6 columns (156-194 px) a smaller badge with the dot on its corner. */
+      @container (max-width: 300px) { .head { gap: 8px; } }
+      @container (max-width: 240px) {
         .pill { padding: 5px; }
         .dot { display: block; }
         .ptext { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+      }
+      @container (max-width: 170px) {
+        .badge { width: 32px; height: 32px; }
+        .badge ha-icon { --mdc-icon-size: 20px; }
+        .pill { position: absolute; left: 21px; top: 50%; margin-top: -19px; padding: 2px;
+                background: var(--ha-card-background, var(--card-background-color, #fff)); }
       }
       .check { all: unset; cursor: pointer; flex: none; width: 26px; height: 26px; border-radius: 50%;
                display: grid; place-items: center; color: var(--secondary-text-color); }
