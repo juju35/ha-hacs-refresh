@@ -56,8 +56,8 @@ const context = {
   Date,
 };
 vm.createContext(context);
-vm.runInContext(`${source}\nthis.hr = { HacsRefreshCard, HacsRefreshCardEditor, HR_I18N, hrEsc, hrLang, hrDevices, HR_DEFAULTS };`, context);
-const { HacsRefreshCard, HacsRefreshCardEditor, HR_I18N, hrEsc, hrLang, hrDevices, HR_DEFAULTS } = context.hr;
+vm.runInContext(`${source}\nthis.hr = { HacsRefreshCard, HacsRefreshCardEditor, HR_I18N, hrEsc, hrLang, hrLocale, hrDevices, HR_DEFAULTS };`, context);
+const { HacsRefreshCard, HacsRefreshCardEditor, HR_I18N, hrEsc, hrLang, hrLocale, hrDevices, HR_DEFAULTS } = context.hr;
 
 const STATUS = 'sensor.hacs_refresh_status';
 const LAST_CHECK = 'sensor.hacs_refresh_last_check';
@@ -152,6 +152,17 @@ test('Italian, Dutch, Portuguese and Polish: card strings and relative dates', (
   }
 });
 
+test('dates use Home Assistant\'s full locale when its base is the card\'s language', () => {
+  assert.equal(hrLocale({ language: 'pt-BR' }, {}), 'pt-BR');
+  assert.equal(hrLocale({ locale: { language: 'pt-BR' }, language: 'pt' }, {}), 'pt-BR');
+  assert.equal(hrLocale({ language: 'fr-CA' }, {}), 'fr-CA');
+  assert.equal(hrLocale({ language: 'pt' }, {}), 'pt');
+  assert.equal(hrLocale({ language: 'pt-BR' }, { language: 'pl' }), 'pl');
+  assert.equal(hrLocale({ language: 'ja' }, {}), 'en');
+  assert.equal(hrLocale({ language: 'sr-Latn' }, { language: 'sr' }), 'sr');
+  assert.equal(hrLocale({ language: 'sr-Latn' }, {}), 'sr-Latn');
+});
+
 test('Serbian is there in Cyrillic (sr) and Latin (sr-Latn)', () => {
   assert.ok(HR_I18N.sr && HR_I18N['sr-Latn']);
   // Proper nouns, brands and placeholders are left out of the script check.
@@ -196,7 +207,7 @@ test('editor offers every language, Serbian in both scripts', () => {
     ['sr-Latn', 'Srpski (latinica)'],
     ['it', 'Italiano'],
     ['nl', 'Nederlands'],
-    ['pt', 'Português'],
+    ['pt', 'Português (Portugal)'],
     ['pl', 'Polski'],
   ]);
   // Every language of the card is offered.

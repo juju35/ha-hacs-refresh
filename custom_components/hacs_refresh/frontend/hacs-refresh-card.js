@@ -309,8 +309,8 @@ const HR_I18N = {
     checking: 'Verifica {done}/{total}',
     checking_short: 'Verifica in corso…',
     error: 'Errore',
-    failed_one: '{n} non riuscito',
-    failed_many: '{n} non riusciti',
+    failed_one: '{n} fallito',
+    failed_many: '{n} falliti',
     not_loaded: 'HACS Refresh non è configurato',
     unavailable: 'Non disponibile',
     never_checked: 'Non ancora verificato',
@@ -409,7 +409,7 @@ const HR_I18N = {
     error: 'Erro',
     failed_one: '{n} falhou',
     failed_many: '{n} falharam',
-    not_loaded: 'O HACS Refresh não está configurado',
+    not_loaded: 'HACS Refresh não configurado',
     unavailable: 'Indisponível',
     never_checked: 'Ainda não verificado',
     checked: 'Verificado {d}',
@@ -458,7 +458,7 @@ const HR_I18N = {
     error: 'Błąd',
     failed_one: 'Nieudane: {n}',
     failed_many: 'Nieudane: {n}',
-    not_loaded: 'HACS Refresh nie jest skonfigurowany',
+    not_loaded: 'HACS Refresh nieskonfigurowany',
     unavailable: 'Niedostępne',
     never_checked: 'Jeszcze nie sprawdzono',
     checked: 'Sprawdzono {d}',
@@ -505,6 +505,14 @@ const hrLang = (hass, config) => {
   if (HR_I18N[raw]) return raw;
   const l = raw.split('-')[0];
   return HR_I18N[l] ? l : 'en';
+};
+
+// Locale for Intl: Home Assistant's full locale (pt-BR, fr-CA…) when its base is the card's language, else the card's
+// language (option `language:` set to another one, or a code the card has its own strings for: sr vs sr-Latn).
+const hrLocale = (hass, config) => {
+  const lang = hrLang(hass, config);
+  const full = String(hass?.locale?.language || hass?.language || '');
+  return full === lang || (!HR_I18N[full] && full.split('-')[0] === lang) ? full || lang : lang;
 };
 
 const hrT = (lang, key, vars = {}) =>
@@ -561,7 +569,7 @@ class HacsRefreshCard extends HTMLElement {
       watched &&
       hass.entities === old.entities &&
       watched.every((id) => hass.states[id] === old.states[id]) &&
-      hrLang(hass, this._config) === hrLang(old, this._config) &&
+      hrLocale(hass, this._config) === hrLocale(old, this._config) &&
       Math.floor(Date.now() / 60000) === this._sigMinute
     ) {
       return;
@@ -586,10 +594,9 @@ class HacsRefreshCard extends HTMLElement {
     const t = new Date(iso).getTime();
     if (!Number.isFinite(t)) return '';
     const m = (t - Date.now()) / 60000;
-    const lang = hrLang(this._hass, this._config);
     let rtf;
     try {
-      rtf = new Intl.RelativeTimeFormat(lang, { numeric: 'auto' });
+      rtf = new Intl.RelativeTimeFormat(hrLocale(this._hass, this._config), { numeric: 'auto' });
     } catch {
       return new Date(t).toISOString();
     }
@@ -605,7 +612,7 @@ class HacsRefreshCard extends HTMLElement {
     const d = new Date(iso);
     if (!Number.isFinite(d.getTime())) return '';
     try {
-      return d.toLocaleString(hrLang(this._hass, this._config), { dateStyle: 'medium', timeStyle: 'short' });
+      return d.toLocaleString(hrLocale(this._hass, this._config), { dateStyle: 'medium', timeStyle: 'short' });
     } catch {
       return d.toISOString();
     }
@@ -648,7 +655,7 @@ class HacsRefreshCard extends HTMLElement {
     // Every update entity's state, not only the ones on: one coming back from unavailable changes the count.
     const updateSig = ids.updates.map((id) => states[id]?.state);
     const admin = !!this._hass.user?.is_admin;
-    const sig = JSON.stringify([c, hrLang(this._hass, c), ids, raw, lastSt, buttonSt?.state, updateStates, updateSig, minute, admin, !!this._confirm]);
+    const sig = JSON.stringify([c, hrLocale(this._hass, c), ids, raw, lastSt, buttonSt?.state, updateStates, updateSig, minute, admin, !!this._confirm]);
     if (sig === this._sig) return;
     this._sig = sig;
 
@@ -1029,7 +1036,7 @@ class HacsRefreshCardEditor extends HTMLElement {
               { value: 'sr-Latn', label: 'Srpski (latinica)' },
               { value: 'it', label: 'Italiano' },
               { value: 'nl', label: 'Nederlands' },
-              { value: 'pt', label: 'Português' },
+              { value: 'pt', label: 'Português (Portugal)' },
               { value: 'pl', label: 'Polski' },
             ],
           },

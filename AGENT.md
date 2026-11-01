@@ -28,7 +28,7 @@ custom_components/hacs_refresh/
 ├── entity.py        # Shared service device, listener on HacsRefresher
 ├── frontend/hacs-refresh-card.js   # custom:hacs-refresh-card: status sensor + last check + button, HACS update entities (platform hacs, state on),
 │                                   #   "Update all (n)" for admins → confirmation at the top of the card → install_updates with the ids listed
-├── const.py / icons.json / services.yaml / translations/{en,fr,de,es,sr,sr-Latn,it,nl,pt,pl}.json
+├── const.py / icons.json / services.yaml / translations/{en,fr,de,es,sr,sr-Latn,it,nl,pt,pt-BR,pl}.json (pt-BR = copy of pt)
 ```
 
 ## HACS internals used (same as HACS' `hacs/repository/refresh` websocket command)

@@ -30,7 +30,7 @@ HACS itself only checks downloaded custom repositories every 48 hours, and its o
 - **Lovelace card** bundled with the integration: status and progress, last and next check, the updates available and the repositories that couldn't be checked
 - One failing repository doesn't stop the others; a check never runs twice at the same time, and `check_repository` waits for a full check that is running instead of starting a second one
 - Also used by the [System Monitor Card](https://github.com/juju35/ha-system-monitor-card) for its HACS section
-- English, French, German, Spanish, Serbian (Cyrillic and Latin), Italian, Dutch, European Portuguese and Polish
+- English, French, German, Spanish, Serbian (Cyrillic and Latin), Italian, Dutch, European Portuguese and Polish (pt-BR uses the European Portuguese texts)
 
 ## Prerequisites
 
@@ -210,7 +210,7 @@ The integration follows the language of Home Assistant. Currently supported:
 | Srpski (latinica) | `sr-Latn` |
 | Italiano | `it` |
 | Nederlands | `nl` |
-| Português (Portugal) | `pt` |
+| Português (Portugal) | `pt` (pt-BR uses the European Portuguese texts) |
 | Polski | `pl` |
 
 Contributions for additional languages are welcome!

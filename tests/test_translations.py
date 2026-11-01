@@ -32,7 +32,7 @@ LANGUAGES = sorted(p.stem for p in TRANSLATIONS.glob("*.json") if p.stem != "en"
 
 def test_every_language_exists() -> None:
     """Same languages as the card."""
-    assert set(LANGUAGES) == {"de", "es", "fr", "it", "nl", "pl", "pt", "sr", "sr-Latn"}
+    assert set(LANGUAGES) == {"de", "es", "fr", "it", "nl", "pl", "pt", "pt-BR", "sr", "sr-Latn"}
 
 
 def test_serbian_files_exist() -> None:
@@ -49,6 +49,11 @@ def test_same_keys_and_placeholders_as_english(lang: str) -> None:
     for path, text in en.items():
         assert sorted(PLACEHOLDER.findall(other[path])) == sorted(PLACEHOLDER.findall(text)), path
         assert isinstance(other[path], str) and other[path].strip(), f"{lang} {path} is empty"
+
+
+def test_brazilian_portuguese_is_european_portuguese() -> None:
+    """pt-BR uses the European Portuguese texts."""
+    assert _load("pt-BR") == _load("pt")
 
 
 def test_serbian_scripts() -> None:
