@@ -30,7 +30,8 @@ const HR_I18N = {
     failed_title: 'Could not be checked',
     error_title: 'The last check failed',
     install_all: 'Update all ({n})',
-    installing: 'Installing… {n} left',
+    installing_one: 'Installing… {n} left',
+    installing_many: 'Installing… {n} left',
     installing_short: 'Installing…',
     confirm_one: 'Install {n} update?',
     confirm_many: 'Install {n} updates?',
@@ -79,7 +80,8 @@ const HR_I18N = {
     failed_title: 'Impossible à vérifier',
     error_title: 'La dernière vérification a échoué',
     install_all: 'Tout mettre à jour ({n})',
-    installing: 'Installation… {n} restante(s)',
+    installing_one: 'Installation… {n} restante',
+    installing_many: 'Installation… {n} restantes',
     installing_short: 'Installation…',
     confirm_one: 'Installer {n} mise à jour ?',
     confirm_many: 'Installer {n} mises à jour ?',
@@ -128,7 +130,8 @@ const HR_I18N = {
     failed_title: 'Konnten nicht geprüft werden',
     error_title: 'Die letzte Prüfung ist fehlgeschlagen',
     install_all: 'Alle aktualisieren ({n})',
-    installing: 'Installation… {n} übrig',
+    installing_one: 'Installation… {n} übrig',
+    installing_many: 'Installation… {n} übrig',
     installing_short: 'Installation…',
     confirm_one: '{n} Update installieren?',
     confirm_many: '{n} Updates installieren?',
@@ -177,7 +180,8 @@ const HR_I18N = {
     failed_title: 'No se pudieron comprobar',
     error_title: 'La última comprobación falló',
     install_all: 'Actualizar todo ({n})',
-    installing: 'Instalando… quedan {n}',
+    installing_one: 'Instalando… queda {n}',
+    installing_many: 'Instalando… quedan {n}',
     installing_short: 'Instalando…',
     confirm_one: '¿Instalar {n} actualización?',
     confirm_many: '¿Instalar {n} actualizaciones?',
@@ -212,6 +216,7 @@ const HR_I18N = {
     checking_short: 'Проверавање…',
     error: 'Грешка',
     failed_one: '{n} неуспешан',
+    failed_few: '{n} неуспешна',
     failed_many: '{n} неуспешних',
     not_loaded: 'HACS Refresh није подешен',
     unavailable: 'Недоступно',
@@ -226,7 +231,9 @@ const HR_I18N = {
     failed_title: 'Није могуће проверити',
     error_title: 'Последња провера није успела',
     install_all: 'Ажурирај све ({n})',
-    installing: 'Инсталирање… преостало {n}',
+    installing_one: 'Инсталирање… преостало {n}',
+    installing_few: 'Инсталирање… преостала {n}',
+    installing_many: 'Инсталирање… преостало {n}',
     installing_short: 'Инсталирање…',
     confirm_one: 'Инсталирати {n} ажурирање?',
     confirm_many: 'Инсталирати {n} ажурирања?',
@@ -261,6 +268,7 @@ const HR_I18N = {
     checking_short: 'Proveravanje…',
     error: 'Greška',
     failed_one: '{n} neuspešan',
+    failed_few: '{n} neuspešna',
     failed_many: '{n} neuspešnih',
     not_loaded: 'HACS Refresh nije podešen',
     unavailable: 'Nedostupno',
@@ -275,7 +283,9 @@ const HR_I18N = {
     failed_title: 'Nije moguće proveriti',
     error_title: 'Poslednja provera nije uspela',
     install_all: 'Ažuriraj sve ({n})',
-    installing: 'Instaliranje… preostalo {n}',
+    installing_one: 'Instaliranje… preostalo {n}',
+    installing_few: 'Instaliranje… preostala {n}',
+    installing_many: 'Instaliranje… preostalo {n}',
     installing_short: 'Instaliranje…',
     confirm_one: 'Instalirati {n} ažuriranje?',
     confirm_many: 'Instalirati {n} ažuriranja?',
@@ -324,7 +334,8 @@ const HR_I18N = {
     failed_title: 'Impossibile verificare',
     error_title: 'L’ultima verifica non è riuscita',
     install_all: 'Aggiorna tutto ({n})',
-    installing: 'Installazione… {n} rimanenti',
+    installing_one: 'Installazione… {n} rimanente',
+    installing_many: 'Installazione… {n} rimanenti',
     installing_short: 'Installazione…',
     confirm_one: 'Installare {n} aggiornamento?',
     confirm_many: 'Installare {n} aggiornamenti?',
@@ -373,7 +384,8 @@ const HR_I18N = {
     failed_title: 'Kon niet worden gecontroleerd',
     error_title: 'De laatste controle is mislukt',
     install_all: 'Alles bijwerken ({n})',
-    installing: 'Installeren… nog {n}',
+    installing_one: 'Installeren… nog {n}',
+    installing_many: 'Installeren… nog {n}',
     installing_short: 'Installeren…',
     confirm_one: '{n} update installeren?',
     confirm_many: '{n} updates installeren?',
@@ -422,7 +434,8 @@ const HR_I18N = {
     failed_title: 'Não foi possível verificar',
     error_title: 'A última verificação falhou',
     install_all: 'Atualizar tudo ({n})',
-    installing: 'A instalar… faltam {n}',
+    installing_one: 'A instalar… falta {n}',
+    installing_many: 'A instalar… faltam {n}',
     installing_short: 'A instalar…',
     confirm_one: 'Instalar {n} atualização?',
     confirm_many: 'Instalar {n} atualizações?',
@@ -452,7 +465,8 @@ const HR_I18N = {
     title: 'Aktualizacje HACS',
     up_to_date: 'Aktualne',
     updates_one: '{n} aktualizacja',
-    updates_many: 'Aktualizacje: {n}',
+    updates_few: '{n} aktualizacje',
+    updates_many: '{n} aktualizacji',
     checking: 'Sprawdzanie {done}/{total}',
     checking_short: 'Sprawdzanie…',
     error: 'Błąd',
@@ -471,10 +485,12 @@ const HR_I18N = {
     failed_title: 'Nie udało się sprawdzić',
     error_title: 'Ostatnie sprawdzanie nie powiodło się',
     install_all: 'Zaktualizuj wszystko ({n})',
-    installing: 'Instalowanie… pozostało: {n}',
+    installing_one: 'Instalowanie… pozostało: {n}',
+    installing_many: 'Instalowanie… pozostało: {n}',
     installing_short: 'Instalowanie…',
     confirm_one: 'Zainstalować {n} aktualizację?',
-    confirm_many: 'Zainstalować aktualizacje ({n})?',
+    confirm_few: 'Zainstalować {n} aktualizacje?',
+    confirm_many: 'Zainstalować {n} aktualizacji?',
     confirm_hint: 'Jedna po drugiej. Integracje wymagają potem ponownego uruchomienia Home Assistant.',
     cancel: 'Anuluj',
     install: 'Zainstaluj',
@@ -519,6 +535,19 @@ const hrLocale = (hass, config) => {
 
 const hrT = (lang, key, vars = {}) =>
   (HR_I18N[lang]?.[key] ?? HR_I18N.en[key] ?? key).replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
+
+// A count's string: `<key>_one`, `<key>_few` (Serbian, Polish: 2-4, 22-24…) or `<key>_many`, by the language's plural rules.
+const hrPlural = (lang, locale, key, n) => {
+  let form = n === 1 ? 'one' : 'other';
+  try {
+    form = new Intl.PluralRules(locale).select(n);
+  } catch {
+    // Unknown locale: one or other.
+  }
+  const strings = HR_I18N[lang] || HR_I18N.en;
+  const suffix = form === 'one' ? 'one' : form === 'few' && strings[`${key}_few`] ? 'few' : 'many';
+  return hrT(lang, `${key}_${suffix}`, { n });
+};
 
 const hrEsc = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -589,6 +618,10 @@ class HacsRefreshCard extends HTMLElement {
 
   _t(key, vars) {
     return hrT(hrLang(this._hass, this._config), key, vars);
+  }
+
+  _n(key, n) {
+    return hrPlural(hrLang(this._hass, this._config), hrLocale(this._hass, this._config), key, n);
   }
 
   // "3 hours ago", "in 21 hours"… in the card's language.
@@ -769,11 +802,11 @@ class HacsRefreshCard extends HTMLElement {
   _status(st, running, a, count, failed, error, installing = []) {
     if (!st) return this._t('not_loaded');
     if (running) return a.total ? this._t('checking', { done: a.done || 0, total: a.total }) : this._t('checking_short');
-    if (installing.length) return this._t('installing', { n: installing.length });
+    if (installing.length) return this._n('installing', installing.length);
     if (error) return this._t('error');
     const parts = [];
-    if (count) parts.push(this._t(count > 1 ? 'updates_many' : 'updates_one', { n: count }));
-    if (failed.length) parts.push(this._t(failed.length > 1 ? 'failed_many' : 'failed_one', { n: failed.length }));
+    if (count) parts.push(this._n('updates', count));
+    if (failed.length) parts.push(this._n('failed', failed.length));
     return parts.length ? parts.join(' · ') : this._t('up_to_date');
   }
 
@@ -801,10 +834,11 @@ class HacsRefreshCard extends HTMLElement {
 
   // Confirmation at the top of the card, like the other cards' popups.
   _confirmBox(n) {
+    const ask = hrEsc(this._n('confirm', n));
     return `
-        <div class="confirm" role="alertdialog" aria-label="${hrEsc(this._t(n > 1 ? 'confirm_many' : 'confirm_one', { n }))}">
+        <div class="confirm" role="alertdialog" aria-label="${ask}">
           <ha-icon icon="mdi:package-down"></ha-icon>
-          <span class="ctext"><b>${hrEsc(this._t(n > 1 ? 'confirm_many' : 'confirm_one', { n }))}</b><br>${hrEsc(this._t('confirm_hint'))}</span>
+          <span class="ctext"><b>${ask}</b><br>${hrEsc(this._t('confirm_hint'))}</span>
           <span class="cbtns">
             <button class="confirm-no">${hrEsc(this._t('cancel'))}</button>
             <button class="confirm-yes">${hrEsc(this._t('install'))}</button>
