@@ -113,7 +113,11 @@ const placeholders = (s) => [...String(s).matchAll(/\{(\w+)\}/g)].map((m) => m[1
 test('every language has the English keys, arrays of the same length and the same placeholders', () => {
   const keys = Object.keys(HR_I18N.en).sort();
   for (const [lang, strings] of Object.entries(HR_I18N)) {
-    assert.deepEqual(Object.keys(strings).sort(), keys, lang);
+    // A `<key>_few` plural form (Serbian, Polish) is the only extra key, next to the `<key>_many` it refines.
+    const extra = Object.keys(strings).filter((k) => !keys.includes(k));
+    for (const k of extra) assert.ok(k.endsWith('_few') && keys.includes(k.replace(/_few$/, '_many')), `${lang}.${k}`);
+    for (const k of extra) assert.deepEqual(placeholders(strings[k]), placeholders(HR_I18N.en[k.replace(/_few$/, '_many')]), `${lang}.${k}`);
+    assert.deepEqual(Object.keys(strings).filter((k) => keys.includes(k)).sort(), keys, lang);
     for (const k of keys) {
       const en = HR_I18N.en[k];
       if (Array.isArray(en)) assert.equal(strings[k].length, en.length, `${lang}.${k}`);
@@ -526,4 +530,64 @@ test('the confirmation closes when the updates are gone', () => {
   assert.match(html(card), /class="confirm"/);
   card.hass = makeHass({ updates: [] });
   assert.doesNotMatch(html(card), /class="confirm"/);
+});
+
+// The pill's text for `updates` updates, `failed` failed repositories or `installing` installs left.
+const pill = (language, { updates = 0, failed = 0, installing = 0 } = {}) => {
+  const card = render({}, makeHass({ language }));
+  const list = (n, p) => Array.from({ length: n }, (_, i) => `${p}${i}`);
+  return card._status({ state: 'idle' }, false, {}, updates, list(failed, 'repo'), null, list(installing, 'update.x'));
+};
+
+test('installing: the singular for the last install, in every language', () => {
+  assert.equal(pill('it', { installing: 1 }), 'Installazione… 1 rimanente');
+  assert.equal(pill('it', { installing: 2 }), 'Installazione… 2 rimanenti');
+  assert.equal(pill('es', { installing: 1 }), 'Instalando… queda 1');
+  assert.equal(pill('es', { installing: 5 }), 'Instalando… quedan 5');
+  assert.equal(pill('pt', { installing: 1 }), 'A instalar… falta 1');
+  assert.equal(pill('pt', { installing: 2 }), 'A instalar… faltam 2');
+  assert.equal(pill('fr', { installing: 1 }), 'Installation… 1 restante');
+  assert.equal(pill('fr', { installing: 3 }), 'Installation… 3 restantes');
+  assert.equal(pill('en', { installing: 1 }), 'Installing… 1 left');
+});
+
+test('1 is singular in every language', () => {
+  for (const lang of Object.keys(HR_I18N)) {
+    const s = HR_I18N[lang];
+    assert.equal(pill(lang, { updates: 1 }), s.updates_one.replace('{n}', '1'), `${lang} updates`);
+    assert.equal(pill(lang, { failed: 1 }), s.failed_one.replace('{n}', '1'), `${lang} failed`);
+    assert.equal(pill(lang, { installing: 1 }), s.installing_one.replace('{n}', '1'), `${lang} installing`);
+  }
+});
+
+test('Serbian and Polish plurals: 1, 2-4 and 5+ (21, 22 like 1 and 2 where the language says so)', () => {
+  const cases = {
+    sr: { failed: ['1 неуспешан', '2 неуспешна', '5 неуспешних', '21 неуспешан', '22 неуспешна'] },
+    'sr-Latn': { failed: ['1 neuspešan', '2 neuspešna', '5 neuspešnih', '21 neuspešan', '22 neuspešna'] },
+    pl: { updates: ['1 aktualizacja', '2 aktualizacje', '5 aktualizacji', '21 aktualizacji', '22 aktualizacje'] },
+    en: { updates: ['1 update', '2 updates', '5 updates', '21 updates', '22 updates'] },
+  };
+  for (const [lang, byKind] of Object.entries(cases)) {
+    for (const [kind, expected] of Object.entries(byKind)) {
+      assert.deepEqual([1, 2, 5, 21, 22].map((n) => pill(lang, { [kind]: n })), expected, `${lang} ${kind}`);
+    }
+  }
+});
+
+test('Polish confirmation: 1, 2-4 and 5+', () => {
+  const ask = (n) => {
+    const card = render({ language: 'pl' }, makeHass());
+    return card._confirmBox(n).match(/<b>([^<]*)<\/b>/)[1];
+  };
+  assert.deepEqual([1, 2, 5, 22].map(ask), [
+    'Zainstalować 1 aktualizację?',
+    'Zainstalować 2 aktualizacje?',
+    'Zainstalować 5 aktualizacji?',
+    'Zainstalować 22 aktualizacje?',
+  ]);
+});
+
+test('plurals: a locale Intl refuses still renders (singular for 1)', () => {
+  assert.equal(pill('pl-@@', { updates: 1 }), '1 aktualizacja');
+  assert.equal(pill('pl-@@', { updates: 5 }), '5 aktualizacji');
 });
