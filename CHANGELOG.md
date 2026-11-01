@@ -7,7 +7,7 @@
 - HACS Refresh shows its own icon in **Settings → Devices & services** on Home Assistant 2026.3 and later: the release zip now includes the `brand/` folder.
 - Card: on a narrow card (its minimum width, small phones), the title stays readable, the status pill is truncated and shrinks to a coloured dot (its text stays in the tooltip and for screen readers), and the **Update all** button moves under the section title instead of being cut off.
 - Card: on a phone's 6 columns (about 156-180 px), the status dot sits on the badge's corner instead of being pushed out of the card; on a card wider than 264 px the pill keeps its whole label (on a 320 px phone card it used to shrink to a dot).
-- Card: the card keeps its width in a container that sizes it to its content (an `inline-block`, an `auto` grid column, some layout-card set-ups) instead of collapsing to a few pixels, and still shrinks in a `1fr 1fr` grid.
+- Card: the card keeps its width in a container that sizes it to its content (an `inline-block`, an `auto` grid column, some layout-card set-ups) instead of collapsing to a few pixels, and shrinks to its column in a `1fr 1fr` grid (layout-card, grid card, horizontal stack), wrapped in a `div` or not, instead of sticking out of it.
 - Card: giving the keyboard focus back after an update (the check button, an update row, the confirmation) no longer scrolls the page.
 - Card: counts follow each language's plural rules: "1 rimanente" / "queda 1" / "falta 1" / "1 restante" for the last install (Italian, Spanish, Portuguese, French), and Serbian and Polish use their 2-4 form ("2 неуспешна", "2 aktualizacje", "5 aktualizacji", "21 неуспешан").
 
