@@ -15,13 +15,15 @@ they exist so a future HACS version fails with a clear message instead of a cras
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
+from homeassistant.const import ATTR_ENTITY_ID, STATE_ON
+from homeassistant.core import CALLBACK_TYPE, Context, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.storage import Store
@@ -119,6 +121,10 @@ class HacsRefresher:
         # so that another call or the full check waits for that result instead of refreshing them a second time.
         self._single: dict[str, asyncio.Future[str | None]] = {}
         self._task: asyncio.Task | None = None
+        # Update entities left to install (the one being installed first), and the ones that failed ("title: error").
+        self.installing: list[str] = []
+        self.install_failed: list[str] = []
+        self._install_task: asyncio.Task | None = None
         self._listeners: list[CALLBACK_TYPE] = []
         # When the entities were last notified of the full check's progress (loop time).
         self._progress_at = 0.0
@@ -146,6 +152,10 @@ class HacsRefresher:
     @property
     def running(self) -> bool:
         return self.state == STATE_RUNNING
+
+    @property
+    def installing_updates(self) -> bool:
+        return self._install_task is not None
 
     @callback
     def async_add_listener(self, update_callback: CALLBACK_TYPE) -> Callable[[], None]:
@@ -327,6 +337,91 @@ class HacsRefresher:
             if task.cancelled() and not _cancelling():
                 raise HomeAssistantError(translation_domain=DOMAIN, translation_key="check_cancelled") from None
             raise
+
+    def _installable(self, entity_ids: list[str] | None) -> list[str]:
+        """These HACS update entities, else all of them, keeping the ones with an update that isn't being installed."""
+        registry = er.async_get(self.hass)
+        if entity_ids is None:
+            candidates = sorted(
+                e.entity_id for e in registry.entities.values() if e.platform == HACS_DOMAIN and e.domain == "update"
+            )
+        else:
+            candidates = []
+            for entity_id in dict.fromkeys(entity_ids):
+                entry = registry.async_get(entity_id)
+                if entry is None or entry.platform != HACS_DOMAIN or entry.domain != "update":
+                    raise ServiceValidationError(
+                        translation_domain=DOMAIN,
+                        translation_key="not_hacs_update_entity",
+                        translation_placeholders={"entity_id": entity_id},
+                    )
+                candidates.append(entity_id)
+        return [
+            entity_id
+            for entity_id in candidates
+            if (state := self.hass.states.get(entity_id)) is not None
+            and state.state == STATE_ON
+            and not state.attributes.get("in_progress")
+        ]
+
+    @callback
+    def async_start_install(self, entity_ids: list[str] | None, context: Context | None) -> None:
+        """Install the updates of these HACS update entities (else all), one after the other, in the background."""
+        if self.installing_updates:
+            raise ServiceValidationError(translation_domain=DOMAIN, translation_key="install_running")
+        _hacs(self.hass)  # fail now, in the caller, if HACS can't be used
+        self.installing = self._installable(entity_ids)
+        self.install_failed = []
+        # Tied to the entry, like the check: unloading it cancels the installs left.
+        self._install_task = self.entry.async_create_background_task(
+            self.hass, self._async_install(context), "hacs_refresh_install"
+        )
+        self._notify()  # once the task is set: the button greys out
+
+    async def async_wait_install(self) -> None:
+        """Wait for the installs running, then fail if some could not be installed."""
+        task = self._install_task
+        if task is not None:
+            try:
+                await asyncio.shield(task)
+            except asyncio.CancelledError:
+                if task.cancelled() and not _cancelling():
+                    raise HomeAssistantError(translation_domain=DOMAIN, translation_key="install_cancelled") from None
+                raise
+        if self.install_failed:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="install_failed",
+                translation_placeholders={"failed": "; ".join(self.install_failed)},
+            )
+
+    async def _async_install(self, context: Context | None) -> None:
+        try:
+            # A check running refreshes these repositories: install once it has ended, whatever its result.
+            if self._task is not None:
+                with contextlib.suppress(HomeAssistantError):
+                    await self.async_wait()
+            # One at a time: HACS writes its data after each download.
+            while self.installing:
+                entity_id = self.installing[0]
+                state = self.hass.states.get(entity_id)
+                # Installed or skipped meanwhile (from HACS, another action): nothing left to do.
+                if state is not None and state.state == STATE_ON:
+                    try:
+                        await self.hass.services.async_call(
+                            "update", "install", {ATTR_ENTITY_ID: entity_id}, blocking=True, context=context
+                        )
+                    except Exception as err:  # noqa: BLE001 - one update must not stop the others
+                        name = state.attributes.get("title") or state.name
+                        _LOGGER.warning("Could not install the update of %s: %s", name, err)
+                        # A new list: the sensor attribute never changes in place.
+                        self.install_failed = [*self.install_failed, f"{name}: {err}"]
+                self.installing = self.installing[1:]
+                self._notify()
+        finally:
+            self.installing = []
+            self._install_task = None
+            self._notify()
 
     async def _async_run(self) -> None:
         try:

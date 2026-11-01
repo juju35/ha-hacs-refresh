@@ -1,0 +1,93 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "HACS Refresh",
+        "description": "Procura atualizações de todos os repositórios transferidos com o HACS, no servidor. O próprio HACS só verifica os repositórios personalizados a cada 48 horas.",
+        "data": { "scan_interval": "Intervalo de verificação" },
+        "data_description": { "scan_interval": "Horas entre duas verificações automáticas. 0 desativa a verificação automática: utilize o botão ou a ação." }
+      }
+    },
+    "abort": {
+      "already_configured": "O HACS Refresh já está configurado.",
+      "single_instance_allowed": "O HACS Refresh já está configurado.",
+      "hacs_not_loaded": "O HACS não está carregado. Instale e configure primeiro o HACS."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opções do HACS Refresh",
+        "data": { "scan_interval": "Intervalo de verificação" },
+        "data_description": { "scan_interval": "Horas entre duas verificações automáticas. 0 desativa a verificação automática: utilize o botão ou a ação." }
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "check_updates": { "name": "Procurar atualizações" }
+    },
+    "sensor": {
+      "status": {
+        "name": "Estado",
+        "state": { "idle": "Inativo", "running": "A verificar", "error": "Erro" },
+        "state_attributes": {
+          "done": { "name": "Verificados" },
+          "total": { "name": "Repositórios" },
+          "updates": { "name": "Atualizações disponíveis" },
+          "failed": { "name": "Falhados" },
+          "error": { "name": "Erro" },
+          "checking": { "name": "Em verificação" },
+          "installing": { "name": "Em instalação" },
+          "install_failed": { "name": "Não foi possível instalar" }
+        }
+      },
+      "last_check": {
+        "name": "Última verificação",
+        "state_attributes": {
+          "scan_interval": { "name": "Intervalo de verificação" },
+          "next_check": { "name": "Próxima verificação" }
+        }
+      }
+    }
+  },
+  "services": {
+    "check_updates": {
+      "name": "Procurar atualizações",
+      "description": "Procura atualizações de todos os repositórios transferidos com o HACS. É executada em segundo plano, exceto se Aguardar estiver ativado.",
+      "fields": {
+        "wait": { "name": "Aguardar", "description": "Aguardar que todos os repositórios sejam verificados antes de a ação terminar; a ação falha então se a verificação falhou ou se um repositório não pôde ser verificado." }
+      }
+    },
+    "check_repository": {
+      "name": "Procurar atualizações de um repositório",
+      "description": "Procura atualizações dos repositórios associados a estas entidades de atualização do HACS e aguarda o resultado.",
+      "fields": {
+        "entity_id": { "name": "Entidades de atualização", "description": "Entidades de atualização do HACS dos repositórios a verificar." }
+      }
+    },
+    "install_updates": {
+      "name": "Instalar atualizações",
+      "description": "Instala as atualizações dos repositórios HACS, uma após a outra, em segundo plano exceto se Aguardar estiver ativado. Apenas administradores.",
+      "fields": {
+        "entity_id": { "name": "Entidades de atualização", "description": "Entidades de atualização do HACS a atualizar; deixe vazio para todos os repositórios com uma atualização." },
+        "wait": { "name": "Aguardar", "description": "Aguardar que todas as atualizações sejam instaladas antes de a ação terminar; a ação falha então se uma atualização não pôde ser instalada." }
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": { "message": "O HACS Refresh não está carregado." },
+    "hacs_not_loaded": { "message": "O HACS não está carregado." },
+    "hacs_not_supported": { "message": "Esta versão do HACS não é suportada ({path} em falta); abra um pedido em {issues}." },
+    "hacs_disabled": { "message": "O HACS está desativado ({reason})." },
+    "hacs_disabled_unknown": { "message": "O HACS está desativado." },
+    "not_hacs_update_entity": { "message": "{entity_id} não é uma entidade de atualização do HACS." },
+    "not_downloaded": { "message": "{entity_id} não é um repositório transferido com o HACS." },
+    "check_failed": { "message": "Não foi possível verificar {failed}." },
+    "check_cancelled": { "message": "A verificação foi cancelada (o HACS Refresh foi recarregado ou removido)." },
+    "full_check_failed": { "message": "A verificação completa falhou: {error}" },
+    "install_running": { "message": "Já estão a ser instaladas atualizações." },
+    "install_failed": { "message": "Não foi possível instalar {failed}." },
+    "install_cancelled": { "message": "As instalações foram canceladas (o HACS Refresh foi recarregado ou removido)." }
+  }
+}

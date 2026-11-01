@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.8.2 - 2026-11-01
+
+### What's new
+- Added Italian, Dutch, European Portuguese and Polish translations: the integration (`it`, `nl`, `pt`, `pl`) and the card, whose editor offers **Italiano**, **Nederlands**, **Português (Portugal)** and **Polski**. pt-BR uses the European Portuguese texts: the integration has a `pt-BR` copy of them and the card falls back to `pt`, with dates in Home Assistant's own format (pt-BR).
+
+### Maintenance
+- Tests: every language of the card and of the integration has the English keys and placeholders and no empty string; the card resolves `it-IT`, `nl-BE`, `pt-BR` and `pl-PL`, formats dates with Home Assistant's full locale, and its editor offers every language; `pt-BR.json` is the same as `pt.json`.
+
+## 0.8.1 - 2026-11-01
+
+### What's new
+- Added Serbian (Cyrillic and Latin) translations: the integration (`sr`, `sr-Latn`) and the card, whose editor offers **Српски** and **Srpski (latinica)**. The card picks `sr-Latn` when Home Assistant is set to it.
+
+### Maintenance
+- Tests: the languages of the card and of the integration have the English keys and placeholders; Serbian is checked for its script.
+
+## 0.8.0
+
+### What's new
+- **Update all** on the card: a button on the updates available installs every update listed, one after the other, after a confirmation at the top of the card. The rows being installed and the number of updates left show the progress; updates that couldn't be installed are listed with their error. Administrators only; option `install_button` to hide it.
+- Card: the **Updates available** section shows how many there are.
+- **`hacs_refresh.install_updates`** action (administrators only): installs the updates of every HACS update entity with one (or the ones given) in the background, or waits for them with `wait: true` and fails if one couldn't be installed. The status sensor gives `installing` and `install_failed`; the **Check for updates** button is greyed out while updates are installed.
+
+## 0.7.2
+
+### Fixes
+- Card: when HACS isn't loaded (setup retry after a GitHub rate limit at startup, disabled), its update entities are unavailable: the card now shows the number of updates found by the last check instead of "Up to date", and `hide_when_ok` no longer hides it. It updates as soon as HACS' entities are back.
+- Card: the status pill, the error of a repository that couldn't be checked and the title of a failed check are readable on a light theme (they were orange or green text on a pale background); the status icons are a little darker too (and slightly lighter on a dark theme).
+- Card: the keyboard focus stays on the **Check for updates** button, or on an update row, when the card refreshes; the button stays focusable while a check runs.
+
+### Maintenance
+- One ruff and Biome version for pre-commit and the Lint workflow, read from the pre-commit configuration; the release now runs Lint, Validate and HACS Validation itself before publishing.
+
 ## 0.7.1
 
 ### Fixes
