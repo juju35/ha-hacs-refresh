@@ -658,23 +658,106 @@ test('narrow header: the title keeps a few characters, the pill shrinks to a dot
   assert.match(rule('.install'), /max-width: 100%/);
   assert.match(rule('.shead'), /flex-wrap: wrap/);
   assert.match(rule('ha-card'), /container-type: inline-size/);
-  // Under the threshold: the dot, the text kept for screen readers (not display: none).
-  const cq = css.indexOf('@container (max-width:');
-  assert.ok(cq >= 0, 'container query');
-  assert.match(rule('.dot', cq), /display: block/);
-  assert.doesNotMatch(rule('.ptext', cq), /display: none/);
-  assert.match(rule('.ptext', cq), /clip-path: inset\(50%\)/);
-  // The text gives way to the dot only on a narrow card (not on a 320 px phone card: 296 px of content).
-  const dotAt = Number(css.slice(cq).match(/@container \(max-width: (\d+)px\) \{ \.pill/)[1]);
-  assert.ok(dotAt < 296, `dot under ${dotAt}px`);
+  // The dot when the label is cut (class set by _fitPill), the text kept for screen readers (not display: none).
+  assert.match(rule('.pill.compact .dot'), /display: block/);
+  assert.doesNotMatch(rule('.pill.compact .ptext'), /display: none/);
+  assert.match(rule('.pill.compact .ptext'), /clip-path: inset\(50%\)/);
   // A phone's 6 columns (156 px card, 132 px of content): the dot sits on the badge's corner, out of the header's row,
   // so badge + title + check button fit (it was pushed 13 px out of the card at 160 px).
   const six = css.indexOf('@container (max-width: 170px)');
   assert.ok(six >= 0, '6-column container query');
-  assert.match(rule('.pill', six), /position: absolute/);
+  assert.match(rule('.pill, .pill.compact', six), /position: absolute/);
+  assert.match(rule('.dot', six), /display: block/);
+  assert.match(rule('.ptext', six), /clip-path: inset\(50%\)/);
   assert.match(rule('.badge', six), /width: 32px/);
   assert.match(rule('.head'), /position: relative/);
   // The pill's full text in its tooltip.
   const out = html(render({}, makeHass({ updates: ['update.mushroom_update', 'update.card_mod_update'], attrs: { failed: ['a/b'] } })));
   assert.match(out, /<div class="pill" title="2 updates · 1 failed"><span class="dot" aria-hidden="true"><\/span><span class="ptext">2 updates · 1 failed<\/span><\/div>/);
+});
+
+// A stand-in for the rendered pill: its label is cut when its full width is more than the room it is given.
+const fakePill = (scrollWidth, clientWidth) => {
+  const cls = new Set();
+  const ptext = { scrollWidth, clientWidth };
+  const pill = {
+    classList: {
+      contains: (c) => cls.has(c),
+      remove: (c) => cls.delete(c),
+      toggle: (c, on) => (on ? cls.add(c) : cls.delete(c)),
+    },
+    querySelector: (sel) => (sel === '.ptext' ? ptext : null),
+  };
+  return { pill, ptext };
+};
+
+test('the pill shrinks to its dot only when its whole label does not fit', () => {
+  const card = render({}, makeHass({ updates: ['update.mushroom_update'] }));
+  const fit = (scroll, client, was = false) => {
+    const { pill } = fakePill(scroll, client);
+    if (was) pill.classList.toggle('compact', true);
+    card.shadowRoot.querySelector = (sel) => (sel === '.pill' ? pill : null);
+    card._fitPill();
+    return pill.classList.contains('compact');
+  };
+  // A label that fits keeps its words (a short "Error" on a 245 px card used to be a dot)...
+  assert.equal(fit(40, 40), false);
+  assert.equal(fit(40, 80), false);
+  // ...measured with its words, not as the dot it was before (a wider card gives it its label back)...
+  assert.equal(fit(60, 60, true), false);
+  // ...and only a label really cut turns into the dot.
+  assert.equal(fit(135, 134), true);
+  // No pill (not set up yet): nothing to do.
+  card.shadowRoot.querySelector = () => null;
+  assert.doesNotThrow(() => card._fitPill());
+  // No fixed width threshold for the dot any more: the label decides, not the card's width.
+  const css = HacsRefreshCard.styles.replace(/\s+/g, ' ');
+  assert.doesNotMatch(css, /@container \(max-width: 240px\)/);
+  assert.match(css, /\.pill\.compact \.dot \{ display: block; \}/);
+  assert.match(css, /\.pill\.compact \.ptext \{[^}]*clip-path: inset\(50%\)/);
+});
+
+test('the pill is fitted again when the card changes width, without a browser it is left alone', () => {
+  const observed = [];
+  class FakeObserver {
+    constructor(fn) {
+      this.fn = fn;
+    }
+    observe(el) {
+      observed.push(el);
+    }
+    disconnect() {
+      observed.length = 0;
+    }
+  }
+  context.ResizeObserver = FakeObserver;
+  try {
+    const card = render({}, makeHass({ updates: ['update.mushroom_update'] }));
+    let fits = 0;
+    card._fitPill = () => fits++;
+    card.connectedCallback();
+    assert.deepEqual(observed, [card]);
+    fits = 0;
+    card._ro.fn();
+    assert.equal(fits, 1);
+    card.disconnectedCallback();
+    assert.equal(observed.length, 0);
+  } finally {
+    delete context.ResizeObserver;
+  }
+  // Node, no ResizeObserver: connecting the card does not throw.
+  const card = render({}, makeHass({ updates: ['update.mushroom_update'] }));
+  assert.doesNotThrow(() => card.connectedCallback());
+  assert.doesNotThrow(() => card.disconnectedCallback());
+});
+
+test("a phone's 6 columns: the version and Update all wrap instead of being cut", () => {
+  const css = HacsRefreshCard.styles.replace(/\s+/g, ' ');
+  const cq = css.indexOf('@container (max-width: 200px)');
+  assert.ok(cq >= 0, 'narrow container query');
+  const block = css.slice(cq, css.indexOf('} }', cq) + 3);
+  assert.match(block, /\.sub \{[^}]*white-space: normal/);
+  assert.match(block, /\.ilabel \{[^}]*white-space: normal/);
+  // The version breaks around its arrow ("v1.13.0 →" / "v1.14.1"), never inside a version unless it can't fit.
+  assert.match(block, /\.sub \{[^}]*overflow-wrap: anywhere/);
 });

@@ -614,6 +614,28 @@ class HacsRefreshCard extends HTMLElement {
     return 2 + (this._rows || 0);
   }
 
+  // The pill shows its dot only when its whole label doesn't fit: measured again whenever the card changes width.
+  connectedCallback() {
+    if (!this._ro && typeof ResizeObserver === 'function') this._ro = new ResizeObserver(() => this._fitPill());
+    this._ro?.observe(this);
+    // Widths measured before the web font is there would be wrong.
+    document.fonts?.ready?.then(() => this._fitPill());
+    this._fitPill();
+  }
+
+  disconnectedCallback() {
+    this._ro?.disconnect();
+  }
+
+  // The label is measured at its full size (the dot removed first): the dot only when the label would be cut.
+  _fitPill() {
+    const pill = this.shadowRoot?.querySelector('.pill');
+    const text = pill?.querySelector?.('.ptext');
+    if (!pill?.classList || !text) return;
+    pill.classList.remove('compact');
+    pill.classList.toggle('compact', text.scrollWidth > text.clientWidth);
+  }
+
   getGridOptions() {
     return { columns: 12, min_columns: 6, rows: 'auto' };
   }
@@ -800,10 +822,11 @@ class HacsRefreshCard extends HTMLElement {
     for (const img of this.shadowRoot.querySelectorAll('img.pic')) {
       img.addEventListener('error', () => img.parentElement?.classList.add('nopic'), { once: true });
     }
+    if (this.isConnected) this._fitPill();
   }
 
-  // The status pill: truncated when the header is short, only its dot on a narrow card (the text stays for screen
-  // readers and in the tooltip).
+  // The status pill: only its dot when its label doesn't fit in the header (the text stays for screen readers and in
+  // the tooltip).
   _pill(text) {
     const t = hrEsc(text);
     return `<div class="pill" title="${t}"><span class="dot" aria-hidden="true"></span><span class="ptext">${t}</span></div>`;
@@ -963,19 +986,20 @@ class HacsRefreshCard extends HTMLElement {
               background: color-mix(in srgb, var(--c) 14%, transparent); font-variant-numeric: tabular-nums; }
       .ptext { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .dot { display: none; flex: none; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
-      /* The pill keeps its words on a card wider than 264 px (8 px gaps under 324 px); narrower, only its dot, and on a
-         phone's 6 columns (156-194 px) a smaller badge with the dot on its corner. */
-      @container (max-width: 300px) { .head { gap: 8px; } }
-      @container (max-width: 240px) {
-        .pill { padding: 5px; }
-        .dot { display: block; }
-        .ptext { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-      }
+      /* The pill keeps its words whenever they fit; when they don't (measured by _fitPill, class "compact"), only its
+         dot. 8 px gaps and a slimmer pill under 324 px; on a phone's 6 columns (156-194 px) a smaller badge with the dot
+         on its corner. */
+      @container (max-width: 300px) { .head { gap: 8px; } .pill { padding: 1px 6px; } }
+      .pill.compact { padding: 5px; }
+      .pill.compact .dot { display: block; }
+      .pill.compact .ptext { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
       @container (max-width: 170px) {
         .badge { width: 32px; height: 32px; }
         .badge ha-icon { --mdc-icon-size: 20px; }
-        .pill { position: absolute; left: 21px; top: 50%; margin-top: -19px; padding: 2px;
+        .pill, .pill.compact { position: absolute; left: 21px; top: 50%; margin-top: -19px; padding: 2px;
                 background: var(--ha-card-background, var(--card-background-color, #fff)); }
+        .dot { display: block; }
+        .ptext { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
       }
       .check { all: unset; cursor: pointer; flex: none; width: 26px; height: 26px; border-radius: 50%;
                display: grid; place-items: center; color: var(--secondary-text-color); }
@@ -1051,6 +1075,13 @@ class HacsRefreshCard extends HTMLElement {
              white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .row.warn .sub { color: color-mix(in srgb, var(--t) 40%, var(--primary-text-color, #212121)); }
       .chev { flex: none; --mdc-icon-size: 18px; color: var(--secondary-text-color); }
+      /* A phone's 6 columns (156-200 px card): the version ("v1.13.0 →" / "v1.14.1"), an error and the section's button go
+         on two lines instead of being cut. */
+      @container (max-width: 200px) {
+        .sub { white-space: normal; overflow-wrap: anywhere; }
+        .ilabel { white-space: normal; overflow-wrap: anywhere; }
+        .install { border-radius: 12px; line-height: 1.2; }
+      }
     `;
   }
 }
