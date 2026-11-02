@@ -87,6 +87,7 @@
     "check_cancelled": { "message": "La comprobación se canceló (HACS Refresh se recargó o se eliminó)." },
     "full_check_failed": { "message": "La comprobación completa falló: {error}" },
     "install_running": { "message": "Ya se están instalando actualizaciones." },
+    "check_while_installing": { "message": "Se están instalando actualizaciones: busca actualizaciones cuando terminen." },
     "install_failed": { "message": "No se pudo instalar {failed}." },
     "install_cancelled": { "message": "Las instalaciones se cancelaron (HACS Refresh se recargó o se eliminó)." }
   }

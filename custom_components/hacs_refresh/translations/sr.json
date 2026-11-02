@@ -87,6 +87,7 @@
     "check_cancelled": { "message": "Провера је отказана (HACS Refresh је поново учитан или уклоњен)." },
     "full_check_failed": { "message": "Потпуна провера није успела: {error}" },
     "install_running": { "message": "Ажурирања се већ инсталирају." },
+    "check_while_installing": { "message": "Ажурирања се инсталирају: проверите ажурирања када се заврше." },
     "install_failed": { "message": "Није могуће инсталирати {failed}." },
     "install_cancelled": { "message": "Инсталације су отказане (HACS Refresh је поново учитан или уклоњен)." }
   }

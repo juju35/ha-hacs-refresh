@@ -87,6 +87,7 @@
     "check_cancelled": { "message": "Die Prüfung wurde abgebrochen (HACS Refresh wurde neu geladen oder entfernt)." },
     "full_check_failed": { "message": "Die vollständige Prüfung ist fehlgeschlagen: {error}" },
     "install_running": { "message": "Es werden bereits Updates installiert." },
+    "check_while_installing": { "message": "Es werden gerade Updates installiert: prüfe nach Updates, sobald sie fertig sind." },
     "install_failed": { "message": "{failed} konnte nicht installiert werden." },
     "install_cancelled": { "message": "Die Installationen wurden abgebrochen (HACS Refresh wurde neu geladen oder entfernt)." }
   }

@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.8.3 - 2026-11-01
+
+### Fixes
+- A full check no longer starts while updates are being installed: `hacs_refresh.check_updates` fails with "Updates are being installed", and an automatic check that falls due meanwhile runs once the installs are done (it used to refresh the repositories being downloaded, and the card switched from "Installing…" to "Checking").
+- HACS Refresh shows its own icon in **Settings → Devices & services** on Home Assistant 2026.3 and later: the release zip now includes the `brand/` folder.
+- Card: on a narrow card (its minimum width, small phones), the title stays readable, the status pill is truncated and shrinks to a coloured dot (its text stays in the tooltip and for screen readers), and the **Update all** button moves under the section title instead of being cut off.
+- Card: the status pill keeps its whole label whenever it fits and only shrinks to its dot when it would be cut, whatever the card's width (a short "Error" or "Unavailable" was a dot on a 245-264 px card, and a Polish label lost its end on a 320 px phone card); on a phone's 6 columns (about 156-180 px), the dot sits on the badge's corner instead of being pushed out of the card.
+- Card: on a phone's 6 columns, an update's target version ("v1.13.0 → v1.14.1"), an install error and the **Update all** button go on two lines instead of being cut ("v1.13.0 → v…", "Zaktualizuj wszy…").
+- Card: the card keeps its width in a container that sizes it to its content (an `inline-block`, an `auto` grid column, some layout-card set-ups) instead of collapsing to a few pixels, and shrinks to its column in a `1fr 1fr` grid (layout-card, grid card, horizontal stack), wrapped in a `div` or not, instead of sticking out of it.
+- Card: giving the keyboard focus back after an update (the check button, an update row, the confirmation) no longer scrolls the page.
+- Card: counts follow each language's plural rules: "1 rimanente" / "queda 1" / "falta 1" / "1 restante" for the last install (Italian, Spanish, Portuguese, French), and Serbian and Polish use their 2-4 form ("2 неуспешна", "2 aktualizacje", "5 aktualizacji", "21 неуспешан").
+
+### Maintenance
+- README: only `install_updates` is for administrators; the button, `check_updates` and `check_repository` are open to every user.
+- Screenshots: a capture is only rewritten when its pixels change, not when the PNG encoder writes other bytes for the same picture.
+
 ## 0.8.2 - 2026-11-01
 
 ### What's new

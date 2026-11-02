@@ -4,7 +4,7 @@
  * Served and added to the dashboard resources by the integration.
  * https://github.com/juju35/ha-hacs-refresh
  */
-var HACS_REFRESH_CARD_VERSION = '0.8.2';
+var HACS_REFRESH_CARD_VERSION = '0.8.3';
 
 const HR_I18N = {
   en: {
@@ -30,7 +30,8 @@ const HR_I18N = {
     failed_title: 'Could not be checked',
     error_title: 'The last check failed',
     install_all: 'Update all ({n})',
-    installing: 'Installing… {n} left',
+    installing_one: 'Installing… {n} left',
+    installing_many: 'Installing… {n} left',
     installing_short: 'Installing…',
     confirm_one: 'Install {n} update?',
     confirm_many: 'Install {n} updates?',
@@ -79,7 +80,8 @@ const HR_I18N = {
     failed_title: 'Impossible à vérifier',
     error_title: 'La dernière vérification a échoué',
     install_all: 'Tout mettre à jour ({n})',
-    installing: 'Installation… {n} restante(s)',
+    installing_one: 'Installation… {n} restante',
+    installing_many: 'Installation… {n} restantes',
     installing_short: 'Installation…',
     confirm_one: 'Installer {n} mise à jour ?',
     confirm_many: 'Installer {n} mises à jour ?',
@@ -128,7 +130,8 @@ const HR_I18N = {
     failed_title: 'Konnten nicht geprüft werden',
     error_title: 'Die letzte Prüfung ist fehlgeschlagen',
     install_all: 'Alle aktualisieren ({n})',
-    installing: 'Installation… {n} übrig',
+    installing_one: 'Installation… {n} übrig',
+    installing_many: 'Installation… {n} übrig',
     installing_short: 'Installation…',
     confirm_one: '{n} Update installieren?',
     confirm_many: '{n} Updates installieren?',
@@ -177,7 +180,8 @@ const HR_I18N = {
     failed_title: 'No se pudieron comprobar',
     error_title: 'La última comprobación falló',
     install_all: 'Actualizar todo ({n})',
-    installing: 'Instalando… quedan {n}',
+    installing_one: 'Instalando… queda {n}',
+    installing_many: 'Instalando… quedan {n}',
     installing_short: 'Instalando…',
     confirm_one: '¿Instalar {n} actualización?',
     confirm_many: '¿Instalar {n} actualizaciones?',
@@ -212,6 +216,7 @@ const HR_I18N = {
     checking_short: 'Проверавање…',
     error: 'Грешка',
     failed_one: '{n} неуспешан',
+    failed_few: '{n} неуспешна',
     failed_many: '{n} неуспешних',
     not_loaded: 'HACS Refresh није подешен',
     unavailable: 'Недоступно',
@@ -226,7 +231,9 @@ const HR_I18N = {
     failed_title: 'Није могуће проверити',
     error_title: 'Последња провера није успела',
     install_all: 'Ажурирај све ({n})',
-    installing: 'Инсталирање… преостало {n}',
+    installing_one: 'Инсталирање… преостало {n}',
+    installing_few: 'Инсталирање… преостала {n}',
+    installing_many: 'Инсталирање… преостало {n}',
     installing_short: 'Инсталирање…',
     confirm_one: 'Инсталирати {n} ажурирање?',
     confirm_many: 'Инсталирати {n} ажурирања?',
@@ -261,6 +268,7 @@ const HR_I18N = {
     checking_short: 'Proveravanje…',
     error: 'Greška',
     failed_one: '{n} neuspešan',
+    failed_few: '{n} neuspešna',
     failed_many: '{n} neuspešnih',
     not_loaded: 'HACS Refresh nije podešen',
     unavailable: 'Nedostupno',
@@ -275,7 +283,9 @@ const HR_I18N = {
     failed_title: 'Nije moguće proveriti',
     error_title: 'Poslednja provera nije uspela',
     install_all: 'Ažuriraj sve ({n})',
-    installing: 'Instaliranje… preostalo {n}',
+    installing_one: 'Instaliranje… preostalo {n}',
+    installing_few: 'Instaliranje… preostala {n}',
+    installing_many: 'Instaliranje… preostalo {n}',
     installing_short: 'Instaliranje…',
     confirm_one: 'Instalirati {n} ažuriranje?',
     confirm_many: 'Instalirati {n} ažuriranja?',
@@ -324,7 +334,8 @@ const HR_I18N = {
     failed_title: 'Impossibile verificare',
     error_title: 'L’ultima verifica non è riuscita',
     install_all: 'Aggiorna tutto ({n})',
-    installing: 'Installazione… {n} rimanenti',
+    installing_one: 'Installazione… {n} rimanente',
+    installing_many: 'Installazione… {n} rimanenti',
     installing_short: 'Installazione…',
     confirm_one: 'Installare {n} aggiornamento?',
     confirm_many: 'Installare {n} aggiornamenti?',
@@ -373,7 +384,8 @@ const HR_I18N = {
     failed_title: 'Kon niet worden gecontroleerd',
     error_title: 'De laatste controle is mislukt',
     install_all: 'Alles bijwerken ({n})',
-    installing: 'Installeren… nog {n}',
+    installing_one: 'Installeren… nog {n}',
+    installing_many: 'Installeren… nog {n}',
     installing_short: 'Installeren…',
     confirm_one: '{n} update installeren?',
     confirm_many: '{n} updates installeren?',
@@ -422,7 +434,8 @@ const HR_I18N = {
     failed_title: 'Não foi possível verificar',
     error_title: 'A última verificação falhou',
     install_all: 'Atualizar tudo ({n})',
-    installing: 'A instalar… faltam {n}',
+    installing_one: 'A instalar… falta {n}',
+    installing_many: 'A instalar… faltam {n}',
     installing_short: 'A instalar…',
     confirm_one: 'Instalar {n} atualização?',
     confirm_many: 'Instalar {n} atualizações?',
@@ -452,7 +465,8 @@ const HR_I18N = {
     title: 'Aktualizacje HACS',
     up_to_date: 'Aktualne',
     updates_one: '{n} aktualizacja',
-    updates_many: 'Aktualizacje: {n}',
+    updates_few: '{n} aktualizacje',
+    updates_many: '{n} aktualizacji',
     checking: 'Sprawdzanie {done}/{total}',
     checking_short: 'Sprawdzanie…',
     error: 'Błąd',
@@ -471,10 +485,12 @@ const HR_I18N = {
     failed_title: 'Nie udało się sprawdzić',
     error_title: 'Ostatnie sprawdzanie nie powiodło się',
     install_all: 'Zaktualizuj wszystko ({n})',
-    installing: 'Instalowanie… pozostało: {n}',
+    installing_one: 'Instalowanie… pozostało: {n}',
+    installing_many: 'Instalowanie… pozostało: {n}',
     installing_short: 'Instalowanie…',
     confirm_one: 'Zainstalować {n} aktualizację?',
-    confirm_many: 'Zainstalować aktualizacje ({n})?',
+    confirm_few: 'Zainstalować {n} aktualizacje?',
+    confirm_many: 'Zainstalować {n} aktualizacji?',
     confirm_hint: 'Jedna po drugiej. Integracje wymagają potem ponownego uruchomienia Home Assistant.',
     cancel: 'Anuluj',
     install: 'Zainstaluj',
@@ -520,9 +536,24 @@ const hrLocale = (hass, config) => {
 const hrT = (lang, key, vars = {}) =>
   (HR_I18N[lang]?.[key] ?? HR_I18N.en[key] ?? key).replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
 
+// A count's string: `<key>_one`, `<key>_few` (Serbian, Polish: 2-4, 22-24…) or `<key>_many`, by the language's plural rules.
+const hrPlural = (lang, locale, key, n) => {
+  let form = n === 1 ? 'one' : 'other';
+  try {
+    form = new Intl.PluralRules(locale).select(n);
+  } catch {
+    // Unknown locale: one or other.
+  }
+  const strings = HR_I18N[lang] || HR_I18N.en;
+  const suffix = form === 'one' ? 'one' : form === 'few' && strings[`${key}_few`] ? 'few' : 'many';
+  return hrT(lang, `${key}_${suffix}`, { n });
+};
+
 const hrEsc = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
+// The focus the card gives back itself (after a re-render, a confirmation) never scrolls the page.
+const HR_FOCUS = { preventScroll: true };
 const HR_DEFAULTS = { show_updates: true, show_failed: true, check_button: true, install_button: true, hide_when_ok: false };
 
 // The integration's entities, from the entity registry: { device: { status, last_check, button } }.
@@ -583,12 +614,38 @@ class HacsRefreshCard extends HTMLElement {
     return 2 + (this._rows || 0);
   }
 
+  // The pill shows its dot only when its whole label doesn't fit: measured again whenever the card changes width.
+  connectedCallback() {
+    if (!this._ro && typeof ResizeObserver === 'function') this._ro = new ResizeObserver(() => this._fitPill());
+    this._ro?.observe(this);
+    // Widths measured before the web font is there would be wrong.
+    document.fonts?.ready?.then(() => this._fitPill());
+    this._fitPill();
+  }
+
+  disconnectedCallback() {
+    this._ro?.disconnect();
+  }
+
+  // The label is measured at its full size (the dot removed first): the dot only when the label would be cut.
+  _fitPill() {
+    const pill = this.shadowRoot?.querySelector('.pill');
+    const text = pill?.querySelector?.('.ptext');
+    if (!pill?.classList || !text) return;
+    pill.classList.remove('compact');
+    pill.classList.toggle('compact', text.scrollWidth > text.clientWidth);
+  }
+
   getGridOptions() {
     return { columns: 12, min_columns: 6, rows: 'auto' };
   }
 
   _t(key, vars) {
     return hrT(hrLang(this._hass, this._config), key, vars);
+  }
+
+  _n(key, n) {
+    return hrPlural(hrLang(this._hass, this._config), hrLocale(this._hass, this._config), key, n);
   }
 
   // "3 hours ago", "in 21 hours"… in the card's language.
@@ -708,7 +765,8 @@ class HacsRefreshCard extends HTMLElement {
     const icon = { ok: 'mdi:package-variant-closed-check', info: 'mdi:package-up', warn: 'mdi:package-variant-closed-remove', alert: 'mdi:alert-circle-outline', na: 'mdi:package-variant-closed' }[level];
     const pct = running && a.total ? Math.round((100 * (a.done || 0)) / a.total) : 0;
 
-    // innerHTML replaces the focused element: give the focus back to its new copy afterwards.
+    // innerHTML replaces the focused element: give the focus back to its new copy afterwards, without scrolling the
+    // page (a hass update re-renders the card while the user may have scrolled it out of view).
     const active = this.shadowRoot.activeElement;
     const focusCls = ['check', 'install', 'confirm-yes', 'confirm-no'].find((k) => active?.classList?.contains(k));
     const focus = focusCls || (active?.dataset?.id ? { id: active.dataset.id } : null);
@@ -724,7 +782,7 @@ class HacsRefreshCard extends HTMLElement {
             ${subtitle ? `<div class="subtitle" title="${hrEsc(last ? this._absolute(last) : '')}">${hrEsc(subtitle)}</div>` : ''}
           </div>
           ${this._checkButton(this._busy)}
-          <div class="pill">${hrEsc(unavailable ? this._t('unavailable') : this._status(st, running, a, count, failed, error, installing))}</div>
+          ${this._pill(unavailable ? this._t('unavailable') : this._status(st, running, a, count, failed, error, installing))}
         </div>
         ${this._confirm ? this._confirmBox(this._installable.length) : ''}
         ${running ? `<div class="progress" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div>` : ''}
@@ -747,33 +805,41 @@ class HacsRefreshCard extends HTMLElement {
 
     const check = this.shadowRoot.querySelector('.check');
     check?.addEventListener('click', () => this._check());
-    if (focus === 'check') check?.focus();
+    if (focus === 'check') check?.focus(HR_FOCUS);
     const on = (cls, fn) => {
       const el = this.shadowRoot.querySelector(`.${cls}`);
       el?.addEventListener('click', fn);
-      if (focus === cls) el?.focus();
+      if (focus === cls) el?.focus(HR_FOCUS);
     };
     on('install', () => this._askInstall());
     on('confirm-yes', () => this._install());
     on('confirm-no', () => this._setConfirm(false));
     for (const el of this.shadowRoot.querySelectorAll('.row[data-id]')) {
       el.addEventListener('click', () => this._moreInfo(el.dataset.id));
-      if (focus?.id === el.dataset.id) el.focus();
+      if (focus?.id === el.dataset.id) el.focus(HR_FOCUS);
     }
     // A repository picture that doesn't load falls back to the generic icon.
     for (const img of this.shadowRoot.querySelectorAll('img.pic')) {
       img.addEventListener('error', () => img.parentElement?.classList.add('nopic'), { once: true });
     }
+    if (this.isConnected) this._fitPill();
+  }
+
+  // The status pill: only its dot when its label doesn't fit in the header (the text stays for screen readers and in
+  // the tooltip).
+  _pill(text) {
+    const t = hrEsc(text);
+    return `<div class="pill" title="${t}"><span class="dot" aria-hidden="true"></span><span class="ptext">${t}</span></div>`;
   }
 
   _status(st, running, a, count, failed, error, installing = []) {
     if (!st) return this._t('not_loaded');
     if (running) return a.total ? this._t('checking', { done: a.done || 0, total: a.total }) : this._t('checking_short');
-    if (installing.length) return this._t('installing', { n: installing.length });
+    if (installing.length) return this._n('installing', installing.length);
     if (error) return this._t('error');
     const parts = [];
-    if (count) parts.push(this._t(count > 1 ? 'updates_many' : 'updates_one', { n: count }));
-    if (failed.length) parts.push(this._t(failed.length > 1 ? 'failed_many' : 'failed_one', { n: failed.length }));
+    if (count) parts.push(this._n('updates', count));
+    if (failed.length) parts.push(this._n('failed', failed.length));
     return parts.length ? parts.join(' · ') : this._t('up_to_date');
   }
 
@@ -791,20 +857,21 @@ class HacsRefreshCard extends HTMLElement {
   // The updates section's button: "Update all (n)", or the installs' progress while they run.
   _installButton(installing) {
     if (installing.length) {
-      return `<span class="install busy" aria-live="polite"><ha-icon icon="mdi:progress-download"></ha-icon>${hrEsc(this._t('installing_short'))}</span>`;
+      return `<span class="install busy" aria-live="polite"><ha-icon icon="mdi:progress-download"></ha-icon><span class="ilabel">${hrEsc(this._t('installing_short'))}</span></span>`;
     }
     const n = this._installable.length;
     if (!n) return '';
     const label = hrEsc(this._t('install_all', { n }));
-    return `<button class="install"${this._confirm ? ' aria-expanded="true"' : ''}><ha-icon icon="mdi:package-down"></ha-icon>${label}</button>`;
+    return `<button class="install"${this._confirm ? ' aria-expanded="true"' : ''}><ha-icon icon="mdi:package-down"></ha-icon><span class="ilabel">${label}</span></button>`;
   }
 
   // Confirmation at the top of the card, like the other cards' popups.
   _confirmBox(n) {
+    const ask = hrEsc(this._n('confirm', n));
     return `
-        <div class="confirm" role="alertdialog" aria-label="${hrEsc(this._t(n > 1 ? 'confirm_many' : 'confirm_one', { n }))}">
+        <div class="confirm" role="alertdialog" aria-label="${ask}">
           <ha-icon icon="mdi:package-down"></ha-icon>
-          <span class="ctext"><b>${hrEsc(this._t(n > 1 ? 'confirm_many' : 'confirm_one', { n }))}</b><br>${hrEsc(this._t('confirm_hint'))}</span>
+          <span class="ctext"><b>${ask}</b><br>${hrEsc(this._t('confirm_hint'))}</span>
           <span class="cbtns">
             <button class="confirm-no">${hrEsc(this._t('cancel'))}</button>
             <button class="confirm-yes">${hrEsc(this._t('install'))}</button>
@@ -817,7 +884,7 @@ class HacsRefreshCard extends HTMLElement {
     this._sig = null;
     this._render();
     // Keyboard focus on the safe choice when it opens, back on the button when it closes.
-    this.shadowRoot?.querySelector(on ? '.confirm-no' : '.install')?.focus?.();
+    this.shadowRoot?.querySelector(on ? '.confirm-no' : '.install')?.focus?.(HR_FOCUS);
   }
 
   _askInstall() {
@@ -882,28 +949,58 @@ class HacsRefreshCard extends HTMLElement {
         --hr-warn: var(--warning-color, #ffa600);
         --hr-alert: var(--error-color, #db4437);
         --hr-na: var(--disabled-color, #9e9e9e);
+        /* A block that a flex or grid parent may shrink (the card has no minimum width of its own). */
+        display: block;
+        min-width: 0;
       }
       /* Text and status icons in a state colour are mixed with the text colour: darker on a light theme,
          lighter on a dark one, so they stay readable (4.5:1 for text, 3:1 for icons) on their tinted background. */
-      ha-card { padding: 12px; overflow: hidden; }
+      /* A size container: the header's pill turns into a dot on a narrow card. */
+      ha-card { padding: 12px; overflow: hidden; container-type: inline-size; }
+      /* A size container has no width of its own content: in a parent that sizes to its content (an inline-block, an
+         "auto" grid column, some layout-card set-ups) the card would fall to its padding. This empty, zero-height grid
+         gives it a natural (max-content) width without any minimum (its min-content width is 0): in a "1fr 1fr" grid,
+         wrapped in a div or not, the card still shrinks to its track. contain-intrinsic-inline-size or a min-width on
+         the host would be a minimum and overflow there. */
+      :host::before { content: ""; display: grid; grid-template-columns: minmax(0, 322px); height: 0; }
       ha-card.lvl-ok    { --c: var(--hr-ok); }
       ha-card.lvl-info  { --c: var(--hr-info); }
       ha-card.lvl-warn  { --c: var(--hr-warn); }
       ha-card.lvl-alert { --c: var(--hr-alert); }
       ha-card.lvl-na    { --c: var(--hr-na); }
 
-      .head { display: flex; align-items: center; gap: 10px; }
+      .head { position: relative; display: flex; align-items: center; gap: 10px; }
       .badge { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
                background: color-mix(in srgb, var(--c) 16%, transparent); color: color-mix(in srgb, var(--c) 55%, var(--primary-text-color, #212121)); }
       .badge ha-icon { --mdc-icon-size: 24px; }
-      .heading { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+      /* The title takes the room left (a long subtitle never squeezes the pill) and keeps about four characters;
+         the buttons never shrink, the pill keeps its whole label and is only truncated when there is really no room. */
+      .heading { flex: 1 1 0%; min-width: 6ch; font-size: 16px; display: flex; flex-direction: column; }
       .title { font-size: 16px; font-weight: 500; line-height: 1.25; color: var(--primary-text-color);
                white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .subtitle { font-size: 12px; line-height: 1.3; color: var(--secondary-text-color);
                   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .pill { flex: none; font-size: 11px; font-weight: 500; padding: 1px 8px; border-radius: 999px;
+      .pill { position: relative; flex: 0 1 auto; min-width: 0; box-sizing: border-box; display: flex; align-items: center; gap: 5px;
+              font-size: 11px; font-weight: 500; padding: 1px 8px; border-radius: 999px;
               color: color-mix(in srgb, var(--c) 40%, var(--primary-text-color, #212121));
               background: color-mix(in srgb, var(--c) 14%, transparent); font-variant-numeric: tabular-nums; }
+      .ptext { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .dot { display: none; flex: none; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+      /* The pill keeps its words whenever they fit; when they don't (measured by _fitPill, class "compact"), only its
+         dot. 8 px gaps and a slimmer pill under 324 px; on a phone's 6 columns (156-194 px) a smaller badge with the dot
+         on its corner. */
+      @container (max-width: 300px) { .head { gap: 8px; } .pill { padding: 1px 6px; } }
+      .pill.compact { padding: 5px; }
+      .pill.compact .dot { display: block; }
+      .pill.compact .ptext { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+      @container (max-width: 170px) {
+        .badge { width: 32px; height: 32px; }
+        .badge ha-icon { --mdc-icon-size: 20px; }
+        .pill, .pill.compact { position: absolute; left: 21px; top: 50%; margin-top: -19px; padding: 2px;
+                background: var(--ha-card-background, var(--card-background-color, #fff)); }
+        .dot { display: block; }
+        .ptext { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+      }
       .check { all: unset; cursor: pointer; flex: none; width: 26px; height: 26px; border-radius: 50%;
                display: grid; place-items: center; color: var(--secondary-text-color); }
       .check:hover { background: color-mix(in srgb, var(--secondary-text-color) 14%, transparent); color: var(--primary-text-color); }
@@ -923,8 +1020,9 @@ class HacsRefreshCard extends HTMLElement {
       .error span { min-width: 0; overflow-wrap: anywhere; }
 
       .section { margin-top: 12px; }
-      .shead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 2px 6px; min-height: 24px; }
-      .stitle { font-size: 12px; font-weight: 500; color: var(--secondary-text-color);
+      /* The section's button goes under its title when both don't fit on one line. */
+      .shead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 8px; margin: 0 2px 6px; min-height: 24px; }
+      .stitle { min-width: 0; font-size: 12px; font-weight: 500; color: var(--secondary-text-color);
                 text-transform: uppercase; letter-spacing: .04em; }
       .stitle .count { font-variant-numeric: tabular-nums; }
       /* No filled button: a tinted outline, the accent colour for the text. */
@@ -932,7 +1030,10 @@ class HacsRefreshCard extends HTMLElement {
                font-size: 12px; font-weight: 500; line-height: 1; padding: 5px 10px; border-radius: 999px; font-variant-numeric: tabular-nums;
                color: color-mix(in srgb, var(--hr-info) 45%, var(--primary-text-color, #212121));
                border: 1px solid color-mix(in srgb, var(--hr-info) 45%, transparent); }
-      .install ha-icon { --mdc-icon-size: 16px; }
+      .install ha-icon { --mdc-icon-size: 16px; flex: none; }
+      /* On its own line under the section title, it never gets wider than the card. */
+      .install { max-width: 100%; }
+      .ilabel { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       button.install:hover, .cbtns button:hover { background: color-mix(in srgb, var(--hr-info) 12%, transparent); }
       .install:focus-visible, .cbtns button:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
       .install.busy { cursor: default; border-color: transparent; color: var(--secondary-text-color); }
@@ -945,7 +1046,7 @@ class HacsRefreshCard extends HTMLElement {
       .confirm > ha-icon { --mdc-icon-size: 18px; flex: none; color: color-mix(in srgb, var(--hr-info) 55%, var(--primary-text-color, #212121)); }
       .confirm b { font-weight: 500; }
       .ctext { flex: 1 1 180px; min-width: 0; }
-      .cbtns { display: flex; gap: 6px; margin-left: auto; }
+      .cbtns { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; margin-left: auto; max-width: 100%; }
       .row.busy .ic { color: color-mix(in srgb, var(--hr-info) 55%, var(--primary-text-color, #212121)); }
       .row.busy .ic ha-icon { animation: hr-pulse 1.2s ease-in-out infinite; }
       @keyframes hr-pulse { 50% { opacity: .35; } }
@@ -974,6 +1075,13 @@ class HacsRefreshCard extends HTMLElement {
              white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .row.warn .sub { color: color-mix(in srgb, var(--t) 40%, var(--primary-text-color, #212121)); }
       .chev { flex: none; --mdc-icon-size: 18px; color: var(--secondary-text-color); }
+      /* A phone's 6 columns (156-200 px card): the version ("v1.13.0 →" / "v1.14.1"), an error and the section's button go
+         on two lines instead of being cut. */
+      @container (max-width: 200px) {
+        .sub { white-space: normal; overflow-wrap: anywhere; }
+        .ilabel { white-space: normal; overflow-wrap: anywhere; }
+        .install { border-radius: 12px; line-height: 1.2; }
+      }
     `;
   }
 }

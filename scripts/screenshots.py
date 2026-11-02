@@ -1,17 +1,20 @@
 """Render the HACS Refresh card with mock data and save the README screenshots.
 
-Usage: python scripts/screenshots.py  (needs `pip install playwright` and `playwright install chromium`)
+Usage: python scripts/screenshots.py  (needs `pip install -r requirements_screenshots.txt` and `playwright install chromium`)
 CHROMIUM_PATH=/path/to/chrome to use another browser. The clock is frozen so "3 hours ago" and "in 21 hours" stay the same.
 Repository pictures are not fetched (the generic icon is shown), so the captures don't depend on the network.
 Every capture keeps a 16 px frame of the theme background around the card.
+A file is only rewritten when its decoded pixels change: the PNG encoder's bytes may differ between machines (zlib),
+so comparing bytes would commit identical pictures again.
 """
 
+import io
 import json
 import os
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from playwright.sync_api import sync_playwright
+from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
 CARD_JS = (ROOT / "custom_components/hacs_refresh/frontend/hacs-refresh-card.js").read_text()
@@ -179,7 +182,21 @@ MOUNT = """([hass, dark]) => {
 }"""
 
 
+def same_pixels(old: bytes, new: bytes) -> bool:
+    """True when both PNGs decode to the same pixels (size and mode included), whatever their compression."""
+    if old == new:
+        return True
+    try:
+        with Image.open(io.BytesIO(old)) as a, Image.open(io.BytesIO(new)) as b:
+            return a.size == b.size and a.convert("RGBA").tobytes() == b.convert("RGBA").tobytes()
+    except (OSError, ValueError):
+        return False
+
+
 def main():
+    # Imported here: the tests load this module (same_pixels) without Playwright installed.
+    from playwright.sync_api import sync_playwright
+
     with sync_playwright() as p:
         browser = p.chromium.launch(executable_path=os.environ.get("CHROMIUM_PATH") or None)
         for shot in SHOTS:
@@ -197,8 +214,12 @@ def main():
             clip = {"x": 0, "y": 0, "width": WIDTH + 32, "height": int(box["height"] + 0.999) + 32}
             path = ROOT / "screenshots" / f"{shot['file']}.png"
             path.parent.mkdir(exist_ok=True)
-            page.screenshot(path=str(path), clip=clip, animations="disabled")
-            print(path.relative_to(ROOT))
+            png = page.screenshot(clip=clip, animations="disabled")
+            if path.exists() and same_pixels(path.read_bytes(), png):
+                print(f"{path.relative_to(ROOT)} (unchanged)")
+            else:
+                path.write_bytes(png)
+                print(path.relative_to(ROOT))
             page.close()
         browser.close()
 

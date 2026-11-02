@@ -6,7 +6,7 @@ from typing import Final
 
 DOMAIN: Final = "hacs_refresh"
 # Same as manifest.json and the card: the card URL carries it, so that browsers load a new release.
-VERSION: Final = "0.8.2"
+VERSION: Final = "0.8.3"
 HACS_DOMAIN: Final = "hacs"
 
 CONF_SCAN_INTERVAL: Final = "scan_interval"

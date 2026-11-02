@@ -87,6 +87,7 @@
     "check_cancelled": { "message": "De controle is geannuleerd (HACS Refresh is herladen of verwijderd)." },
     "full_check_failed": { "message": "De volledige controle is mislukt: {error}" },
     "install_running": { "message": "Er worden al updates geïnstalleerd." },
+    "check_while_installing": { "message": "Er worden updates geïnstalleerd: controleer op updates zodra ze klaar zijn." },
     "install_failed": { "message": "Kon {failed} niet installeren." },
     "install_cancelled": { "message": "De installaties zijn geannuleerd (HACS Refresh is herladen of verwijderd)." }
   }

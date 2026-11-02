@@ -1,2 +1,4 @@
 # Screenshots workflow (scripts/screenshots.py); kept here so Dependabot keeps Playwright up to date.
 playwright==1.64.1
+# Compares the decoded pixels of a new capture with the committed one (scripts/screenshots.py).
+pillow==12.3.0

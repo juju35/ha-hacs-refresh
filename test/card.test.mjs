@@ -113,7 +113,11 @@ const placeholders = (s) => [...String(s).matchAll(/\{(\w+)\}/g)].map((m) => m[1
 test('every language has the English keys, arrays of the same length and the same placeholders', () => {
   const keys = Object.keys(HR_I18N.en).sort();
   for (const [lang, strings] of Object.entries(HR_I18N)) {
-    assert.deepEqual(Object.keys(strings).sort(), keys, lang);
+    // A `<key>_few` plural form (Serbian, Polish) is the only extra key, next to the `<key>_many` it refines.
+    const extra = Object.keys(strings).filter((k) => !keys.includes(k));
+    for (const k of extra) assert.ok(k.endsWith('_few') && keys.includes(k.replace(/_few$/, '_many')), `${lang}.${k}`);
+    for (const k of extra) assert.deepEqual(placeholders(strings[k]), placeholders(HR_I18N.en[k.replace(/_few$/, '_many')]), `${lang}.${k}`);
+    assert.deepEqual(Object.keys(strings).filter((k) => keys.includes(k)).sort(), keys, lang);
     for (const k of keys) {
       const en = HR_I18N.en[k];
       if (Array.isArray(en)) assert.equal(strings[k].length, en.length, `${lang}.${k}`);
@@ -433,6 +437,51 @@ test('a re-render keeps the keyboard focus on the check button and on an update 
   assert.equal(focused, 'update.mushroom_update');
 });
 
+test('focus given back after a re-render never scrolls the page', () => {
+  // A hass update re-renders the card while the user scrolled away: focus({ preventScroll: true }) keeps the page still.
+  const card = render({}, makeHass({ updates: ['update.mushroom_update', 'update.card_mod_update'] }));
+  const calls = [];
+  const spy = (name) => (opts) => calls.push([name, opts]);
+  card.shadowRoot.querySelector('.check').focus = spy('check');
+  card.shadowRoot.activeElement = { classList: { contains: (c) => c === 'check' }, dataset: {} };
+  card.hass = makeHass({ state: 'running', attrs: { done: 1, total: 4 } });
+  const row = { dataset: { id: 'update.mushroom_update' }, addEventListener() {}, focus: spy('row') };
+  card.shadowRoot.querySelectorAll = (sel) => (sel === '.row[data-id]' ? [row] : []);
+  card.shadowRoot.activeElement = { classList: { contains: () => false }, dataset: { id: 'update.mushroom_update' } };
+  card.hass = makeHass({ updates: ['update.mushroom_update', 'update.hacs_update'] });
+  // The confirmation: focus on its safe choice when it opens, back on the button when it closes, kept across a re-render.
+  card.shadowRoot.querySelectorAll = () => [];
+  card.shadowRoot.querySelector('.install').focus = spy('install');
+  card.shadowRoot.querySelector('.install').handlers.click();
+  card.shadowRoot.querySelector('.confirm-no').focus = spy('confirm-no');
+  card.shadowRoot.querySelector('.install').handlers.click();
+  card.shadowRoot.activeElement = { classList: { contains: (c) => c === 'confirm-no' }, dataset: {} };
+  card.hass = makeHass({ updates: ['update.mushroom_update', 'update.card_mod_update', 'update.hacs_update'] });
+  card.shadowRoot.querySelector('.confirm-no').handlers.click();
+  const names = calls.map(([n]) => n);
+  for (const n of ['check', 'row', 'confirm-no', 'install']) assert.ok(names.includes(n), n);
+  for (const [name, opts] of calls) assert.equal(JSON.stringify(opts), '{"preventScroll":true}', name);
+});
+
+test('intrinsic width: never collapses in an inline-block or auto column, still shrinks in a 1fr grid', () => {
+  const css = HacsRefreshCard.styles.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ');
+  const host = css.match(/:host \{([^}]*)\}/)[1];
+  const card = css.match(/ ha-card \{([^}]*)\}/)[1];
+  // The size container is ha-card (inside the host); an empty zero-height grid gives the host a natural width so a
+  // shrink-to-fit parent doesn't drop the card to its padding...
+  assert.match(card, /container-type: inline-size/);
+  assert.doesNotMatch(host, /container/);
+  const before = css.match(/:host::before \{([^}]*)\}/)?.[1];
+  assert.ok(before, ':host::before');
+  assert.match(before, /display: grid;/);
+  assert.match(before, /grid-template-columns: minmax\(0, \d+px\)/);
+  assert.match(before, /height: 0/);
+  // ...without a minimum: in a 1fr 1fr grid, even wrapped in a div, the card shrinks (no px min-width, no contain-intrinsic).
+  assert.match(host, /min-width: 0;/);
+  assert.doesNotMatch(host, /min-width: [1-9]/);
+  assert.doesNotMatch(css, /contain-intrinsic/);
+});
+
 // WCAG contrast of the coloured text and status icons, with Home Assistant's default light and dark themes.
 test('coloured text reaches 4.5:1 and status icons 3:1, light and dark', () => {
   const hex = (h) => [1, 3, 5].map((i) => Number.parseInt(h.slice(i, i + 2), 16));
@@ -526,4 +575,189 @@ test('the confirmation closes when the updates are gone', () => {
   assert.match(html(card), /class="confirm"/);
   card.hass = makeHass({ updates: [] });
   assert.doesNotMatch(html(card), /class="confirm"/);
+});
+
+// The pill's text for `updates` updates, `failed` failed repositories or `installing` installs left.
+const pill = (language, { updates = 0, failed = 0, installing = 0 } = {}) => {
+  const card = render({}, makeHass({ language }));
+  const list = (n, p) => Array.from({ length: n }, (_, i) => `${p}${i}`);
+  return card._status({ state: 'idle' }, false, {}, updates, list(failed, 'repo'), null, list(installing, 'update.x'));
+};
+
+test('installing: the singular for the last install, in every language', () => {
+  assert.equal(pill('it', { installing: 1 }), 'Installazione… 1 rimanente');
+  assert.equal(pill('it', { installing: 2 }), 'Installazione… 2 rimanenti');
+  assert.equal(pill('es', { installing: 1 }), 'Instalando… queda 1');
+  assert.equal(pill('es', { installing: 5 }), 'Instalando… quedan 5');
+  assert.equal(pill('pt', { installing: 1 }), 'A instalar… falta 1');
+  assert.equal(pill('pt', { installing: 2 }), 'A instalar… faltam 2');
+  assert.equal(pill('fr', { installing: 1 }), 'Installation… 1 restante');
+  assert.equal(pill('fr', { installing: 3 }), 'Installation… 3 restantes');
+  assert.equal(pill('en', { installing: 1 }), 'Installing… 1 left');
+});
+
+test('1 is singular in every language', () => {
+  for (const lang of Object.keys(HR_I18N)) {
+    const s = HR_I18N[lang];
+    assert.equal(pill(lang, { updates: 1 }), s.updates_one.replace('{n}', '1'), `${lang} updates`);
+    assert.equal(pill(lang, { failed: 1 }), s.failed_one.replace('{n}', '1'), `${lang} failed`);
+    assert.equal(pill(lang, { installing: 1 }), s.installing_one.replace('{n}', '1'), `${lang} installing`);
+  }
+});
+
+test('Serbian and Polish plurals: 1, 2-4 and 5+ (21, 22 like 1 and 2 where the language says so)', () => {
+  const cases = {
+    sr: { failed: ['1 неуспешан', '2 неуспешна', '5 неуспешних', '21 неуспешан', '22 неуспешна'] },
+    'sr-Latn': { failed: ['1 neuspešan', '2 neuspešna', '5 neuspešnih', '21 neuspešan', '22 neuspešna'] },
+    pl: { updates: ['1 aktualizacja', '2 aktualizacje', '5 aktualizacji', '21 aktualizacji', '22 aktualizacje'] },
+    en: { updates: ['1 update', '2 updates', '5 updates', '21 updates', '22 updates'] },
+  };
+  for (const [lang, byKind] of Object.entries(cases)) {
+    for (const [kind, expected] of Object.entries(byKind)) {
+      assert.deepEqual([1, 2, 5, 21, 22].map((n) => pill(lang, { [kind]: n })), expected, `${lang} ${kind}`);
+    }
+  }
+});
+
+test('Polish confirmation: 1, 2-4 and 5+', () => {
+  const ask = (n) => {
+    const card = render({ language: 'pl' }, makeHass());
+    return card._confirmBox(n).match(/<b>([^<]*)<\/b>/)[1];
+  };
+  assert.deepEqual([1, 2, 5, 22].map(ask), [
+    'Zainstalować 1 aktualizację?',
+    'Zainstalować 2 aktualizacje?',
+    'Zainstalować 5 aktualizacji?',
+    'Zainstalować 22 aktualizacje?',
+  ]);
+});
+
+test('plurals: a locale Intl refuses still renders (singular for 1)', () => {
+  assert.equal(pill('pl-@@', { updates: 1 }), '1 aktualizacja');
+  assert.equal(pill('pl-@@', { updates: 5 }), '5 aktualizacji');
+});
+
+test('narrow header: the title keeps a few characters, the pill shrinks to a dot, nothing leaves the card', () => {
+  const css = HacsRefreshCard.styles.replace(/\s+/g, ' ');
+  const rule = (selector, from = 0) => {
+    const i = css.indexOf(` ${selector} {`, from);
+    assert.ok(i >= 0, `${selector} rule`);
+    return css.slice(i).match(/\{([^}]*)\}/)[1];
+  };
+  assert.match(rule('.heading'), /flex: 1 1 0%/);
+  assert.match(rule('.heading'), /min-width: [4-9]ch/);
+  assert.match(rule('.title'), /text-overflow: ellipsis/);
+  const pillRule = rule('.pill');
+  assert.match(pillRule, /flex: 0 1 auto/);
+  assert.match(pillRule, /min-width: 0/);
+  // No cap on the pill: it is only truncated when the header really has no room for its label.
+  assert.doesNotMatch(pillRule, /max-width/);
+  assert.match(rule('.ptext'), /text-overflow: ellipsis/);
+  assert.match(rule('.check'), /flex: none/);
+  assert.match(rule('.install, .cbtns button'), /flex: none/);
+  assert.match(rule('.install'), /max-width: 100%/);
+  assert.match(rule('.shead'), /flex-wrap: wrap/);
+  assert.match(rule('ha-card'), /container-type: inline-size/);
+  // The dot when the label is cut (class set by _fitPill), the text kept for screen readers (not display: none).
+  assert.match(rule('.pill.compact .dot'), /display: block/);
+  assert.doesNotMatch(rule('.pill.compact .ptext'), /display: none/);
+  assert.match(rule('.pill.compact .ptext'), /clip-path: inset\(50%\)/);
+  // A phone's 6 columns (156 px card, 132 px of content): the dot sits on the badge's corner, out of the header's row,
+  // so badge + title + check button fit (it was pushed 13 px out of the card at 160 px).
+  const six = css.indexOf('@container (max-width: 170px)');
+  assert.ok(six >= 0, '6-column container query');
+  assert.match(rule('.pill, .pill.compact', six), /position: absolute/);
+  assert.match(rule('.dot', six), /display: block/);
+  assert.match(rule('.ptext', six), /clip-path: inset\(50%\)/);
+  assert.match(rule('.badge', six), /width: 32px/);
+  assert.match(rule('.head'), /position: relative/);
+  // The pill's full text in its tooltip.
+  const out = html(render({}, makeHass({ updates: ['update.mushroom_update', 'update.card_mod_update'], attrs: { failed: ['a/b'] } })));
+  assert.match(out, /<div class="pill" title="2 updates · 1 failed"><span class="dot" aria-hidden="true"><\/span><span class="ptext">2 updates · 1 failed<\/span><\/div>/);
+});
+
+// A stand-in for the rendered pill: its label is cut when its full width is more than the room it is given.
+const fakePill = (scrollWidth, clientWidth) => {
+  const cls = new Set();
+  const ptext = { scrollWidth, clientWidth };
+  const pill = {
+    classList: {
+      contains: (c) => cls.has(c),
+      remove: (c) => cls.delete(c),
+      toggle: (c, on) => (on ? cls.add(c) : cls.delete(c)),
+    },
+    querySelector: (sel) => (sel === '.ptext' ? ptext : null),
+  };
+  return { pill, ptext };
+};
+
+test('the pill shrinks to its dot only when its whole label does not fit', () => {
+  const card = render({}, makeHass({ updates: ['update.mushroom_update'] }));
+  const fit = (scroll, client, was = false) => {
+    const { pill } = fakePill(scroll, client);
+    if (was) pill.classList.toggle('compact', true);
+    card.shadowRoot.querySelector = (sel) => (sel === '.pill' ? pill : null);
+    card._fitPill();
+    return pill.classList.contains('compact');
+  };
+  // A label that fits keeps its words (a short "Error" on a 245 px card used to be a dot)...
+  assert.equal(fit(40, 40), false);
+  assert.equal(fit(40, 80), false);
+  // ...measured with its words, not as the dot it was before (a wider card gives it its label back)...
+  assert.equal(fit(60, 60, true), false);
+  // ...and only a label really cut turns into the dot.
+  assert.equal(fit(135, 134), true);
+  // No pill (not set up yet): nothing to do.
+  card.shadowRoot.querySelector = () => null;
+  assert.doesNotThrow(() => card._fitPill());
+  // No fixed width threshold for the dot any more: the label decides, not the card's width.
+  const css = HacsRefreshCard.styles.replace(/\s+/g, ' ');
+  assert.doesNotMatch(css, /@container \(max-width: 240px\)/);
+  assert.match(css, /\.pill\.compact \.dot \{ display: block; \}/);
+  assert.match(css, /\.pill\.compact \.ptext \{[^}]*clip-path: inset\(50%\)/);
+});
+
+test('the pill is fitted again when the card changes width, without a browser it is left alone', () => {
+  const observed = [];
+  class FakeObserver {
+    constructor(fn) {
+      this.fn = fn;
+    }
+    observe(el) {
+      observed.push(el);
+    }
+    disconnect() {
+      observed.length = 0;
+    }
+  }
+  context.ResizeObserver = FakeObserver;
+  try {
+    const card = render({}, makeHass({ updates: ['update.mushroom_update'] }));
+    let fits = 0;
+    card._fitPill = () => fits++;
+    card.connectedCallback();
+    assert.deepEqual(observed, [card]);
+    fits = 0;
+    card._ro.fn();
+    assert.equal(fits, 1);
+    card.disconnectedCallback();
+    assert.equal(observed.length, 0);
+  } finally {
+    delete context.ResizeObserver;
+  }
+  // Node, no ResizeObserver: connecting the card does not throw.
+  const card = render({}, makeHass({ updates: ['update.mushroom_update'] }));
+  assert.doesNotThrow(() => card.connectedCallback());
+  assert.doesNotThrow(() => card.disconnectedCallback());
+});
+
+test("a phone's 6 columns: the version and Update all wrap instead of being cut", () => {
+  const css = HacsRefreshCard.styles.replace(/\s+/g, ' ');
+  const cq = css.indexOf('@container (max-width: 200px)');
+  assert.ok(cq >= 0, 'narrow container query');
+  const block = css.slice(cq, css.indexOf('} }', cq) + 3);
+  assert.match(block, /\.sub \{[^}]*white-space: normal/);
+  assert.match(block, /\.ilabel \{[^}]*white-space: normal/);
+  // The version breaks around its arrow ("v1.13.0 →" / "v1.14.1"), never inside a version unless it can't fit.
+  assert.match(block, /\.sub \{[^}]*overflow-wrap: anywhere/);
 });

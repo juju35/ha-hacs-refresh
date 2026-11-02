@@ -36,7 +36,7 @@ HACS itself only checks downloaded custom repositories every 48 hours, and its o
 
 - Home Assistant 2024.12 or later
 - [HACS](https://hacs.xyz) 2.x installed and set up
-- The button and both actions are open to every user: they only fetch information, like HACS' own "Update information"; installing updates stays with HACS and its permissions
+- The button, `hacs_refresh.check_updates` and `hacs_refresh.check_repository` are open to every user: they only fetch information, like HACS' own "Update information". `hacs_refresh.install_updates` installs code on the server and is for administrators only, like HACS itself
 
 ## Installation
 
@@ -121,7 +121,7 @@ data:
 | `entity_id` | every HACS update entity with an update | HACS update entities to install |
 | `wait` | `false` | Wait until every update is installed; the action then fails if one couldn't be |
 
-Installs the updates one after the other with `update.install`, in the background (a check running ends first). One failing update doesn't stop the others; the failures are in the status sensor's `install_failed` attribute. Administrators only, like HACS; it can't run twice at the same time, and the **Check for updates** button is greyed out meanwhile. Integrations need a restart of Home Assistant afterwards, which HACS asks for in **Settings → Repairs**.
+Installs the updates one after the other with `update.install`, in the background (a check running ends first). One failing update doesn't stop the others; the failures are in the status sensor's `install_failed` attribute. Administrators only, like HACS; it can't run twice at the same time. Meanwhile, no full check starts: the **Check for updates** button is greyed out, `hacs_refresh.check_updates` fails with "Updates are being installed", and an automatic check that falls due runs once the installs are done. Integrations need a restart of Home Assistant afterwards, which HACS asks for in **Settings → Repairs**.
 
 ```yaml
 action: hacs_refresh.install_updates
