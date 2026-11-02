@@ -243,7 +243,8 @@ test('up to date: ok, last and next check', () => {
   assert.match(out, /lvl-ok/);
   assert.match(out, /Up to date/);
   assert.match(out, /Checked 3 hours ago · next in 21 hours/);
-  assert.match(out, /Every repository is up to date/);
+  // No update: no "Updates available" section.
+  assert.doesNotMatch(out, /Updates available/);
 });
 
 test('automatic check off is said so', () => {

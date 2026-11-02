@@ -25,7 +25,6 @@ const HR_I18N = {
     auto_off: 'automatic check off',
     check_now: 'Check for updates',
     updates_title: 'Updates available',
-    no_updates: 'Every repository is up to date',
     no_details: 'HACS isn’t loaded: no details on these updates',
     failed_title: 'Could not be checked',
     error_title: 'The last check failed',
@@ -75,7 +74,6 @@ const HR_I18N = {
     auto_off: 'vérification automatique désactivée',
     check_now: 'Rechercher les mises à jour',
     updates_title: 'Mises à jour disponibles',
-    no_updates: 'Tous les dépôts sont à jour',
     no_details: 'HACS n’est pas chargé : pas de détail sur ces mises à jour',
     failed_title: 'Impossible à vérifier',
     error_title: 'La dernière vérification a échoué',
@@ -125,7 +123,6 @@ const HR_I18N = {
     auto_off: 'automatische Prüfung aus',
     check_now: 'Nach Updates suchen',
     updates_title: 'Verfügbare Updates',
-    no_updates: 'Alle Repositorys sind aktuell',
     no_details: 'HACS ist nicht geladen: keine Details zu diesen Updates',
     failed_title: 'Konnten nicht geprüft werden',
     error_title: 'Die letzte Prüfung ist fehlgeschlagen',
@@ -175,7 +172,6 @@ const HR_I18N = {
     auto_off: 'comprobación automática desactivada',
     check_now: 'Buscar actualizaciones',
     updates_title: 'Actualizaciones disponibles',
-    no_updates: 'Todos los repositorios están al día',
     no_details: 'HACS no está cargado: sin detalles de estas actualizaciones',
     failed_title: 'No se pudieron comprobar',
     error_title: 'La última comprobación falló',
@@ -226,7 +222,6 @@ const HR_I18N = {
     auto_off: 'аутоматска провера искључена',
     check_now: 'Провери ажурирања',
     updates_title: 'Доступна ажурирања',
-    no_updates: 'Сви репозиторијуми су ажурирани',
     no_details: 'HACS није учитан: нема детаља о овим ажурирањима',
     failed_title: 'Није могуће проверити',
     error_title: 'Последња провера није успела',
@@ -278,7 +273,6 @@ const HR_I18N = {
     auto_off: 'automatska provera isključena',
     check_now: 'Proveri ažuriranja',
     updates_title: 'Dostupna ažuriranja',
-    no_updates: 'Svi repozitorijumi su ažurirani',
     no_details: 'HACS nije učitan: nema detalja o ovim ažuriranjima',
     failed_title: 'Nije moguće proveriti',
     error_title: 'Poslednja provera nije uspela',
@@ -329,7 +323,6 @@ const HR_I18N = {
     auto_off: 'verifica automatica disattivata',
     check_now: 'Cerca aggiornamenti',
     updates_title: 'Aggiornamenti disponibili',
-    no_updates: 'Tutti i repository sono aggiornati',
     no_details: 'HACS non è caricato: nessun dettaglio su questi aggiornamenti',
     failed_title: 'Impossibile verificare',
     error_title: 'L’ultima verifica non è riuscita',
@@ -379,7 +372,6 @@ const HR_I18N = {
     auto_off: 'automatische controle uit',
     check_now: 'Controleren op updates',
     updates_title: 'Beschikbare updates',
-    no_updates: 'Alle repository’s zijn up-to-date',
     no_details: 'HACS is niet geladen: geen details over deze updates',
     failed_title: 'Kon niet worden gecontroleerd',
     error_title: 'De laatste controle is mislukt',
@@ -429,7 +421,6 @@ const HR_I18N = {
     auto_off: 'verificação automática desativada',
     check_now: 'Procurar atualizações',
     updates_title: 'Atualizações disponíveis',
-    no_updates: 'Todos os repositórios estão atualizados',
     no_details: 'O HACS não está carregado: sem detalhes sobre estas atualizações',
     failed_title: 'Não foi possível verificar',
     error_title: 'A última verificação falhou',
@@ -480,7 +471,6 @@ const HR_I18N = {
     auto_off: 'automatyczne sprawdzanie wyłączone',
     check_now: 'Sprawdź aktualizacje',
     updates_title: 'Dostępne aktualizacje',
-    no_updates: 'Wszystkie repozytoria są aktualne',
     no_details: 'HACS nie jest załadowany: brak szczegółów tych aktualizacji',
     failed_title: 'Nie udało się sprawdzić',
     error_title: 'Ostatnie sprawdzanie nie powiodło się',
@@ -788,12 +778,13 @@ class HacsRefreshCard extends HTMLElement {
         ${running ? `<div class="progress" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div>` : ''}
         ${c.show_failed && error ? `<div class="error"><ha-icon icon="mdi:alert-circle-outline"></ha-icon><span><b>${hrEsc(this._t('error_title'))}</b><br>${hrEsc(error)}</span></div>` : ''}
         ${
-          c.show_updates && st
+          // No update: no section (the pill already says "Up to date").
+          c.show_updates && st && count
             ? this._section(
                 'updates_title',
                 shownUpdates.length
                   ? shownUpdates.map((u) => this._updateRow(u, installing.includes(u.id))).join('')
-                  : `<div class="empty">${hrEsc(this._t(count ? 'no_details' : 'no_updates'))}</div>`,
+                  : `<div class="empty">${hrEsc(this._t('no_details'))}</div>`,
                 count,
                 this._installButton(installing),
               )
