@@ -1,6 +1,8 @@
 # Changelog
 
-## 0.8.3 - 2026-11-01
+## 1.0.0 - 2026-11-02
+
+First stable release.
 
 ### Fixes
 - A full check no longer starts while updates are being installed: `hacs_refresh.check_updates` fails with "Updates are being installed", and an automatic check that falls due meanwhile runs once the installs are done (it used to refresh the repositories being downloaded, and the card switched from "Installing…" to "Checking").
