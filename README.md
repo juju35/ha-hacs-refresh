@@ -144,7 +144,7 @@ type: custom:hacs-refresh-card
 
 - **Header**: status (up to date, *n* updates, *n* failed, checking *done/total*, error), when the last check ran and when the next automatic one is due, and the **Check for updates** button
 - **Progress bar** while a check runs
-- **Updates available** (with their number): the HACS repositories with an update, from HACS' own update entities, with the installed and new version. A row opens the update entity, to install it or read the release notes
+- **Updates available** (with their number): the HACS repositories with an update, from HACS' own update entities, with the installed and new version, hidden when there is none. A row opens the update entity, to install it or read the release notes
 - **Update all (*n*)**: installs every update listed, one after the other, after a confirmation at the top of the card (administrators only). The rows being installed and the number left show the progress
 - **Could not be installed**: the updates that failed, with the error
 - **Could not be checked**: the repositories the last check couldn't fetch, and the error of a check that failed
