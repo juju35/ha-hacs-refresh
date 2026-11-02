@@ -4,7 +4,7 @@
  * Served and added to the dashboard resources by the integration.
  * https://github.com/juju35/ha-hacs-refresh
  */
-var HACS_REFRESH_CARD_VERSION = '1.0.0';
+var HACS_REFRESH_CARD_VERSION = '1.0.1';
 
 const HR_I18N = {
   en: {

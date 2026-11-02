@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.0.1 - 2026-11-02
 
 ### Changes
 - Card: the **Updates available** section is hidden when there is no update (the status pill already says "Up to date").
