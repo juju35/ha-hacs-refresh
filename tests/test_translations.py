@@ -34,7 +34,7 @@ def test_every_language_exists() -> None:
     """Same languages as the card."""
     assert set(LANGUAGES) == {
         *("de", "es", "fr", "it", "nl", "pl", "pt", "pt-BR", "sr", "sr-Latn"),
-        *("ro", "da", "sv", "bg", "ru", "uk", "hu", "ga", "sk", "cs", "sl", "mt", "lv", "el"),
+        *("ro", "da", "sv", "bg", "ru", "uk", "hu", "sk", "cs", "sl", "lv", "el"),
     }
 
 

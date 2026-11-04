@@ -31,7 +31,7 @@ HACS itself only checks downloaded custom repositories every 48 hours, and its o
 - **Lovelace card** bundled with the integration: status and progress, last and next check, the updates available and the repositories that couldn't be checked
 - One failing repository doesn't stop the others; a check never runs twice at the same time, and `check_repository` waits for a full check that is running instead of starting a second one
 - Also used by the [System Monitor Card](https://github.com/juju35/ha-system-monitor-card) for its HACS section
-- English, French, German, Spanish, Serbian (Cyrillic and Latin), Italian, Dutch, European Portuguese, Polish, Romanian, Danish, Swedish, Bulgarian, Russian, Ukrainian, Hungarian, Irish, Slovak, Czech, Slovenian, Maltese, Latvian and Greek (pt-BR uses the European Portuguese texts)
+- English, French, German, Spanish, Serbian (Cyrillic and Latin), Italian, Dutch, European Portuguese, Polish, Romanian, Danish, Swedish, Bulgarian, Russian, Ukrainian, Hungarian, Slovak, Czech, Slovenian, Latvian and Greek (pt-BR uses the European Portuguese texts)
 
 ## Prerequisites
 
@@ -161,7 +161,7 @@ Every option is in the visual editor:
 | `check_button` | `true` | **Check for updates** button in the header |
 | `install_button` | `true` | **Update all** button on the updates available (administrators only) |
 | `hide_when_ok` | `false` | Hide the card while everything is up to date (it shows while checking, and with an update or an error) |
-| `language` | Home Assistant's | `en`, `fr`, `de`, `es`, `sr`, `sr-Latn`, `it`, `nl`, `pt`, `pl`, `ro`, `da`, `sv`, `bg`, `ru`, `uk`, `hu`, `ga`, `sk`, `cs`, `sl`, `mt`, `lv` or `el` |
+| `language` | Home Assistant's | `en`, `fr`, `de`, `es`, `sr`, `sr-Latn`, `it`, `nl`, `pt`, `pl`, `ro`, `da`, `sv`, `bg`, `ru`, `uk`, `hu`, `sk`, `cs`, `sl`, `lv` or `el` |
 
 The [System Monitor Card](https://github.com/juju35/ha-system-monitor-card) also shows the HACS extensions with their update status, and its **Check for updates** button presses this integration's button.
 
@@ -220,11 +220,9 @@ The integration follows the language of Home Assistant. Currently supported:
 | Русский | `ru` |
 | Українська | `uk` |
 | Magyar | `hu` |
-| Gaeilge | `ga` |
 | Slovenčina | `sk` |
 | Čeština | `cs` |
 | Slovenščina | `sl` |
-| Malti | `mt` |
 | Latviešu | `lv` |
 | Ελληνικά | `el` |
 

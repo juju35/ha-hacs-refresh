@@ -137,14 +137,14 @@ test('every language has the English keys, arrays of the same length and the sam
 
 test('every language of the integration is in the card', () => {
   assert.deepEqual(Object.keys(HR_I18N).sort(), [
-    'bg', 'cs', 'da', 'de', 'el', 'en', 'es', 'fr', 'ga', 'hu', 'it', 'lv', 'mt', 'nl', 'pl', 'pt', 'ro', 'ru', 'sk', 'sl', 'sr', 'sr-Latn', 'sv', 'uk',
+    'bg', 'cs', 'da', 'de', 'el', 'en', 'es', 'fr', 'hu', 'it', 'lv', 'nl', 'pl', 'pt', 'ro', 'ru', 'sk', 'sl', 'sr', 'sr-Latn', 'sv', 'uk',
   ]);
 });
 
-test('Romanian to Greek (14 languages): full code, then the part before the dash', () => {
+test('Romanian to Greek (12 languages): full code, then the part before the dash', () => {
   const regional = {
     'ro-RO': 'ro', 'da-DK': 'da', 'sv-SE': 'sv', 'bg-BG': 'bg', 'ru-RU': 'ru', 'uk-UA': 'uk', 'hu-HU': 'hu',
-    'ga-IE': 'ga', 'sk-SK': 'sk', 'cs-CZ': 'cs', 'sl-SI': 'sl', 'mt-MT': 'mt', 'lv-LV': 'lv', 'el-GR': 'el',
+    'sk-SK': 'sk', 'cs-CZ': 'cs', 'sl-SI': 'sl', 'lv-LV': 'lv', 'el-GR': 'el',
   };
   for (const [language, lang] of Object.entries(regional)) {
     assert.equal(hrLang({ language }, {}), lang, language);
@@ -154,7 +154,7 @@ test('Romanian to Greek (14 languages): full code, then the part before the dash
   assert.equal(hrLocale({ language: 'sv-FI' }, {}), 'sv-FI');
 });
 
-test('Romanian to Greek (14 languages): card strings and relative dates', () => {
+test('Romanian to Greek (12 languages): card strings and relative dates', () => {
   const cases = {
     ro: [/Caută actualizări/, /Verificat acum \d+ ore/],
     da: [/Søg efter opdateringer/, /Kontrolleret for \d+ timer siden/],
@@ -163,11 +163,9 @@ test('Romanian to Greek (14 languages): card strings and relative dates', () => 
     ru: [/Проверить обновления/, /Проверено \d+ час\S* назад/],
     uk: [/Перевірити оновлення/, /Перевірено \d+ годин\S* тому/],
     hu: [/Frissítések keresése/, /Ellenőrizve \d+ órával ezelőtt/],
-    ga: [/Seiceáil le haghaidh nuashonruithe/, /Seiceáilte \d+ uair an chloig ó shin/],
     sk: [/Skontrolovať aktualizácie/, /Skontrolované pred \d+ hodinami/],
     cs: [/Zkontrolovat aktualizace/, /Zkontrolováno před \d+ hodinami/],
     sl: [/Preveri posodobitve/, /Preverjeno pred \d+ urami/],
-    mt: [/Iċċekkja għal aġġornamenti/, /Iċċekkjat \d+ sigħat ilu/],
     lv: [/Meklēt atjauninājumus/, /Pārbaudīts pirms \d+ stundām/],
     el: [/Έλεγχος για ενημερώσεις/, /Ελέγχθηκε πριν από \d+ ώρες/],
   };
@@ -263,11 +261,9 @@ test('editor offers every language, Serbian in both scripts', () => {
     ['ru', 'Русский'],
     ['uk', 'Українська'],
     ['hu', 'Magyar'],
-    ['ga', 'Gaeilge'],
     ['sk', 'Slovenčina'],
     ['cs', 'Čeština'],
     ['sl', 'Slovenščina'],
-    ['mt', 'Malti'],
     ['lv', 'Latviešu'],
     ['el', 'Ελληνικά'],
   ]);
