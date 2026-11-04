@@ -5,18 +5,18 @@
 [![Validate](https://github.com/juju35/ha-hacs-refresh/actions/workflows/validate.yml/badge.svg)](https://github.com/juju35/ha-hacs-refresh/actions/workflows/validate.yml)
 [![Lint](https://github.com/juju35/ha-hacs-refresh/actions/workflows/lint.yml/badge.svg)](https://github.com/juju35/ha-hacs-refresh/actions/workflows/lint.yml)
 [![Release](https://img.shields.io/github/v/release/juju35/ha-hacs-refresh)](https://github.com/juju35/ha-hacs-refresh/releases/latest)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/juju35/ha-hacs-refresh/blob/main/LICENSE)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/julienstep9)
 
-<p align="center"><img src="custom_components/hacs_refresh/brand/icon.png" alt="HACS Refresh" width="120"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/juju35/ha-hacs-refresh/main/custom_components/hacs_refresh/brand/icon.png" alt="HACS Refresh" width="120"></p>
 
 Home Assistant integration that checks every repository downloaded with [HACS](https://hacs.xyz) for updates, on the server: with a button, an action, a progress sensor and a check interval set in the integration options.
 
 HACS itself only checks downloaded custom repositories every 48 hours, and its own "update information" button works one repository at a time from the browser. HACS Refresh checks them all at once, in the background, even when no dashboard is open. It comes with a Lovelace card showing the check and the updates available.
 
 <p align="center">
-  <img src="screenshots/card.png" alt="HACS Refresh card with updates available" width="420">
-  <img src="screenshots/card-dark.png" alt="HACS Refresh card, dark theme" width="420">
+  <img src="https://raw.githubusercontent.com/juju35/ha-hacs-refresh/main/screenshots/card.png" alt="HACS Refresh card with updates available" width="420">
+  <img src="https://raw.githubusercontent.com/juju35/ha-hacs-refresh/main/screenshots/card-dark.png" alt="HACS Refresh card, dark theme" width="420">
 </p>
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=juju35&repository=ha-hacs-refresh&category=integration)
@@ -141,8 +141,8 @@ type: custom:hacs-refresh-card
 
 | Updates available | Checking | Installing | Up to date |
 |---|---|---|---|
-| ![Card](screenshots/card.png) | ![Card while checking](screenshots/card-checking.png) | ![Card while installing](screenshots/card-installing.png) | ![Card, up to date](screenshots/card-ok.png) |
-| ![Card, dark theme](screenshots/card-dark.png) | ![Card while checking, dark theme](screenshots/card-checking-dark.png) | ![Card while installing, dark theme](screenshots/card-installing-dark.png) | ![Card, up to date, dark theme](screenshots/card-ok-dark.png) |
+| ![Card](https://raw.githubusercontent.com/juju35/ha-hacs-refresh/main/screenshots/card.png) | ![Card while checking](https://raw.githubusercontent.com/juju35/ha-hacs-refresh/main/screenshots/card-checking.png) | ![Card while installing](https://raw.githubusercontent.com/juju35/ha-hacs-refresh/main/screenshots/card-installing.png) | ![Card, up to date](https://raw.githubusercontent.com/juju35/ha-hacs-refresh/main/screenshots/card-ok.png) |
+| ![Card, dark theme](https://raw.githubusercontent.com/juju35/ha-hacs-refresh/main/screenshots/card-dark.png) | ![Card while checking, dark theme](https://raw.githubusercontent.com/juju35/ha-hacs-refresh/main/screenshots/card-checking-dark.png) | ![Card while installing, dark theme](https://raw.githubusercontent.com/juju35/ha-hacs-refresh/main/screenshots/card-installing-dark.png) | ![Card, up to date, dark theme](https://raw.githubusercontent.com/juju35/ha-hacs-refresh/main/screenshots/card-ok-dark.png) |
 
 - **Header**: status (up to date, *n* updates, *n* failed, checking *done/total*, error), when the last check ran and when the next automatic one is due, and the **Check for updates** button
 - **Progress bar** while a check runs
@@ -195,7 +195,7 @@ The tests use a stand-in for HACS' internal object (`tests/conftest.py`).
 ### Releasing
 
 1. Bump the version in `custom_components/hacs_refresh/manifest.json`, `const.py` (`VERSION`) and the card (`HACS_REFRESH_CARD_VERSION`)
-2. Add a `## <version>` section at the top of [CHANGELOG.md](CHANGELOG.md)
+2. Add a `## <version>` section at the top of [CHANGELOG.md](https://github.com/juju35/ha-hacs-refresh/blob/main/CHANGELOG.md)
 3. Push to `main`: once **Validate**, **Lint** and **HACS Validation** have passed on that commit, the **Release** workflow creates the tag and the GitHub release with the changelog section as notes
 
 ## Translations
@@ -231,7 +231,7 @@ Contributions for additional languages are welcome!
 
 ## License
 
-[MIT](LICENSE)
+[MIT](https://github.com/juju35/ha-hacs-refresh/blob/main/LICENSE)
 
 Not affiliated with HACS.
 
