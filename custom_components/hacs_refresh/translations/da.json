@@ -1,0 +1,94 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "HACS Refresh",
+        "description": "Søger på serveren efter opdateringer til alle repositories, der er downloadet med HACS. HACS selv kontrollerer kun brugerdefinerede repositories hver 48. time.",
+        "data": { "scan_interval": "Kontrolinterval" },
+        "data_description": { "scan_interval": "Timer mellem to automatiske kontroller. 0 slår den automatiske kontrol fra: brug knappen eller handlingen." }
+      }
+    },
+    "abort": {
+      "already_configured": "HACS Refresh er allerede konfigureret.",
+      "single_instance_allowed": "HACS Refresh er allerede konfigureret.",
+      "hacs_not_loaded": "HACS er ikke indlæst. Installer og konfigurer HACS først."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "HACS Refresh-indstillinger",
+        "data": { "scan_interval": "Kontrolinterval" },
+        "data_description": { "scan_interval": "Timer mellem to automatiske kontroller. 0 slår den automatiske kontrol fra: brug knappen eller handlingen." }
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "check_updates": { "name": "Søg efter opdateringer" }
+    },
+    "sensor": {
+      "status": {
+        "name": "Status",
+        "state": { "idle": "Inaktiv", "running": "Kontrollerer", "error": "Fejl" },
+        "state_attributes": {
+          "done": { "name": "Kontrolleret" },
+          "total": { "name": "Repositories" },
+          "updates": { "name": "Tilgængelige opdateringer" },
+          "failed": { "name": "Mislykkede" },
+          "error": { "name": "Fejl" },
+          "checking": { "name": "Kontrolleres" },
+          "installing": { "name": "Installeres" },
+          "install_failed": { "name": "Kunne ikke installeres" }
+        }
+      },
+      "last_check": {
+        "name": "Seneste kontrol",
+        "state_attributes": {
+          "scan_interval": { "name": "Kontrolinterval" },
+          "next_check": { "name": "Næste kontrol" }
+        }
+      }
+    }
+  },
+  "services": {
+    "check_updates": {
+      "name": "Søg efter opdateringer",
+      "description": "Søger efter opdateringer til alle repositories, der er downloadet med HACS. Kører i baggrunden, medmindre wait er angivet.",
+      "fields": {
+        "wait": { "name": "Vent", "description": "Vent, til alle repositories er kontrolleret, før handlingen afsluttes; handlingen mislykkes så, hvis kontrollen mislykkedes, eller et repository ikke kunne kontrolleres." }
+      }
+    },
+    "check_repository": {
+      "name": "Søg efter opdateringer til et repository",
+      "description": "Søger efter opdateringer til de repositories, der ligger bag disse HACS-opdateringsentiteter, og venter på resultatet.",
+      "fields": {
+        "entity_id": { "name": "Opdateringsentiteter", "description": "HACS-opdateringsentiteter for de repositories, der skal kontrolleres." }
+      }
+    },
+    "install_updates": {
+      "name": "Installer opdateringer",
+      "description": "Installerer opdateringerne til HACS-repositories én ad gangen, i baggrunden, medmindre wait er angivet. Kun administratorer.",
+      "fields": {
+        "entity_id": { "name": "Opdateringsentiteter", "description": "HACS-opdateringsentiteter, der skal opdateres; lad stå tomt for alle repositories med en opdatering." },
+        "wait": { "name": "Vent", "description": "Vent, til alle opdateringer er installeret, før handlingen afsluttes; handlingen mislykkes så, hvis en opdatering ikke kunne installeres." }
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": { "message": "HACS Refresh er ikke indlæst." },
+    "hacs_not_loaded": { "message": "HACS er ikke indlæst." },
+    "hacs_not_supported": { "message": "Denne version af HACS understøttes ikke ({path} mangler); opret venligst et issue på {issues}." },
+    "hacs_disabled": { "message": "HACS er deaktiveret ({reason})." },
+    "hacs_disabled_unknown": { "message": "HACS er deaktiveret." },
+    "not_hacs_update_entity": { "message": "{entity_id} er ikke en HACS-opdateringsentitet." },
+    "not_downloaded": { "message": "{entity_id} er ikke et repository downloadet med HACS." },
+    "check_failed": { "message": "Kunne ikke kontrollere {failed}." },
+    "check_cancelled": { "message": "Kontrollen blev annulleret (HACS Refresh blev genindlæst eller fjernet)." },
+    "full_check_failed": { "message": "Den fulde kontrol mislykkedes: {error}" },
+    "install_running": { "message": "Der installeres allerede opdateringer." },
+    "check_while_installing": { "message": "Der installeres opdateringer: søg efter opdateringer, når de er færdige." },
+    "install_failed": { "message": "Kunne ikke installere {failed}." },
+    "install_cancelled": { "message": "Installationerne blev annulleret (HACS Refresh blev genindlæst eller fjernet)." }
+  }
+}

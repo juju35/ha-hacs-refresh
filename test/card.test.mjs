@@ -110,6 +110,14 @@ const html = (card) => card.shadowRoot.innerHTML;
 
 const placeholders = (s) => [...String(s).matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
 
+// Each language's card matches its patterns (strings, relative dates).
+function assertRendered(cases) {
+  for (const [language, patterns] of Object.entries(cases)) {
+    const out = html(render({}, makeHass({ language })));
+    for (const re of patterns) assert.match(out, re, language);
+  }
+}
+
 test('every language has the English keys, arrays of the same length and the same placeholders', () => {
   const keys = Object.keys(HR_I18N.en).sort();
   for (const [lang, strings] of Object.entries(HR_I18N)) {
@@ -128,7 +136,40 @@ test('every language has the English keys, arrays of the same length and the sam
 });
 
 test('every language of the integration is in the card', () => {
-  assert.deepEqual(Object.keys(HR_I18N).sort(), ['de', 'en', 'es', 'fr', 'it', 'nl', 'pl', 'pt', 'sr', 'sr-Latn']);
+  assert.deepEqual(Object.keys(HR_I18N).sort(), [
+    'bg', 'cs', 'da', 'de', 'el', 'en', 'es', 'fr', 'hu', 'it', 'lv', 'nl', 'pl', 'pt', 'ro', 'ru', 'sk', 'sl', 'sr', 'sr-Latn', 'sv', 'uk',
+  ]);
+});
+
+test('Romanian to Greek (12 languages): full code, then the part before the dash', () => {
+  const regional = {
+    'ro-RO': 'ro', 'da-DK': 'da', 'sv-SE': 'sv', 'bg-BG': 'bg', 'ru-RU': 'ru', 'uk-UA': 'uk', 'hu-HU': 'hu',
+    'sk-SK': 'sk', 'cs-CZ': 'cs', 'sl-SI': 'sl', 'lv-LV': 'lv', 'el-GR': 'el',
+  };
+  for (const [language, lang] of Object.entries(regional)) {
+    assert.equal(hrLang({ language }, {}), lang, language);
+    assert.equal(hrLang({ language: lang }, {}), lang, lang);
+  }
+  assert.equal(hrLang({ language: 'en' }, { language: 'el' }), 'el');
+  assert.equal(hrLocale({ language: 'sv-FI' }, {}), 'sv-FI');
+});
+
+test('Romanian to Greek (12 languages): card strings and relative dates', () => {
+  const cases = {
+    ro: [/Caută actualizări/, /Verificat acum \d+ ore/],
+    da: [/Søg efter opdateringer/, /Kontrolleret for \d+ timer siden/],
+    sv: [/Sök efter uppdateringar/, /Kontrollerad för \d+ timmar sedan/],
+    bg: [/Провери за актуализации/, /Проверено преди \d+ часа/],
+    ru: [/Проверить обновления/, /Проверено \d+ час\S* назад/],
+    uk: [/Перевірити оновлення/, /Перевірено \d+ годин\S* тому/],
+    hu: [/Frissítések keresése/, /Ellenőrizve \d+ órával ezelőtt/],
+    sk: [/Skontrolovať aktualizácie/, /Skontrolované pred \d+ hodinami/],
+    cs: [/Zkontrolovat aktualizace/, /Zkontrolováno před \d+ hodinami/],
+    sl: [/Preveri posodobitve/, /Preverjeno pred \d+ urami/],
+    lv: [/Meklēt atjauninājumus/, /Pārbaudīts pirms \d+ stundām/],
+    el: [/Έλεγχος για ενημερώσεις/, /Έλεγχος πριν από \d+ ώρες/],
+  };
+  assertRendered(cases);
 });
 
 test('Italian, Dutch, Portuguese and Polish: full code, then the part before the dash, else English', () => {
@@ -150,10 +191,7 @@ test('Italian, Dutch, Portuguese and Polish: card strings and relative dates', (
     pt: [/Procurar atualizações/, /Verificado há \d+ horas/],
     pl: [/Sprawdź aktualizacje/, /Sprawdzono \d+ godzin\w* temu/],
   };
-  for (const [language, patterns] of Object.entries(cases)) {
-    const out = html(render({}, makeHass({ language })));
-    for (const re of patterns) assert.match(out, re, language);
-  }
+  assertRendered(cases);
 });
 
 test('dates use Home Assistant\'s full locale when its base is the card\'s language', () => {
@@ -216,6 +254,18 @@ test('editor offers every language, Serbian in both scripts', () => {
     ['nl', 'Nederlands'],
     ['pt', 'Português (Portugal)'],
     ['pl', 'Polski'],
+    ['ro', 'Română'],
+    ['da', 'Dansk'],
+    ['sv', 'Svenska'],
+    ['bg', 'Български'],
+    ['ru', 'Русский'],
+    ['uk', 'Українська'],
+    ['hu', 'Magyar'],
+    ['sk', 'Slovenčina'],
+    ['cs', 'Čeština'],
+    ['sl', 'Slovenščina'],
+    ['lv', 'Latviešu'],
+    ['el', 'Ελληνικά'],
   ]);
   // Every language of the card is offered.
   assert.deepEqual(JSON.parse(JSON.stringify(options.map((o) => o.value).sort())), Object.keys(HR_I18N).sort());
