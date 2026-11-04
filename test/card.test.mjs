@@ -167,7 +167,7 @@ test('Romanian to Greek (12 languages): card strings and relative dates', () => 
     cs: [/Zkontrolovat aktualizace/, /Zkontrolováno před \d+ hodinami/],
     sl: [/Preveri posodobitve/, /Preverjeno pred \d+ urami/],
     lv: [/Meklēt atjauninājumus/, /Pārbaudīts pirms \d+ stundām/],
-    el: [/Έλεγχος για ενημερώσεις/, /Ελέγχθηκε πριν από \d+ ώρες/],
+    el: [/Έλεγχος για ενημερώσεις/, /Έλεγχος πριν από \d+ ώρες/],
   };
   assertRendered(cases);
 });
