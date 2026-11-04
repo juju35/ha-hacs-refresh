@@ -1,0 +1,94 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "HACS Refresh",
+        "description": "Перевіряє на сервері наявність оновлень для всіх репозиторіїв, завантажених через HACS. Сам HACS перевіряє користувацькі репозиторії лише раз на 48 годин.",
+        "data": { "scan_interval": "Інтервал перевірки" },
+        "data_description": { "scan_interval": "Години між двома автоматичними перевірками. 0 вимикає автоматичну перевірку: скористайтеся кнопкою або дією." }
+      }
+    },
+    "abort": {
+      "already_configured": "HACS Refresh уже налаштовано.",
+      "single_instance_allowed": "HACS Refresh уже налаштовано.",
+      "hacs_not_loaded": "HACS не завантажено. Спочатку встановіть і налаштуйте HACS."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Параметри HACS Refresh",
+        "data": { "scan_interval": "Інтервал перевірки" },
+        "data_description": { "scan_interval": "Години між двома автоматичними перевірками. 0 вимикає автоматичну перевірку: скористайтеся кнопкою або дією." }
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "check_updates": { "name": "Перевірити оновлення" }
+    },
+    "sensor": {
+      "status": {
+        "name": "Стан",
+        "state": { "idle": "Очікування", "running": "Перевірка", "error": "Помилка" },
+        "state_attributes": {
+          "done": { "name": "Перевірено" },
+          "total": { "name": "Репозиторії" },
+          "updates": { "name": "Доступні оновлення" },
+          "failed": { "name": "З помилкою" },
+          "error": { "name": "Помилка" },
+          "checking": { "name": "Перевіряються" },
+          "installing": { "name": "Встановлюються" },
+          "install_failed": { "name": "Не вдалося встановити" }
+        }
+      },
+      "last_check": {
+        "name": "Остання перевірка",
+        "state_attributes": {
+          "scan_interval": { "name": "Інтервал перевірки" },
+          "next_check": { "name": "Наступна перевірка" }
+        }
+      }
+    }
+  },
+  "services": {
+    "check_updates": {
+      "name": "Перевірити оновлення",
+      "description": "Перевіряє наявність оновлень для всіх репозиторіїв, завантажених через HACS. Виконується у фоні, якщо не задано wait.",
+      "fields": {
+        "wait": { "name": "Чекати", "description": "Дочекатися перевірки всіх репозиторіїв до завершення дії; тоді дія завершується помилкою, якщо перевірка не вдалася або якийсь репозиторій не вдалося перевірити." }
+      }
+    },
+    "check_repository": {
+      "name": "Перевірити оновлення репозиторію",
+      "description": "Перевіряє наявність оновлень для репозиторіїв, що стоять за цими сутностями оновлення HACS, і чекає на результат.",
+      "fields": {
+        "entity_id": { "name": "Сутності оновлення", "description": "Сутності оновлення HACS репозиторіїв, які потрібно перевірити." }
+      }
+    },
+    "install_updates": {
+      "name": "Встановити оновлення",
+      "description": "Встановлює оновлення репозиторіїв HACS одне за одним, у фоні, якщо не задано wait. Лише для адміністраторів.",
+      "fields": {
+        "entity_id": { "name": "Сутності оновлення", "description": "Сутності оновлення HACS, які потрібно оновити; залиште порожнім для всіх репозиторіїв з оновленням." },
+        "wait": { "name": "Чекати", "description": "Дочекатися встановлення всіх оновлень до завершення дії; тоді дія завершується помилкою, якщо якесь оновлення не вдалося встановити." }
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": { "message": "HACS Refresh не завантажено." },
+    "hacs_not_loaded": { "message": "HACS не завантажено." },
+    "hacs_not_supported": { "message": "Ця версія HACS не підтримується (відсутній {path}); будь ласка, створіть issue на {issues}." },
+    "hacs_disabled": { "message": "HACS вимкнено ({reason})." },
+    "hacs_disabled_unknown": { "message": "HACS вимкнено." },
+    "not_hacs_update_entity": { "message": "{entity_id} не є сутністю оновлення HACS." },
+    "not_downloaded": { "message": "{entity_id} не є репозиторієм, завантаженим через HACS." },
+    "check_failed": { "message": "Не вдалося перевірити {failed}." },
+    "check_cancelled": { "message": "Перевірку скасовано (HACS Refresh було перезавантажено або видалено)." },
+    "full_check_failed": { "message": "Повна перевірка не вдалася: {error}" },
+    "install_running": { "message": "Оновлення вже встановлюються." },
+    "check_while_installing": { "message": "Триває встановлення оновлень: перевірте оновлення після його завершення." },
+    "install_failed": { "message": "Не вдалося встановити {failed}." },
+    "install_cancelled": { "message": "Встановлення скасовано (HACS Refresh було перезавантажено або видалено)." }
+  }
+}

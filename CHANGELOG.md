@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.2 - 2026-11-04
+
+### What's new
+- Added Romanian, Danish, Swedish, Bulgarian, Russian, Ukrainian, Hungarian, Irish, Slovak, Czech, Slovenian, Maltese, Latvian and Greek translations: the integration (`ro`, `da`, `sv`, `bg`, `ru`, `uk`, `hu`, `ga`, `sk`, `cs`, `sl`, `mt`, `lv`, `el`) and the card, whose editor offers **Română**, **Dansk**, **Svenska**, **Български**, **Русский**, **Українська**, **Magyar**, **Gaeilge**, **Slovenčina**, **Čeština**, **Slovenščina**, **Malti**, **Latviešu** and **Ελληνικά**. Counts whose plural depends on the number are written as counters ("Обновления: 5", "Aktualizace: 3").
+
+### Maintenance
+- Tests: the card and the integration have every new language, with the English keys and placeholders and no empty string; the card resolves their regional codes (`ro-RO`, `el-GR`…), shows its strings and relative dates in each of them, and its editor offers them all.
+
 ## 1.0.1 - 2026-11-02
 
 ### Changes

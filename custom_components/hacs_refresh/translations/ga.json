@@ -1,0 +1,94 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "HACS Refresh",
+        "description": "Seiceálann sé ar an bhfreastalaí an bhfuil nuashonruithe ann do gach stór a íoslódáladh le HACS. Ní sheiceálann HACS féin stórtha saincheaptha ach gach 48 uair an chloig.",
+        "data": { "scan_interval": "Eatramh seiceála" },
+        "data_description": { "scan_interval": "Uaireanta idir dhá sheiceáil uathoibríocha. Múchann 0 an tseiceáil uathoibríoch: úsáid an cnaipe nó an gníomh." }
+      }
+    },
+    "abort": {
+      "already_configured": "Tá HACS Refresh cumraithe cheana féin.",
+      "single_instance_allowed": "Tá HACS Refresh cumraithe cheana féin.",
+      "hacs_not_loaded": "Níl HACS lódáilte. Suiteáil agus socraigh HACS ar dtús."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Roghanna HACS Refresh",
+        "data": { "scan_interval": "Eatramh seiceála" },
+        "data_description": { "scan_interval": "Uaireanta idir dhá sheiceáil uathoibríocha. Múchann 0 an tseiceáil uathoibríoch: úsáid an cnaipe nó an gníomh." }
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "check_updates": { "name": "Seiceáil le haghaidh nuashonruithe" }
+    },
+    "sensor": {
+      "status": {
+        "name": "Stádas",
+        "state": { "idle": "Díomhaoin", "running": "Á sheiceáil", "error": "Earráid" },
+        "state_attributes": {
+          "done": { "name": "Seiceáilte" },
+          "total": { "name": "Stórtha" },
+          "updates": { "name": "Nuashonruithe ar fáil" },
+          "failed": { "name": "Teipthe" },
+          "error": { "name": "Earráid" },
+          "checking": { "name": "Á seiceáil" },
+          "installing": { "name": "Á suiteáil" },
+          "install_failed": { "name": "Níorbh fhéidir suiteáil" }
+        }
+      },
+      "last_check": {
+        "name": "Seiceáil dheireanach",
+        "state_attributes": {
+          "scan_interval": { "name": "Eatramh seiceála" },
+          "next_check": { "name": "An chéad seiceáil eile" }
+        }
+      }
+    }
+  },
+  "services": {
+    "check_updates": {
+      "name": "Seiceáil le haghaidh nuashonruithe",
+      "description": "Seiceálann sé an bhfuil nuashonruithe ann do gach stór a íoslódáladh le HACS. Ritheann sé sa chúlra mura bhfuil wait socraithe.",
+      "fields": {
+        "wait": { "name": "Fan", "description": "Fan go dtí go mbeidh gach stór seiceáilte sula gcríochnaíonn an gníomh; teipeann ar an ngníomh ansin má theip ar an tseiceáil nó murarbh fhéidir stór a sheiceáil." }
+      }
+    },
+    "check_repository": {
+      "name": "Seiceáil stór le haghaidh nuashonruithe",
+      "description": "Seiceálann sé an bhfuil nuashonruithe ann do na stórtha taobh thiar de na haonáin nuashonraithe HACS seo, agus fanann sé ar an toradh.",
+      "fields": {
+        "entity_id": { "name": "Aonáin nuashonraithe", "description": "Aonáin nuashonraithe HACS na stór atá le seiceáil." }
+      }
+    },
+    "install_updates": {
+      "name": "Suiteáil nuashonruithe",
+      "description": "Suiteálann sé nuashonruithe na stór HACS, ceann i ndiaidh a chéile, sa chúlra mura bhfuil wait socraithe. Riarthóirí amháin.",
+      "fields": {
+        "entity_id": { "name": "Aonáin nuashonraithe", "description": "Aonáin nuashonraithe HACS atá le nuashonrú; fág folamh le haghaidh gach stór a bhfuil nuashonrú aige." },
+        "wait": { "name": "Fan", "description": "Fan go dtí go mbeidh gach nuashonrú suiteáilte sula gcríochnaíonn an gníomh; teipeann ar an ngníomh ansin murarbh fhéidir nuashonrú a shuiteáil." }
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": { "message": "Níl HACS Refresh lódáilte." },
+    "hacs_not_loaded": { "message": "Níl HACS lódáilte." },
+    "hacs_not_supported": { "message": "Ní thacaítear leis an leagan seo de HACS ({path} ar iarraidh); oscail fadhb ar {issues}, le do thoil." },
+    "hacs_disabled": { "message": "Tá HACS díchumasaithe ({reason})." },
+    "hacs_disabled_unknown": { "message": "Tá HACS díchumasaithe." },
+    "not_hacs_update_entity": { "message": "Ní aonán nuashonraithe HACS é {entity_id}." },
+    "not_downloaded": { "message": "Ní stór a íoslódáladh le HACS é {entity_id}." },
+    "check_failed": { "message": "Níorbh fhéidir {failed} a sheiceáil." },
+    "check_cancelled": { "message": "Cealaíodh an tseiceáil (athlódáladh nó baineadh HACS Refresh)." },
+    "full_check_failed": { "message": "Theip ar an tseiceáil iomlán: {error}" },
+    "install_running": { "message": "Tá nuashonruithe á suiteáil cheana féin." },
+    "check_while_installing": { "message": "Tá nuashonruithe á suiteáil: seiceáil le haghaidh nuashonruithe nuair a bheidh siad críochnaithe." },
+    "install_failed": { "message": "Níorbh fhéidir {failed} a shuiteáil." },
+    "install_cancelled": { "message": "Cealaíodh na suiteálacha (athlódáladh nó baineadh HACS Refresh)." }
+  }
+}
