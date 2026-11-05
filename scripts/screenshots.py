@@ -1,4 +1,4 @@
-"""Render the HACS Refresh card with mock data and save the README screenshots.
+"""Render the Marketplace Refresh card with mock data and save the README screenshots.
 
 Usage: python scripts/screenshots.py  (needs `pip install -r requirements_screenshots.txt` and `playwright install chromium`)
 CHROMIUM_PATH=/path/to/chrome to use another browser. The clock is frozen so "3 hours ago" and "in 21 hours" stay the same.
@@ -17,7 +17,7 @@ from pathlib import Path
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
-CARD_JS = (ROOT / "custom_components/hacs_refresh/frontend/hacs-refresh-card.js").read_text()
+CARD_JS = (ROOT / "custom_components/marketplace_refresh/frontend/marketplace-refresh-card.js").read_text()
 NOW = datetime.fromisoformat("2026-10-31T14:00:00+01:00")
 WIDTH = 460
 
@@ -87,27 +87,27 @@ customElements.define("ha-icon", class extends HTMLElement {
 });"""
 )
 
-STATUS = "sensor.hacs_refresh_status"
-LAST_CHECK = "sensor.hacs_refresh_last_check"
-BUTTON = "button.hacs_refresh_check_for_updates"
+STATUS = "sensor.marketplace_refresh_status"
+LAST_CHECK = "sensor.marketplace_refresh_last_check"
+BUTTON = "button.marketplace_refresh_check_for_updates"
 
 
 def at(**delta) -> str:
     return (NOW + timedelta(**delta)).isoformat()
 
 
-# Mock HACS repositories: (update entity, title, installed, latest).
+# Mock Marketplace repositories: (update entity, title, installed, latest).
 REPOSITORIES = [
     ("update.mushroom_update", "Mushroom", "v4.4.0", "v4.5.0"),
     ("update.card_mod_update", "card-mod", "v3.4.4", "v3.4.5"),
     ("update.auto_entities_update", "auto-entities", "v1.13.0", "v1.14.1"),
     ("update.button_card_update", "button-card", "v4.3.0", "v4.3.0"),
-    ("update.hacs_update", "HACS", "2.0.5", "2.0.5"),
+    ("update.spook_update", "Spook", "v4.0.0", "v4.0.0"),
 ]
 
 
 def mock_hass(status, attrs, with_updates):
-    platform = {"platform": "hacs_refresh", "device_id": "hacs_refresh"}
+    platform = {"platform": "marketplace_refresh", "device_id": "marketplace_refresh"}
     states = {
         STATUS: {
             "entity_id": STATUS,
@@ -138,7 +138,7 @@ def mock_hass(status, attrs, with_updates):
                 "entity_picture": f"https://brands.home-assistant.io/_/{entity_id}/icon.png",
             },
         }
-        entities[entity_id] = {"platform": "hacs"}
+        entities[entity_id] = {"platform": "marketplace"}
     # An administrator: the card offers "Update all".
     return {
         "states": states,
@@ -175,8 +175,8 @@ body {{ margin: 0; padding: 16px; background: var(--primary-background-color);
 
 
 MOUNT = """([hass, dark]) => {
-    const el = document.createElement("hacs-refresh-card");
-    el.setConfig({ type: "custom:hacs-refresh-card" });
+    const el = document.createElement("marketplace-refresh-card");
+    el.setConfig({ type: "custom:marketplace-refresh-card" });
     el.hass = { ...hass, themes: { darkMode: dark }, callService: async () => {} };
     document.getElementById("root").appendChild(el);
 }"""

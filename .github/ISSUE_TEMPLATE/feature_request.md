@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest an idea for the HACS Refresh integration
+about: Suggest an idea for the Marketplace Refresh integration
 title: "[Feature] "
 labels: enhancement
 assignees: ""

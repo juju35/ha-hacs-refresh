@@ -6,10 +6,10 @@ from pathlib import Path
 
 import pytest
 
-TRANSLATIONS = Path(__file__).parent.parent / "custom_components" / "hacs_refresh" / "translations"
+TRANSLATIONS = Path(__file__).parent.parent / "custom_components" / "marketplace_refresh" / "translations"
 PLACEHOLDER = re.compile(r"\{(\w+)\}")
 # Proper nouns and brands, kept in Latin script in the Cyrillic translation.
-NAMES = re.compile(r"HACS|Refresh|Home Assistant")
+NAMES = re.compile(r"Marketplace|Refresh|Home Assistant|GitHub")
 
 
 def _load(lang: str) -> dict:

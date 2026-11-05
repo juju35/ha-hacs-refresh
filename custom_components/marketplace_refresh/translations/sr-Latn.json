@@ -1,0 +1,95 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Marketplace Refresh",
+        "description": "Proverava ažuriranja za svaki repozitorijum preuzet pomoću Marketplace-a, na serveru. Sam Marketplace proverava prilagođene repozitorijume samo na svakih 48 sati.",
+        "data": { "scan_interval": "Interval provere" },
+        "data_description": { "scan_interval": "Broj sati između dve automatske provere. 0 isključuje automatsku proveru: koristite dugme ili akciju." }
+      }
+    },
+    "abort": {
+      "already_configured": "Marketplace Refresh je već podešen.",
+      "single_instance_allowed": "Marketplace Refresh je već podešen.",
+      "marketplace_not_loaded": "Marketplace nije učitan."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opcije za Marketplace Refresh",
+        "data": { "scan_interval": "Interval provere" },
+        "data_description": { "scan_interval": "Broj sati između dve automatske provere. 0 isključuje automatsku proveru: koristite dugme ili akciju." }
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "check_updates": { "name": "Proveri ažuriranja" }
+    },
+    "sensor": {
+      "status": {
+        "name": "Status",
+        "state": { "idle": "Mirovanje", "running": "Proveravanje", "error": "Greška" },
+        "state_attributes": {
+          "done": { "name": "Provereno" },
+          "total": { "name": "Repozitorijumi" },
+          "updates": { "name": "Dostupna ažuriranja" },
+          "failed": { "name": "Neuspešno" },
+          "error": { "name": "Greška" },
+          "checking": { "name": "Proverava se" },
+          "installing": { "name": "Instalira se" },
+          "install_failed": { "name": "Nije moguće instalirati" },
+          "github_connected": { "name": "GitHub povezan" }
+        }
+      },
+      "last_check": {
+        "name": "Poslednja provera",
+        "state_attributes": {
+          "scan_interval": { "name": "Interval provere" },
+          "next_check": { "name": "Sledeća provera" }
+        }
+      }
+    }
+  },
+  "services": {
+    "check_updates": {
+      "name": "Proveri ažuriranja",
+      "description": "Proverava ažuriranja za svaki repozitorijum preuzet pomoću Marketplace-a. Radi u pozadini, osim ako je postavljeno čekanje.",
+      "fields": {
+        "wait": { "name": "Čekaj", "description": "Čekaj da svi repozitorijumi budu provereni pre nego što se akcija završi; akcija tada ne uspeva ako provera nije uspela ili ako neki repozitorijum nije mogao da bude proveren." }
+      }
+    },
+    "check_repository": {
+      "name": "Proveri ažuriranja repozitorijuma",
+      "description": "Proverava ažuriranja repozitorijuma iza ovih Marketplace entiteta ažuriranja i čeka rezultat.",
+      "fields": {
+        "entity_id": { "name": "Entiteti ažuriranja", "description": "Marketplace entiteti ažuriranja repozitorijuma koje treba proveriti." }
+      }
+    },
+    "install_updates": {
+      "name": "Instaliraj ažuriranja",
+      "description": "Instalira ažuriranja Marketplace repozitorijuma, jedno za drugim, u pozadini, osim ako je postavljeno čekanje. Samo za administratore.",
+      "fields": {
+        "entity_id": { "name": "Entiteti ažuriranja", "description": "Marketplace entiteti ažuriranja koje treba ažurirati; ostavite prazno za svaki repozitorijum sa ažuriranjem." },
+        "wait": { "name": "Čekaj", "description": "Čekaj da sva ažuriranja budu instalirana pre nego što se akcija završi; akcija tada ne uspeva ako neko ažuriranje nije moglo da bude instalirano." }
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": { "message": "Marketplace Refresh nije učitan." },
+    "marketplace_not_loaded": { "message": "Marketplace nije učitan." },
+    "marketplace_not_supported": { "message": "Ova verzija Marketplace-a nije podržana (nedostaje {path}); prijavite problem na {issues}." },
+    "marketplace_disabled": { "message": "Marketplace je onemogućen ({reason})." },
+    "marketplace_disabled_unknown": { "message": "Marketplace je onemogućen." },
+    "not_marketplace_update_entity": { "message": "{entity_id} nije Marketplace entitet ažuriranja." },
+    "not_installed": { "message": "{entity_id} nije repozitorijum preuzet pomoću Marketplace-a." },
+    "check_failed": { "message": "Nije moguće proveriti {failed}." },
+    "check_cancelled": { "message": "Provera je otkazana (Marketplace Refresh je ponovo učitan ili uklonjen)." },
+    "full_check_failed": { "message": "Potpuna provera nije uspela: {error}" },
+    "install_running": { "message": "Ažuriranja se već instaliraju." },
+    "check_while_installing": { "message": "Ažuriranja se instaliraju: proverite ažuriranja kada se završe." },
+    "install_failed": { "message": "Nije moguće instalirati {failed}." },
+    "install_cancelled": { "message": "Instalacije su otkazane (Marketplace Refresh je ponovo učitan ili uklonjen)." }
+  }
+}

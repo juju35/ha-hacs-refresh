@@ -1,0 +1,95 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Marketplace Refresh",
+        "description": "Проверява на сървъра за актуализации на всички хранилища, изтеглени с Marketplace. Самият Marketplace проверява потребителските хранилища само веднъж на 48 часа.",
+        "data": { "scan_interval": "Интервал на проверка" },
+        "data_description": { "scan_interval": "Часове между две автоматични проверки. 0 изключва автоматичната проверка: използвайте бутона или действието." }
+      }
+    },
+    "abort": {
+      "already_configured": "Marketplace Refresh вече е конфигуриран.",
+      "single_instance_allowed": "Marketplace Refresh вече е конфигуриран.",
+      "marketplace_not_loaded": "Marketplace не е зареден."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Опции на Marketplace Refresh",
+        "data": { "scan_interval": "Интервал на проверка" },
+        "data_description": { "scan_interval": "Часове между две автоматични проверки. 0 изключва автоматичната проверка: използвайте бутона или действието." }
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "check_updates": { "name": "Провери за актуализации" }
+    },
+    "sensor": {
+      "status": {
+        "name": "Състояние",
+        "state": { "idle": "Неактивен", "running": "Проверява се", "error": "Грешка" },
+        "state_attributes": {
+          "done": { "name": "Проверени" },
+          "total": { "name": "Хранилища" },
+          "updates": { "name": "Налични актуализации" },
+          "failed": { "name": "Неуспешни" },
+          "error": { "name": "Грешка" },
+          "checking": { "name": "В процес на проверка" },
+          "installing": { "name": "В процес на инсталиране" },
+          "install_failed": { "name": "Не можаха да бъдат инсталирани" },
+          "github_connected": { "name": "GitHub свързан" }
+        }
+      },
+      "last_check": {
+        "name": "Последна проверка",
+        "state_attributes": {
+          "scan_interval": { "name": "Интервал на проверка" },
+          "next_check": { "name": "Следваща проверка" }
+        }
+      }
+    }
+  },
+  "services": {
+    "check_updates": {
+      "name": "Провери за актуализации",
+      "description": "Проверява за актуализации на всички хранилища, изтеглени с Marketplace. Работи във фонов режим, освен ако не е зададено wait.",
+      "fields": {
+        "wait": { "name": "Изчакване", "description": "Изчаква, докато всички хранилища бъдат проверени, преди действието да приключи; действието тогава е неуспешно, ако проверката е неуспешна или някое хранилище не е могло да бъде проверено." }
+      }
+    },
+    "check_repository": {
+      "name": "Провери хранилище за актуализации",
+      "description": "Проверява за актуализации хранилищата зад тези обекти за актуализация на Marketplace и изчаква резултата.",
+      "fields": {
+        "entity_id": { "name": "Обекти за актуализация", "description": "Обекти за актуализация на Marketplace на хранилищата за проверка." }
+      }
+    },
+    "install_updates": {
+      "name": "Инсталирай актуализации",
+      "description": "Инсталира актуализациите на хранилищата в Marketplace една след друга, във фонов режим, освен ако не е зададено wait. Само за администратори.",
+      "fields": {
+        "entity_id": { "name": "Обекти за актуализация", "description": "Обекти за актуализация на Marketplace за актуализиране; оставете празно за всички хранилища с актуализация." },
+        "wait": { "name": "Изчакване", "description": "Изчаква, докато всички актуализации бъдат инсталирани, преди действието да приключи; действието тогава е неуспешно, ако някоя актуализация не е могла да бъде инсталирана." }
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": { "message": "Marketplace Refresh не е зареден." },
+    "marketplace_not_loaded": { "message": "Marketplace не е зареден." },
+    "marketplace_not_supported": { "message": "Тази версия на Marketplace не се поддържа (липсва {path}); моля, отворете проблем в {issues}." },
+    "marketplace_disabled": { "message": "Marketplace е деактивиран ({reason})." },
+    "marketplace_disabled_unknown": { "message": "Marketplace е деактивиран." },
+    "not_marketplace_update_entity": { "message": "{entity_id} не е обект за актуализация на Marketplace." },
+    "not_installed": { "message": "{entity_id} не е хранилище, изтеглено с Marketplace." },
+    "check_failed": { "message": "Неуспешна проверка на {failed}." },
+    "check_cancelled": { "message": "Проверката беше отменена (Marketplace Refresh беше презареден или премахнат)." },
+    "full_check_failed": { "message": "Пълната проверка е неуспешна: {error}" },
+    "install_running": { "message": "Вече се инсталират актуализации." },
+    "check_while_installing": { "message": "Инсталират се актуализации: проверете за актуализации, след като приключат." },
+    "install_failed": { "message": "Неуспешно инсталиране на {failed}." },
+    "install_cancelled": { "message": "Инсталациите бяха отменени (Marketplace Refresh беше презареден или премахнат)." }
+  }
+}

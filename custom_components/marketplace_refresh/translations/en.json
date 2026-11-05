@@ -1,0 +1,95 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Marketplace Refresh",
+        "description": "Checks every repository installed from the Marketplace for updates, on the server. The Marketplace itself reads the catalog every 6 hours and only checks custom repositories every 48 hours.",
+        "data": { "scan_interval": "Check interval" },
+        "data_description": { "scan_interval": "Hours between two automatic checks. 0 turns the automatic check off: use the button or the action." }
+      }
+    },
+    "abort": {
+      "already_configured": "Marketplace Refresh is already configured.",
+      "single_instance_allowed": "Marketplace Refresh is already configured.",
+      "marketplace_not_loaded": "The Marketplace is not loaded or is disabled."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Marketplace Refresh options",
+        "data": { "scan_interval": "Check interval" },
+        "data_description": { "scan_interval": "Hours between two automatic checks. 0 turns the automatic check off: use the button or the action." }
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "check_updates": { "name": "Check for updates" }
+    },
+    "sensor": {
+      "status": {
+        "name": "Status",
+        "state": { "idle": "Idle", "running": "Checking", "error": "Error" },
+        "state_attributes": {
+          "done": { "name": "Checked" },
+          "total": { "name": "Repositories" },
+          "updates": { "name": "Updates available" },
+          "failed": { "name": "Failed" },
+          "error": { "name": "Error" },
+          "checking": { "name": "Being checked" },
+          "installing": { "name": "Being installed" },
+          "install_failed": { "name": "Could not be installed" },
+          "github_connected": { "name": "GitHub connected" }
+        }
+      },
+      "last_check": {
+        "name": "Last check",
+        "state_attributes": {
+          "scan_interval": { "name": "Check interval" },
+          "next_check": { "name": "Next check" }
+        }
+      }
+    }
+  },
+  "services": {
+    "check_updates": {
+      "name": "Check for updates",
+      "description": "Checks every repository installed from the Marketplace for updates. Runs in the background unless wait is set.",
+      "fields": {
+        "wait": { "name": "Wait", "description": "Wait until every repository has been checked before the action ends; the action then fails if the check failed or a repository could not be checked." }
+      }
+    },
+    "check_repository": {
+      "name": "Check a repository for updates",
+      "description": "Checks the repositories behind these Marketplace update entities for updates, and waits for the result.",
+      "fields": {
+        "entity_id": { "name": "Update entities", "description": "Marketplace update entities of the repositories to check." }
+      }
+    },
+    "install_updates": {
+      "name": "Install updates",
+      "description": "Installs the updates of the Marketplace repositories, one after the other, in the background unless wait is set. Administrators only.",
+      "fields": {
+        "entity_id": { "name": "Update entities", "description": "Marketplace update entities to update; leave empty for every repository with an update." },
+        "wait": { "name": "Wait", "description": "Wait until every update has been installed before the action ends; the action then fails if an update could not be installed." }
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": { "message": "Marketplace Refresh is not loaded." },
+    "marketplace_not_loaded": { "message": "The Marketplace is not loaded." },
+    "marketplace_not_supported": { "message": "This version of the Marketplace is not supported (missing {path}); please open an issue on {issues}." },
+    "marketplace_disabled": { "message": "The Marketplace is disabled ({reason})." },
+    "marketplace_disabled_unknown": { "message": "The Marketplace is disabled." },
+    "not_marketplace_update_entity": { "message": "{entity_id} is not a Marketplace update entity." },
+    "not_installed": { "message": "{entity_id} is not a repository installed from the Marketplace." },
+    "check_failed": { "message": "Could not check {failed}." },
+    "check_cancelled": { "message": "The check was cancelled (Marketplace Refresh was reloaded or removed)." },
+    "full_check_failed": { "message": "The full check failed: {error}" },
+    "install_running": { "message": "Updates are already being installed." },
+    "check_while_installing": { "message": "Updates are being installed: check for updates once they are done." },
+    "install_failed": { "message": "Could not install {failed}." },
+    "install_cancelled": { "message": "The installs were cancelled (Marketplace Refresh was reloaded or removed)." }
+  }
+}

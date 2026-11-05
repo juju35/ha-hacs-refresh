@@ -1,0 +1,29 @@
+check_updates:
+  fields:
+    wait:
+      default: false
+      selector:
+        boolean:
+
+check_repository:
+  fields:
+    entity_id:
+      required: true
+      selector:
+        entity:
+          multiple: true
+          integration: marketplace
+          domain: update
+
+install_updates:
+  fields:
+    entity_id:
+      selector:
+        entity:
+          multiple: true
+          integration: marketplace
+          domain: update
+    wait:
+      default: false
+      selector:
+        boolean:

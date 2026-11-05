@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.0.0 - 2026-11-05
+
+### Breaking changes
+- **Renamed to Marketplace Refresh** (`marketplace_refresh`, repository `juju35/ha-marketplace-refresh`): Home Assistant 2026.11 replaces HACS with the built-in Marketplace, which removes HACS and its `hass.data["hacs"]` object this integration relied on. Requires Home Assistant 2026.11 or later; keep HACS Refresh 1.0.3 with HACS on 2026.10 and older.
+- Migration from HACS Refresh: uninstall HACS Refresh (its entry, then the repository), install Marketplace Refresh and add it again. Entity IDs become `button.marketplace_refresh_check_for_updates`, `sensor.marketplace_refresh_status` and `sensor.marketplace_refresh_last_check`; the actions become `marketplace_refresh.check_updates`, `marketplace_refresh.check_repository` and `marketplace_refresh.install_updates`; the card type becomes `custom:marketplace-refresh-card`; the translation keys of the error messages follow (`marketplace_not_loaded`, `not_marketplace_update_entity`, `not_installed`…).
+- The actions take the Marketplace's update entities (`update.*` of platform `marketplace`) instead of HACS'.
+
+### What's new
+- A full check first reads the Marketplace catalog again (one request per content type, no GitHub API call), then fetches every installed repository from GitHub as before, **only when a GitHub account is connected to the Marketplace**: without one, the Marketplace runs on GitHub's anonymous limit (60 requests an hour), so the catalog is the only source and the repositories added from a link are listed as "could not be checked". The status sensor says whether GitHub was connected (`github_connected`), and the card explains it under the repositories concerned.
+- `install_updates` reports the Marketplace's own refusal when nobody has accepted the Marketplace warning yet.
+
+### Maintenance
+- CI: the minimum-version test job is gone (the minimum is the current release); `hacs.json` requires Home Assistant 2026.11.0; the release zip is `marketplace_refresh.zip`.
+
+
 ## 1.0.3 - 2026-11-04
 
 ### Documentation
@@ -26,8 +41,8 @@ First stable release. No change since 0.8.3.
 ## 0.8.3 - 2026-11-01
 
 ### Fixes
-- A full check no longer starts while updates are being installed: `hacs_refresh.check_updates` fails with "Updates are being installed", and an automatic check that falls due meanwhile runs once the installs are done (it used to refresh the repositories being downloaded, and the card switched from "Installing…" to "Checking").
-- HACS Refresh shows its own icon in **Settings → Devices & services** on Home Assistant 2026.3 and later: the release zip now includes the `brand/` folder.
+- A full check no longer starts while updates are being installed: `marketplace_refresh.check_updates` fails with "Updates are being installed", and an automatic check that falls due meanwhile runs once the installs are done (it used to refresh the repositories being downloaded, and the card switched from "Installing…" to "Checking").
+- Marketplace Refresh shows its own icon in **Settings → Devices & services** on Home Assistant 2026.3 and later: the release zip now includes the `brand/` folder.
 - Card: on a narrow card (its minimum width, small phones), the title stays readable, the status pill is truncated and shrinks to a coloured dot (its text stays in the tooltip and for screen readers), and the **Update all** button moves under the section title instead of being cut off.
 - Card: the status pill keeps its whole label whenever it fits and only shrinks to its dot when it would be cut, whatever the card's width (a short "Error" or "Unavailable" was a dot on a 245-264 px card, and a Polish label lost its end on a 320 px phone card); on a phone's 6 columns (about 156-180 px), the dot sits on the badge's corner instead of being pushed out of the card.
 - Card: on a phone's 6 columns, an update's target version ("v1.13.0 → v1.14.1"), an install error and the **Update all** button go on two lines instead of being cut ("v1.13.0 → v…", "Zaktualizuj wszy…").
@@ -60,7 +75,7 @@ First stable release. No change since 0.8.3.
 ### What's new
 - **Update all** on the card: a button on the updates available installs every update listed, one after the other, after a confirmation at the top of the card. The rows being installed and the number of updates left show the progress; updates that couldn't be installed are listed with their error. Administrators only; option `install_button` to hide it.
 - Card: the **Updates available** section shows how many there are.
-- **`hacs_refresh.install_updates`** action (administrators only): installs the updates of every HACS update entity with one (or the ones given) in the background, or waits for them with `wait: true` and fails if one couldn't be installed. The status sensor gives `installing` and `install_failed`; the **Check for updates** button is greyed out while updates are installed.
+- **`marketplace_refresh.install_updates`** action (administrators only): installs the updates of every HACS update entity with one (or the ones given) in the background, or waits for them with `wait: true` and fails if one couldn't be installed. The status sensor gives `installing` and `install_failed`; the **Check for updates** button is greyed out while updates are installed.
 
 ## 0.7.2
 
@@ -75,7 +90,7 @@ First stable release. No change since 0.8.3.
 ## 0.7.1
 
 ### Fixes
-- Card: the visual editor only offers the **Status** sensor for "HACS Refresh sensor". Choosing the **Last check** sensor (offered before, or set in YAML) no longer shows "Up to date" / "Not checked yet" without the button or the error: any entity of the HACS Refresh device leads to its status.
+- Card: the visual editor only offers the **Status** sensor for "Marketplace Refresh sensor". Choosing the **Last check** sensor (offered before, or set in YAML) no longer shows "Up to date" / "Not checked yet" without the button or the error: any entity of the Marketplace Refresh device leads to its status.
 - Card: when the integration's sensors are unavailable or unknown (entry not loaded, setup retry), the card shows "Unavailable" in grey instead of "Up to date", and `hide_when_ok` no longer hides it.
 - Card: when the automatic check is already due (HACS unavailable, retried within the hour), the card no longer reads "next 3 hours ago".
 
@@ -85,7 +100,7 @@ First stable release. No change since 0.8.3.
 ## 0.7.0
 
 ### What's new
-- **HACS Refresh Card**, bundled with the integration and added to the dashboard resources automatically: status and progress bar, last and next check, **Check for updates** button, the HACS repositories with an update (installed → new version, a row opens the update entity) and the repositories that couldn't be checked. Visual editor; English, French, German and Spanish.
+- **Marketplace Refresh Card**, bundled with the integration and added to the dashboard resources automatically: status and progress bar, last and next check, **Check for updates** button, the HACS repositories with an update (installed → new version, a row opens the update entity) and the repositories that couldn't be checked. Visual editor; English, French, German and Spanish.
 - The **Last check** sensor gives `scan_interval` and `next_check` (when the next automatic check is due).
 
 ### Maintenance
@@ -94,11 +109,11 @@ First stable release. No change since 0.8.3.
 ## 0.6.1
 
 ### Fixes
-- `hacs_refresh.check_updates` with `wait: true` fails when the check failed or could not check a repository, like `hacs_refresh.check_repository`, instead of succeeding (automations no longer act on the previous check's `updates`).
+- `marketplace_refresh.check_updates` with `wait: true` fails when the check failed or could not check a repository, like `marketplace_refresh.check_repository`, instead of succeeding (automations no longer act on the previous check's `updates`).
 - A scheduled check skipped because HACS is unavailable (rate-limited, still starting) is retried within the hour instead of after a full interval.
 - The `failed` attribute of the status sensor no longer changes in place while a check runs.
 - "HACS is disabled" no longer shows an untranslated "unknown" when HACS gives no reason.
-- `hacs_refresh.check_repository` during a full check also checks the repositories whose category the full check leaves out, instead of reporting success without checking them.
+- `marketplace_refresh.check_repository` during a full check also checks the repositories whose category the full check leaves out, instead of reporting success without checking them.
 
 ### Maintenance
 - CI: the release is published only once Validate (hassfest, tests) has passed on the push to main; vulture is pinned in `requirements_lint.txt` so Dependabot keeps it up to date.
@@ -112,26 +127,26 @@ First stable release. No change since 0.8.3.
 ## 0.5.1
 
 ### Fixes
-- HACS installs and updates HACS Refresh from the `hacs_refresh.zip` release asset, so development files are no longer copied to Home Assistant.
-- A `hacs_refresh.check_repository` waiting for another call on the same repository no longer reports success when saving the HACS data fails: it checks the repository itself and fails with the error.
+- HACS installs and updates Marketplace Refresh from the `marketplace_refresh.zip` release asset, so development files are no longer copied to Home Assistant.
+- A `marketplace_refresh.check_repository` waiting for another call on the same repository no longer reports success when saving the HACS data fails: it checks the repository itself and fails with the error.
 - On large installations, the full check updates its progress at most every 0.5 s instead of after every repository, avoiding hundreds of state and recorder writes; the final state is always reported.
 - "HACS is disabled" says "unknown" instead of "None" when HACS gives no reason.
-- The `hacs_refresh.check_repository` action has its own icon.
+- The `marketplace_refresh.check_repository` action has its own icon.
 
 ### Maintenance
-- AGENT.md moved out of the installed integration; brand assets stay under `custom_components/hacs_refresh/brand/` for the HACS brands check but are kept out of the release zip.
+- AGENT.md moved out of the installed integration; brand assets stay under `custom_components/marketplace_refresh/brand/` for the HACS brands check but are kept out of the release zip.
 - CI: branch cleanup paginates PR lookups, ruff-action pinned to the pre-commit ruff version, stale exempts `confirmed`/`pinned` issues, Dependabot watches `requirements_test.txt`; leftover lint config from the card repositories removed.
 - README: the `check_repository` example uses `data:`.
 
 ## 0.5.0
 
 ### Maintenance
-- Removed the unused local `card-js-syntax` pre-commit hook: it was copied from the Lovelace card repositories, but HACS Refresh is a pure Python integration with no `.js` files, so the hook never checked anything and only forced `node` to be installed to run pre-commit locally.
+- Removed the unused local `card-js-syntax` pre-commit hook: it was copied from the Lovelace card repositories, but Marketplace Refresh is a pure Python integration with no `.js` files, so the hook never checked anything and only forced `node` to be installed to run pre-commit locally.
 
 ## 0.4.1
 
 ### Fixes
-- A `hacs_refresh.check_repository` waiting for another call on the same repository checks that repository itself when the other call is cancelled (automation or script stopped, client disconnected), instead of failing with "The check was cancelled (HACS Refresh was reloaded or removed)" without checking it.
+- A `marketplace_refresh.check_repository` waiting for another call on the same repository checks that repository itself when the other call is cancelled (automation or script stopped, client disconnected), instead of failing with "The check was cancelled (Marketplace Refresh was reloaded or removed)" without checking it.
 
 ### Maintenance
 - Test for the fix; the duplication check runs on Node 22.
@@ -140,12 +155,12 @@ First stable release. No change since 0.8.3.
 
 ### Changes
 - Requires Home Assistant 2024.12 or later (was 2024.11): on 2024.11, **Configure** failed with an error.
-- `hacs_refresh.check_repository` called during a full check fails if that check failed or could not check one of its repositories, instead of succeeding.
-- A second `hacs_refresh.check_repository` on a repository already being checked waits for the first one's result and fails with the same reason, instead of returning at once.
-- A full check started while `hacs_refresh.check_repository` is running uses its result instead of checking the same repositories again.
+- `marketplace_refresh.check_repository` called during a full check fails if that check failed or could not check one of its repositories, instead of succeeding.
+- A second `marketplace_refresh.check_repository` on a repository already being checked waits for the first one's result and fails with the same reason, instead of returning at once.
+- A full check started while `marketplace_refresh.check_repository` is running uses its result instead of checking the same repositories again.
 
 ### Fixes
-- `hacs_refresh.check_updates` with `wait: true`, or a `hacs_refresh.check_repository` waiting for a full check, fails with "The check was cancelled" when HACS Refresh is reloaded or removed, instead of a raw error.
+- `marketplace_refresh.check_updates` with `wait: true`, or a `marketplace_refresh.check_repository` waiting for a full check, fails with "The check was cancelled" when Marketplace Refresh is reloaded or removed, instead of a raw error.
 
 ### Maintenance
 - Tests run on Home Assistant 2026.10 and on the minimum version (2024.12), and fail on any deprecated Home Assistant call; new tests for the fixes.
@@ -153,13 +168,13 @@ First stable release. No change since 0.8.3.
 ## 0.3.0
 
 ### Changes
-- The `hacs_refresh.check_updates` action is open to every user, like the **Check for updates** button and `hacs_refresh.check_repository`: it only fetches information, installing stays with HACS.
+- The `marketplace_refresh.check_updates` action is open to every user, like the **Check for updates** button and `marketplace_refresh.check_repository`: it only fetches information, installing stays with HACS.
 - Error messages are translated (English, French).
 
 ### Fixes
 - The automatic check runs even when Home Assistant restarts more often than the interval: the last check is kept across restarts and an overdue check runs at startup. `last_check` and `updates` no longer go back to unknown after a restart.
 - Unloading the entry (options changed, removed) stops a running check, so two full checks no longer run side by side.
-- `hacs_refresh.check_repository` called during a full check waits for it, and an entity already being checked is not refreshed twice.
+- `marketplace_refresh.check_repository` called during a full check waits for it, and an entity already being checked is not refreshed twice.
 - A HACS version without `disabled_reason` gives the "HACS is disabled" error instead of a bare error.
 
 ### Maintenance
@@ -179,14 +194,14 @@ First stable release. No change since 0.8.3.
 ## 0.2.0
 
 ### What's new
-- `hacs_refresh.check_repository` action: checks only the repositories behind the HACS update entities given in `entity_id`, and waits for the result. Open to every user, like the button. Used by the per-extension button of the System Monitor Card.
+- `marketplace_refresh.check_repository` action: checks only the repositories behind the HACS update entities given in `entity_id`, and waits for the result. Open to every user, like the button. Used by the per-extension button of the System Monitor Card.
 - The **Status** sensor lists the update entities being checked this way in its `checking` attribute.
 
 ## 0.1.0
 
 ### What's new
 - First release: checks every repository downloaded with HACS for updates on the server, four at a time, then refreshes HACS' update entities.
-- **Check for updates** button and `hacs_refresh.check_updates` action (administrators only), with an optional `wait`.
+- **Check for updates** button and `marketplace_refresh.check_updates` action (administrators only), with an optional `wait`.
 - Automatic check at the interval set in the integration options (24 hours by default, `0` to turn it off).
 - **Status** sensor with the progress, the number of updates found and the repositories that failed, and a **Last check** sensor.
 - English and French.

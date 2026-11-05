@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report a bug with the HACS Refresh integration
+about: Report a bug with the Marketplace Refresh integration
 title: "[Bug] "
 labels: bug
 assignees: ""
@@ -23,12 +23,12 @@ If applicable, add screenshots to help explain your problem.
 
 **Environment:**
 - Home Assistant version:
-- HACS version:
+- Marketplace: GitHub account connected (yes/no):
 - Integration version:
 
 **Logs:**
 ```text
-Paste the log lines of custom_components.hacs_refresh here
+Paste the log lines of custom_components.marketplace_refresh here
 ```
 
 **Additional context**

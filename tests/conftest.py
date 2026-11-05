@@ -1,16 +1,16 @@
-"""Fixtures for HACS Refresh tests: a stand-in for HACS' internal object."""
+"""Fixtures for Marketplace Refresh tests: a stand-in for the Marketplace manager."""
 
 from __future__ import annotations
 
 import logging
 import os
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from homeassistant.helpers import frame
 
-from custom_components.hacs_refresh.const import DOMAIN
+from custom_components.marketplace_refresh.const import DOMAIN
 
 
 @pytest.fixture(autouse=True)
@@ -56,30 +56,40 @@ def no_deprecated_calls():
     assert not recorder.messages, "\n".join(recorder.messages)
 
 
-def make_repo(full_name: str, category: str = "integration", pending: bool = False, fail: bool = False):
+def make_repo(
+    full_name: str, category: str = "integration", pending: bool = False, fail: bool = False, custom: bool = False
+):
+    """A stand-in for a Marketplace repository; `custom` for one added from a link (not in the catalog)."""
     repo = SimpleNamespace(
-        data=SimpleNamespace(id=abs(hash(full_name)) % 10**9, full_name=full_name, category=category),
+        data=SimpleNamespace(id=str(abs(hash(full_name)) % 10**9), full_name=full_name, category=category),
         pending_update=pending,
+        custom=custom,
         update_repository=AsyncMock(side_effect=RuntimeError("GitHub down") if fail else None),
     )
     return repo
 
 
 @pytest.fixture
-def fake_hacs(hass):
-    """hass.data["hacs"] with the attributes HACS Refresh uses, and HACS marked as loaded."""
+def fake_marketplace(hass):
+    """The Marketplace manager with the attributes Marketplace Refresh uses, GitHub connected, marked as loaded."""
     repos = [
-        make_repo("hacs/integration"),
+        make_repo("juju35/ha-git-sync"),
         make_repo("juju35/ha-parcel", pending=True),
         make_repo("piitaya/lovelace-mushroom", category="plugin"),
     ]
-    hacs = SimpleNamespace(
-        repositories=SimpleNamespace(list_downloaded=repos),
+
+    def is_default(repo_id: str) -> bool:
+        return not any(repo.custom for repo in repos if repo.data.id == repo_id)
+
+    marketplace = SimpleNamespace(
+        repositories=SimpleNamespace(list_installed=repos, is_default=is_default),
         data=SimpleNamespace(async_write=AsyncMock()),
         coordinators={"integration": MagicMock(), "plugin": MagicMock()},
         system=SimpleNamespace(disabled=False, disabled_reason=None),
         common=SimpleNamespace(categories={"integration", "plugin", "theme"}),
+        github_connected=True,
+        async_get_all_category_repositories=AsyncMock(),
     )
-    hass.data["hacs"] = hacs
-    hass.config.components.add("hacs")
-    return hacs
+    hass.config.components.add("marketplace")
+    with patch("custom_components.marketplace_refresh.refresher._loaded_marketplace", return_value=marketplace):
+        yield marketplace
