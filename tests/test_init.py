@@ -68,6 +68,8 @@ async def test_check_updates_action(hass, fake_marketplace):
 
     for repo in fake_marketplace.repositories.list_installed:
         repo.update_repository.assert_awaited_once_with(ignore_issues=True, force=True)
+    # The catalog is read again first: it carries the latest version of every catalog repository.
+    fake_marketplace.async_get_all_category_repositories.assert_awaited_once()
     fake_marketplace.data.async_write.assert_awaited_once()
     for coordinator in fake_marketplace.coordinators.values():
         coordinator.async_update_listeners.assert_called_once()
@@ -78,7 +80,36 @@ async def test_check_updates_action(hass, fake_marketplace):
     assert state.attributes["total"] == 3
     assert state.attributes["updates"] == 1
     assert state.attributes["failed"] == []
+    assert state.attributes["github_connected"] is True
     assert hass.states.get(LAST_CHECK).state not in ("unknown", "unavailable")
+
+
+async def test_check_updates_without_github_reads_the_catalog_only(hass, fake_marketplace, caplog):
+    """No GitHub account connected: the catalog is the only source, custom repositories can't be checked."""
+    fake_marketplace.github_connected = False
+    custom = make_repo("someone/custom-card", category="plugin", custom=True)
+    fake_marketplace.repositories.list_installed.append(custom)
+    await _setup(hass)
+    # Waiting reports the repositories not checked, like the ones GitHub couldn't fetch.
+    with pytest.raises(HomeAssistantError, match="someone/custom-card"):
+        await hass.services.async_call(DOMAIN, "check_updates", {"wait": True}, blocking=True)
+    await hass.async_block_till_done()
+
+    fake_marketplace.async_get_all_category_repositories.assert_awaited_once()
+    for repo in fake_marketplace.repositories.list_installed:
+        repo.update_repository.assert_not_awaited()
+    fake_marketplace.data.async_write.assert_awaited_once()
+    for coordinator in fake_marketplace.coordinators.values():
+        coordinator.async_update_listeners.assert_called_once()
+
+    state = hass.states.get(STATUS)
+    assert state.state == "idle"
+    assert state.attributes["done"] == 4
+    assert state.attributes["total"] == 4
+    assert state.attributes["updates"] == 1
+    assert state.attributes["failed"] == ["someone/custom-card"]
+    assert state.attributes["github_connected"] is False
+    assert "no GitHub account connected" in caplog.text
 
 
 async def test_button_and_failed_repository(hass, fake_marketplace):
