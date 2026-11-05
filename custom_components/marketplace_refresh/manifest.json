@@ -1,0 +1,15 @@
+{
+  "domain": "marketplace_refresh",
+  "name": "Marketplace Refresh",
+  "after_dependencies": ["marketplace"],
+  "codeowners": ["@juju35"],
+  "config_flow": true,
+  "dependencies": ["frontend", "http", "lovelace"],
+  "documentation": "https://github.com/juju35/ha-marketplace-refresh",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/juju35/ha-marketplace-refresh/issues",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "2.0.0"
+}

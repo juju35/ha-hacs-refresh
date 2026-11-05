@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import vm from 'node:vm';
 
-const source = readFileSync(new URL('../custom_components/hacs_refresh/frontend/hacs-refresh-card.js', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../custom_components/marketplace_refresh/frontend/marketplace-refresh-card.js', import.meta.url), 'utf8');
 
 // Elements found in the rendered HTML by a selector: enough to click the check button.
 const fakeNode = () => ({
@@ -56,21 +56,21 @@ const context = {
   Date,
 };
 vm.createContext(context);
-vm.runInContext(`${source}\nthis.hr = { HacsRefreshCard, HacsRefreshCardEditor, HR_I18N, hrEsc, hrLang, hrLocale, hrDevices, HR_DEFAULTS };`, context);
-const { HacsRefreshCard, HacsRefreshCardEditor, HR_I18N, hrEsc, hrLang, hrLocale, hrDevices, HR_DEFAULTS } = context.hr;
+vm.runInContext(`${source}\nthis.hr = { MarketplaceRefreshCard, MarketplaceRefreshCardEditor, HR_I18N, hrEsc, hrLang, hrLocale, hrDevices, HR_DEFAULTS };`, context);
+const { MarketplaceRefreshCard, MarketplaceRefreshCardEditor, HR_I18N, hrEsc, hrLang, hrLocale, hrDevices, HR_DEFAULTS } = context.hr;
 
-const STATUS = 'sensor.hacs_refresh_status';
-const LAST_CHECK = 'sensor.hacs_refresh_last_check';
-const BUTTON = 'button.hacs_refresh_check_for_updates';
+const STATUS = 'sensor.marketplace_refresh_status';
+const LAST_CHECK = 'sensor.marketplace_refresh_last_check';
+const BUTTON = 'button.marketplace_refresh_check_for_updates';
 const minutes = (m) => new Date(Date.now() + m * 60000).toISOString();
 
 const REGISTRY = {
-  [STATUS]: { platform: 'hacs_refresh', device_id: 'd1', translation_key: 'status' },
-  [LAST_CHECK]: { platform: 'hacs_refresh', device_id: 'd1', translation_key: 'last_check' },
-  [BUTTON]: { platform: 'hacs_refresh', device_id: 'd1', translation_key: 'check_updates' },
-  'update.mushroom_update': { platform: 'hacs' },
-  'update.card_mod_update': { platform: 'hacs' },
-  'update.hacs_update': { platform: 'hacs' },
+  [STATUS]: { platform: 'marketplace_refresh', device_id: 'd1', translation_key: 'status' },
+  [LAST_CHECK]: { platform: 'marketplace_refresh', device_id: 'd1', translation_key: 'last_check' },
+  [BUTTON]: { platform: 'marketplace_refresh', device_id: 'd1', translation_key: 'check_updates' },
+  'update.mushroom_update': { platform: 'marketplace' },
+  'update.card_mod_update': { platform: 'marketplace' },
+  'update.spook_update': { platform: 'marketplace' },
   'update.core': { platform: 'hassio' },
 };
 
@@ -85,7 +85,7 @@ function makeHass({ state = 'idle', attrs = {}, updates = ['update.mushroom_upda
     [BUTTON]: { state: button, attributes: {} },
     'update.core': { entity_id: 'update.core', state: 'on', attributes: { title: 'Core' } },
   };
-  for (const id of ['update.mushroom_update', 'update.card_mod_update', 'update.hacs_update']) {
+  for (const id of ['update.mushroom_update', 'update.card_mod_update', 'update.spook_update']) {
     const on = updates.includes(id);
     states[id] = {
       entity_id: id,
@@ -97,7 +97,7 @@ function makeHass({ state = 'idle', attrs = {}, updates = ['update.mushroom_upda
 }
 
 function render(config, hass) {
-  const card = new HacsRefreshCard();
+  const card = new MarketplaceRefreshCard();
   card.attachShadow = fakeNode().attachShadow;
   card.style = {};
   card.dispatchEvent = () => {};
@@ -211,7 +211,7 @@ test('dates use Home Assistant\'s full locale when its base is the card\'s langu
 test('Serbian is there in Cyrillic (sr) and Latin (sr-Latn)', () => {
   assert.ok(HR_I18N.sr && HR_I18N['sr-Latn']);
   // Proper nouns, brands and placeholders are left out of the script check.
-  const strip = (s) => String(s).replace(/\{\w+\}|HACS|Refresh|Home Assistant/g, '');
+  const strip = (s) => String(s).replace(/\{\w+\}|Marketplace|Refresh|Home Assistant|GitHub/g, '');
   for (const [k, s] of Object.entries(HR_I18N.sr)) assert.doesNotMatch(strip(s), /[A-Za-z]/, `sr.${k}: ${s}`);
   for (const [k, s] of Object.entries(HR_I18N['sr-Latn'])) assert.doesNotMatch(s, /[Ѐ-ӿ]/, `sr-Latn.${k}: ${s}`);
 });
@@ -237,7 +237,7 @@ test('Serbian in Latin script: card strings and relative dates', () => {
 });
 
 test('editor offers every language, Serbian in both scripts', () => {
-  const editor = new HacsRefreshCardEditor();
+  const editor = new MarketplaceRefreshCardEditor();
   editor.appendChild = () => {};
   editor.dispatchEvent = () => {};
   editor.setConfig({});
@@ -277,7 +277,7 @@ test('entities found by translation key, or by entity ID when it is missing', ()
   assert.equal(hrDevices(noKeys).d1.button, BUTTON);
 });
 
-test('updates from the HACS update entities only, with their versions', () => {
+test('updates from the Marketplace update entities only, with their versions', () => {
   const out = html(render({}, makeHass({ updates: ['update.mushroom_update', 'update.card_mod_update'] })));
   assert.match(out, /lvl-info/);
   assert.match(out, /2 updates/);
@@ -321,6 +321,16 @@ test('failed repositories and a failed check', () => {
   assert.doesNotMatch(html(render({ show_failed: false }, makeHass({ state: 'error', attrs: { error: 'x' } }))), /The last check failed/);
 });
 
+test('without a GitHub account connected, the repositories not checked say why, once', () => {
+  const out = html(render({}, makeHass({ updates: [], attrs: { failed: ['someone/custom', 'other/custom'], github_connected: false } })));
+  assert.match(out, /someone\/custom/);
+  assert.equal((out.match(/GitHub isn’t connected to the Marketplace/g) || []).length, 1);
+  // Connected, or nothing failed: no such line.
+  assert.doesNotMatch(html(render({}, makeHass({ updates: [], attrs: { failed: ['someone/custom'], github_connected: true } }))), /GitHub isn’t connected/);
+  assert.doesNotMatch(html(render({}, makeHass({ updates: [], attrs: { failed: [], github_connected: false } }))), /GitHub isn’t connected/);
+  assert.doesNotMatch(html(render({ show_failed: false }, makeHass({ updates: [], attrs: { failed: ['x'], github_connected: false } }))), /GitHub isn’t connected/);
+});
+
 test('hide_when_ok hides the card only while everything is up to date', () => {
   const card = render({ hide_when_ok: true }, makeHass({ updates: [] }));
   assert.equal(card.style.display, 'none');
@@ -339,7 +349,7 @@ test('check button presses the button', () => {
 test('not set up: tells so', () => {
   const out = html(render({}, { ...makeHass(), entities: {}, states: {} }));
   assert.match(out, /lvl-na/);
-  assert.match(out, /HACS Refresh is not set up/);
+  assert.match(out, /Marketplace Refresh is not set up/);
 });
 
 test('names are escaped', () => {
@@ -350,7 +360,7 @@ test('names are escaped', () => {
 });
 
 test('French', () => {
-  const out = html(render({}, makeHass({ language: 'fr', updates: ['update.mushroom_update', 'update.hacs_update'] })));
+  const out = html(render({}, makeHass({ language: 'fr', updates: ['update.mushroom_update', 'update.spook_update'] })));
   assert.match(out, /2 mises à jour/);
   assert.match(out, /Mises à jour disponibles/);
 });
@@ -364,7 +374,7 @@ test('no re-render while nothing changed', () => {
 });
 
 test('editor leaves the defaults out of the YAML', () => {
-  const editor = new HacsRefreshCardEditor();
+  const editor = new MarketplaceRefreshCardEditor();
   editor.appendChild = () => {};
   const sent = [];
   editor.dispatchEvent = (ev) => sent.push(ev.detail.config);
@@ -375,13 +385,13 @@ test('editor leaves the defaults out of the YAML', () => {
 });
 
 test('the editor only offers the status sensor', () => {
-  const editor = new HacsRefreshCardEditor();
+  const editor = new MarketplaceRefreshCardEditor();
   editor.appendChild = () => {};
   editor.setConfig({});
   editor.hass = makeHass();
   const entity = editor._form.schema.find((s) => s.name === 'entity');
   assert.deepEqual(JSON.parse(JSON.stringify(entity.selector.entity.filter)), {
-    integration: 'hacs_refresh',
+    integration: 'marketplace_refresh',
     domain: 'sensor',
     device_class: 'enum',
   });
@@ -429,10 +439,10 @@ test('a next check already due is not shown in the past', () => {
   assert.doesNotMatch(out, /next|ago · /);
 });
 
-test("HACS' update entities unavailable or missing: the status sensor's count is used, never up to date", () => {
+test("the Marketplace's update entities unavailable or missing: the status sensor's count is used, never up to date", () => {
   for (const mode of ['unavailable', 'missing']) {
     const hass = makeHass({ updates: [], attrs: { updates: 2 } });
-    for (const id of ['update.mushroom_update', 'update.card_mod_update', 'update.hacs_update']) {
+    for (const id of ['update.mushroom_update', 'update.card_mod_update', 'update.spook_update']) {
       if (mode === 'missing') delete hass.states[id];
       else hass.states[id] = { entity_id: id, state: 'unavailable', attributes: {} };
     }
@@ -442,20 +452,20 @@ test("HACS' update entities unavailable or missing: the status sensor's count is
     assert.match(out, /lvl-info/, mode);
     assert.match(out, /2 updates/, mode);
     assert.doesNotMatch(out, /Up to date|Every repository is up to date/, mode);
-    assert.match(out, /HACS isn’t loaded/, mode);
+    assert.match(out, /Marketplace isn’t loaded/, mode);
   }
 });
 
-test('one HACS update entity known is enough: the entities stay the truth', () => {
+test('one Marketplace update entity known is enough: the entities stay the truth', () => {
   const hass = makeHass({ updates: [], attrs: { updates: 2 } });
-  hass.states['update.hacs_update'] = { entity_id: 'update.hacs_update', state: 'unavailable', attributes: {} };
+  hass.states['update.spook_update'] = { entity_id: 'update.spook_update', state: 'unavailable', attributes: {} };
   const out = html(render({}, hass));
   assert.match(out, /Up to date/);
 });
 
 test('update entities coming back re-render the card', () => {
   const hass = makeHass({ updates: [], attrs: { updates: 2 } });
-  const ids = ['update.mushroom_update', 'update.card_mod_update', 'update.hacs_update'];
+  const ids = ['update.mushroom_update', 'update.card_mod_update', 'update.spook_update'];
   const back = { ...hass.states };
   for (const id of ids) hass.states[id] = { entity_id: id, state: 'unavailable', attributes: {} };
   const card = render({}, hass);
@@ -484,7 +494,7 @@ test('a re-render keeps the keyboard focus on the check button and on an update 
   const row = { dataset: { id: 'update.mushroom_update' }, addEventListener() {}, focus: () => (focused = row.dataset.id) };
   card.shadowRoot.querySelectorAll = (sel) => (sel === '.row[data-id]' ? [row] : []);
   card.shadowRoot.activeElement = { classList: { contains: () => false }, dataset: { id: 'update.mushroom_update' } };
-  card.hass = makeHass({ updates: ['update.mushroom_update', 'update.hacs_update'] });
+  card.hass = makeHass({ updates: ['update.mushroom_update', 'update.spook_update'] });
   assert.equal(focused, 'update.mushroom_update');
 });
 
@@ -499,7 +509,7 @@ test('focus given back after a re-render never scrolls the page', () => {
   const row = { dataset: { id: 'update.mushroom_update' }, addEventListener() {}, focus: spy('row') };
   card.shadowRoot.querySelectorAll = (sel) => (sel === '.row[data-id]' ? [row] : []);
   card.shadowRoot.activeElement = { classList: { contains: () => false }, dataset: { id: 'update.mushroom_update' } };
-  card.hass = makeHass({ updates: ['update.mushroom_update', 'update.hacs_update'] });
+  card.hass = makeHass({ updates: ['update.mushroom_update', 'update.spook_update'] });
   // The confirmation: focus on its safe choice when it opens, back on the button when it closes, kept across a re-render.
   card.shadowRoot.querySelectorAll = () => [];
   card.shadowRoot.querySelector('.install').focus = spy('install');
@@ -507,7 +517,7 @@ test('focus given back after a re-render never scrolls the page', () => {
   card.shadowRoot.querySelector('.confirm-no').focus = spy('confirm-no');
   card.shadowRoot.querySelector('.install').handlers.click();
   card.shadowRoot.activeElement = { classList: { contains: (c) => c === 'confirm-no' }, dataset: {} };
-  card.hass = makeHass({ updates: ['update.mushroom_update', 'update.card_mod_update', 'update.hacs_update'] });
+  card.hass = makeHass({ updates: ['update.mushroom_update', 'update.card_mod_update', 'update.spook_update'] });
   card.shadowRoot.querySelector('.confirm-no').handlers.click();
   const names = calls.map(([n]) => n);
   for (const n of ['check', 'row', 'confirm-no', 'install']) assert.ok(names.includes(n), n);
@@ -515,7 +525,7 @@ test('focus given back after a re-render never scrolls the page', () => {
 });
 
 test('intrinsic width: never collapses in an inline-block or auto column, still shrinks in a 1fr grid', () => {
-  const css = HacsRefreshCard.styles.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ');
+  const css = MarketplaceRefreshCard.styles.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ');
   const host = css.match(/:host \{([^}]*)\}/)[1];
   const card = css.match(/ ha-card \{([^}]*)\}/)[1];
   // The size container is ha-card (inside the host); an empty zero-height grid gives the host a natural width so a
@@ -545,7 +555,7 @@ test('coloured text reaches 4.5:1 and status icons 3:1, light and dark', () => {
     const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m);
     return (x + 0.05) / (y + 0.05);
   };
-  const css = HacsRefreshCard.styles.replace(/\s+/g, ' ');
+  const css = MarketplaceRefreshCard.styles.replace(/\s+/g, ' ');
   // The `color` of a rule: a state colour, or a color-mix of it with the text colour.
   const colorOf = (selector, state, text) => {
     const body = css.slice(css.indexOf(`${selector} {`)).match(/\{([^}]*)\}/)[1];
@@ -594,7 +604,7 @@ test('update all: asks first, then installs the updates listed', () => {
   card.shadowRoot.querySelector('.confirm-yes').handlers.click();
   assert.equal(
     JSON.stringify(hass.calls),
-    JSON.stringify([['hacs_refresh', 'install_updates', { entity_id: ['update.card_mod_update', 'update.mushroom_update'] }]]),
+    JSON.stringify([['marketplace_refresh', 'install_updates', { entity_id: ['update.card_mod_update', 'update.mushroom_update'] }]]),
   );
   assert.doesNotMatch(html(card), /class="confirm"/);
 });
@@ -689,7 +699,7 @@ test('plurals: a locale Intl refuses still renders (singular for 1)', () => {
 });
 
 test('narrow header: the title keeps a few characters, the pill shrinks to a dot, nothing leaves the card', () => {
-  const css = HacsRefreshCard.styles.replace(/\s+/g, ' ');
+  const css = MarketplaceRefreshCard.styles.replace(/\s+/g, ' ');
   const rule = (selector, from = 0) => {
     const i = css.indexOf(` ${selector} {`, from);
     assert.ok(i >= 0, `${selector} rule`);
@@ -762,7 +772,7 @@ test('the pill shrinks to its dot only when its whole label does not fit', () =>
   card.shadowRoot.querySelector = () => null;
   assert.doesNotThrow(() => card._fitPill());
   // No fixed width threshold for the dot any more: the label decides, not the card's width.
-  const css = HacsRefreshCard.styles.replace(/\s+/g, ' ');
+  const css = MarketplaceRefreshCard.styles.replace(/\s+/g, ' ');
   assert.doesNotMatch(css, /@container \(max-width: 240px\)/);
   assert.match(css, /\.pill\.compact \.dot \{ display: block; \}/);
   assert.match(css, /\.pill\.compact \.ptext \{[^}]*clip-path: inset\(50%\)/);
@@ -803,7 +813,7 @@ test('the pill is fitted again when the card changes width, without a browser it
 });
 
 test("a phone's 6 columns: the version and Update all wrap instead of being cut", () => {
-  const css = HacsRefreshCard.styles.replace(/\s+/g, ' ');
+  const css = MarketplaceRefreshCard.styles.replace(/\s+/g, ' ');
   const cq = css.indexOf('@container (max-width: 200px)');
   assert.ok(cq >= 0, 'narrow container query');
   const block = css.slice(cq, css.indexOf('} }', cq) + 3);

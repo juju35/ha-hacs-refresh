@@ -1,0 +1,95 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Marketplace Refresh",
+        "description": "A szerveren ellenőrzi az összes Marketplace-szel letöltött tároló frissítéseit. Maga a Marketplace csak 48 óránként ellenőrzi az egyéni tárolókat.",
+        "data": { "scan_interval": "Ellenőrzési időköz" },
+        "data_description": { "scan_interval": "Két automatikus ellenőrzés között eltelt órák száma. A 0 kikapcsolja az automatikus ellenőrzést: használja a gombot vagy a műveletet." }
+      }
+    },
+    "abort": {
+      "already_configured": "A Marketplace Refresh már be van állítva.",
+      "single_instance_allowed": "A Marketplace Refresh már be van állítva.",
+      "marketplace_not_loaded": "A Marketplace nincs betöltve."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Marketplace Refresh beállításai",
+        "data": { "scan_interval": "Ellenőrzési időköz" },
+        "data_description": { "scan_interval": "Két automatikus ellenőrzés között eltelt órák száma. A 0 kikapcsolja az automatikus ellenőrzést: használja a gombot vagy a műveletet." }
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "check_updates": { "name": "Frissítések keresése" }
+    },
+    "sensor": {
+      "status": {
+        "name": "Állapot",
+        "state": { "idle": "Tétlen", "running": "Ellenőrzés", "error": "Hiba" },
+        "state_attributes": {
+          "done": { "name": "Ellenőrizve" },
+          "total": { "name": "Tárolók" },
+          "updates": { "name": "Elérhető frissítések" },
+          "failed": { "name": "Sikertelen" },
+          "error": { "name": "Hiba" },
+          "checking": { "name": "Ellenőrzés alatt" },
+          "installing": { "name": "Telepítés alatt" },
+          "install_failed": { "name": "Nem sikerült telepíteni" },
+          "github_connected": { "name": "GitHub csatlakoztatva" }
+        }
+      },
+      "last_check": {
+        "name": "Utolsó ellenőrzés",
+        "state_attributes": {
+          "scan_interval": { "name": "Ellenőrzési időköz" },
+          "next_check": { "name": "Következő ellenőrzés" }
+        }
+      }
+    }
+  },
+  "services": {
+    "check_updates": {
+      "name": "Frissítések keresése",
+      "description": "Ellenőrzi az összes Marketplace-szel letöltött tároló frissítéseit. A háttérben fut, hacsak nincs beállítva a wait.",
+      "fields": {
+        "wait": { "name": "Várakozás", "description": "A művelet befejezése előtt megvárja, amíg minden tároló ellenőrzése lezajlik; ekkor a művelet sikertelen, ha az ellenőrzés sikertelen volt, vagy egy tárolót nem sikerült ellenőrizni." }
+      }
+    },
+    "check_repository": {
+      "name": "Tároló frissítéseinek keresése",
+      "description": "Ellenőrzi az ezen Marketplace-frissítési entitások mögötti tárolók frissítéseit, és megvárja az eredményt.",
+      "fields": {
+        "entity_id": { "name": "Frissítési entitások", "description": "Az ellenőrizendő tárolók Marketplace-frissítési entitásai." }
+      }
+    },
+    "install_updates": {
+      "name": "Frissítések telepítése",
+      "description": "Egymás után telepíti a Marketplace-tárolók frissítéseit, a háttérben, hacsak nincs beállítva a wait. Csak rendszergazdák számára.",
+      "fields": {
+        "entity_id": { "name": "Frissítési entitások", "description": "A frissítendő Marketplace-frissítési entitások; hagyja üresen az összes frissíthető tárolóhoz." },
+        "wait": { "name": "Várakozás", "description": "A művelet befejezése előtt megvárja, amíg minden frissítés települ; ekkor a művelet sikertelen, ha egy frissítést nem sikerült telepíteni." }
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": { "message": "A Marketplace Refresh nincs betöltve." },
+    "marketplace_not_loaded": { "message": "A Marketplace nincs betöltve." },
+    "marketplace_not_supported": { "message": "A Marketplace ezen verziója nem támogatott (hiányzik: {path}); kérjük, nyisson egy hibajegyet itt: {issues}." },
+    "marketplace_disabled": { "message": "A Marketplace le van tiltva ({reason})." },
+    "marketplace_disabled_unknown": { "message": "A Marketplace le van tiltva." },
+    "not_marketplace_update_entity": { "message": "{entity_id} nem Marketplace-frissítési entitás." },
+    "not_installed": { "message": "{entity_id} nem Marketplace-szel letöltött tároló." },
+    "check_failed": { "message": "Nem sikerült ellenőrizni: {failed}." },
+    "check_cancelled": { "message": "Az ellenőrzés megszakadt (a Marketplace Refresh újra lett töltve vagy el lett távolítva)." },
+    "full_check_failed": { "message": "A teljes ellenőrzés sikertelen: {error}" },
+    "install_running": { "message": "A frissítések telepítése már folyamatban van." },
+    "check_while_installing": { "message": "Frissítések telepítése folyamatban: a befejezésük után keressen frissítéseket." },
+    "install_failed": { "message": "Nem sikerült telepíteni: {failed}." },
+    "install_cancelled": { "message": "A telepítések megszakadtak (a Marketplace Refresh újra lett töltve vagy el lett távolítva)." }
+  }
+}

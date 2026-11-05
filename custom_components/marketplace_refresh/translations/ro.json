@@ -1,0 +1,95 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Marketplace Refresh",
+        "description": "Verifică pe server dacă există actualizări pentru toate depozitele descărcate cu Marketplace. Marketplace însuși verifică depozitele personalizate doar o dată la 48 de ore.",
+        "data": { "scan_interval": "Interval de verificare" },
+        "data_description": { "scan_interval": "Ore între două verificări automate. 0 dezactivează verificarea automată: folosiți butonul sau acțiunea." }
+      }
+    },
+    "abort": {
+      "already_configured": "Marketplace Refresh este deja configurat.",
+      "single_instance_allowed": "Marketplace Refresh este deja configurat.",
+      "marketplace_not_loaded": "Marketplace nu este încărcat."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opțiuni Marketplace Refresh",
+        "data": { "scan_interval": "Interval de verificare" },
+        "data_description": { "scan_interval": "Ore între două verificări automate. 0 dezactivează verificarea automată: folosiți butonul sau acțiunea." }
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "check_updates": { "name": "Caută actualizări" }
+    },
+    "sensor": {
+      "status": {
+        "name": "Stare",
+        "state": { "idle": "Inactiv", "running": "Se verifică", "error": "Eroare" },
+        "state_attributes": {
+          "done": { "name": "Verificate" },
+          "total": { "name": "Depozite" },
+          "updates": { "name": "Actualizări disponibile" },
+          "failed": { "name": "Eșuate" },
+          "error": { "name": "Eroare" },
+          "checking": { "name": "În curs de verificare" },
+          "installing": { "name": "În curs de instalare" },
+          "install_failed": { "name": "Nu au putut fi instalate" },
+          "github_connected": { "name": "GitHub conectat" }
+        }
+      },
+      "last_check": {
+        "name": "Ultima verificare",
+        "state_attributes": {
+          "scan_interval": { "name": "Interval de verificare" },
+          "next_check": { "name": "Următoarea verificare" }
+        }
+      }
+    }
+  },
+  "services": {
+    "check_updates": {
+      "name": "Caută actualizări",
+      "description": "Verifică dacă există actualizări pentru toate depozitele descărcate cu Marketplace. Rulează în fundal, cu excepția cazului în care este setat «wait».",
+      "fields": {
+        "wait": { "name": "Așteaptă", "description": "Așteaptă până când toate depozitele au fost verificate înainte de încheierea acțiunii; acțiunea eșuează apoi dacă verificarea a eșuat sau dacă un depozit nu a putut fi verificat." }
+      }
+    },
+    "check_repository": {
+      "name": "Caută actualizări pentru un depozit",
+      "description": "Verifică dacă există actualizări pentru depozitele din spatele acestor entități de actualizare Marketplace și așteaptă rezultatul.",
+      "fields": {
+        "entity_id": { "name": "Entități de actualizare", "description": "Entitățile de actualizare Marketplace ale depozitelor de verificat." }
+      }
+    },
+    "install_updates": {
+      "name": "Instalează actualizările",
+      "description": "Instalează actualizările depozitelor Marketplace, una după alta, în fundal, cu excepția cazului în care este setat «wait». Doar pentru administratori.",
+      "fields": {
+        "entity_id": { "name": "Entități de actualizare", "description": "Entitățile de actualizare Marketplace de actualizat; lăsați gol pentru toate depozitele care au o actualizare." },
+        "wait": { "name": "Așteaptă", "description": "Așteaptă până când toate actualizările au fost instalate înainte de încheierea acțiunii; acțiunea eșuează apoi dacă o actualizare nu a putut fi instalată." }
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": { "message": "Marketplace Refresh nu este încărcat." },
+    "marketplace_not_loaded": { "message": "Marketplace nu este încărcat." },
+    "marketplace_not_supported": { "message": "Această versiune de Marketplace nu este acceptată (lipsește {path}); vă rugăm să deschideți un tichet pe {issues}." },
+    "marketplace_disabled": { "message": "Marketplace este dezactivat ({reason})." },
+    "marketplace_disabled_unknown": { "message": "Marketplace este dezactivat." },
+    "not_marketplace_update_entity": { "message": "{entity_id} nu este o entitate de actualizare Marketplace." },
+    "not_installed": { "message": "{entity_id} nu este un depozit descărcat cu Marketplace." },
+    "check_failed": { "message": "Nu s-a putut verifica {failed}." },
+    "check_cancelled": { "message": "Verificarea a fost anulată (Marketplace Refresh a fost reîncărcat sau eliminat)." },
+    "full_check_failed": { "message": "Verificarea completă a eșuat: {error}" },
+    "install_running": { "message": "Actualizările se instalează deja." },
+    "check_while_installing": { "message": "Se instalează actualizări: căutați actualizări după ce s-au terminat." },
+    "install_failed": { "message": "Nu s-a putut instala {failed}." },
+    "install_cancelled": { "message": "Instalările au fost anulate (Marketplace Refresh a fost reîncărcat sau eliminat)." }
+  }
+}

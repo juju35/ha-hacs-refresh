@@ -1,0 +1,95 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Marketplace Refresh",
+        "description": "Serverī pārbauda atjauninājumus visiem ar Marketplace lejupielādētajiem repozitorijiem. Pats Marketplace pielāgotos repozitorijus pārbauda tikai reizi 48 stundās.",
+        "data": { "scan_interval": "Pārbaudes intervāls" },
+        "data_description": { "scan_interval": "Stundas starp divām automātiskām pārbaudēm. 0 izslēdz automātisko pārbaudi: izmantojiet pogu vai darbību." }
+      }
+    },
+    "abort": {
+      "already_configured": "Marketplace Refresh jau ir konfigurēts.",
+      "single_instance_allowed": "Marketplace Refresh jau ir konfigurēts.",
+      "marketplace_not_loaded": "Marketplace nav ielādēts."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Marketplace Refresh opcijas",
+        "data": { "scan_interval": "Pārbaudes intervāls" },
+        "data_description": { "scan_interval": "Stundas starp divām automātiskām pārbaudēm. 0 izslēdz automātisko pārbaudi: izmantojiet pogu vai darbību." }
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "check_updates": { "name": "Meklēt atjauninājumus" }
+    },
+    "sensor": {
+      "status": {
+        "name": "Statuss",
+        "state": { "idle": "Dīkstāvē", "running": "Notiek pārbaude", "error": "Kļūda" },
+        "state_attributes": {
+          "done": { "name": "Pārbaudīti" },
+          "total": { "name": "Repozitoriji" },
+          "updates": { "name": "Pieejamie atjauninājumi" },
+          "failed": { "name": "Neizdevās" },
+          "error": { "name": "Kļūda" },
+          "checking": { "name": "Tiek pārbaudīti" },
+          "installing": { "name": "Tiek instalēti" },
+          "install_failed": { "name": "Neizdevās instalēt" },
+          "github_connected": { "name": "GitHub pievienots" }
+        }
+      },
+      "last_check": {
+        "name": "Pēdējā pārbaude",
+        "state_attributes": {
+          "scan_interval": { "name": "Pārbaudes intervāls" },
+          "next_check": { "name": "Nākamā pārbaude" }
+        }
+      }
+    }
+  },
+  "services": {
+    "check_updates": {
+      "name": "Meklēt atjauninājumus",
+      "description": "Pārbauda atjauninājumus visiem ar Marketplace lejupielādētajiem repozitorijiem. Darbojas fonā, ja vien nav iestatīts wait.",
+      "fields": {
+        "wait": { "name": "Gaidīt", "description": "Pirms darbības beigām gaidīt, līdz visi repozitoriji ir pārbaudīti; darbība tad neizdodas, ja pārbaude neizdevās vai kādu repozitoriju neizdevās pārbaudīt." }
+      }
+    },
+    "check_repository": {
+      "name": "Meklēt repozitorija atjauninājumus",
+      "description": "Pārbauda atjauninājumus repozitorijiem, kas atbilst šīm Marketplace atjauninājumu vienībām, un gaida rezultātu.",
+      "fields": {
+        "entity_id": { "name": "Atjauninājumu vienības", "description": "Pārbaudāmo repozitoriju Marketplace atjauninājumu vienības." }
+      }
+    },
+    "install_updates": {
+      "name": "Instalēt atjauninājumus",
+      "description": "Instalē Marketplace repozitoriju atjauninājumus vienu pēc otra, fonā, ja vien nav iestatīts wait. Tikai administratoriem.",
+      "fields": {
+        "entity_id": { "name": "Atjauninājumu vienības", "description": "Atjaunināmās Marketplace atjauninājumu vienības; atstājiet tukšu visiem repozitorijiem, kuriem ir atjauninājums." },
+        "wait": { "name": "Gaidīt", "description": "Pirms darbības beigām gaidīt, līdz visi atjauninājumi ir instalēti; darbība tad neizdodas, ja kādu atjauninājumu neizdevās instalēt." }
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": { "message": "Marketplace Refresh nav ielādēts." },
+    "marketplace_not_loaded": { "message": "Marketplace nav ielādēts." },
+    "marketplace_not_supported": { "message": "Šī Marketplace versija netiek atbalstīta (trūkst {path}); lūdzu, izveidojiet problēmas pieteikumu vietnē {issues}." },
+    "marketplace_disabled": { "message": "Marketplace ir atspējots ({reason})." },
+    "marketplace_disabled_unknown": { "message": "Marketplace ir atspējots." },
+    "not_marketplace_update_entity": { "message": "{entity_id} nav Marketplace atjauninājuma vienība." },
+    "not_installed": { "message": "{entity_id} nav ar Marketplace lejupielādēts repozitorijs." },
+    "check_failed": { "message": "Neizdevās pārbaudīt {failed}." },
+    "check_cancelled": { "message": "Pārbaude tika atcelta (Marketplace Refresh tika atkārtoti ielādēts vai noņemts)." },
+    "full_check_failed": { "message": "Pilnā pārbaude neizdevās: {error}" },
+    "install_running": { "message": "Atjauninājumi jau tiek instalēti." },
+    "check_while_installing": { "message": "Tiek instalēti atjauninājumi: meklējiet atjauninājumus, kad tie būs pabeigti." },
+    "install_failed": { "message": "Neizdevās instalēt {failed}." },
+    "install_cancelled": { "message": "Instalēšana tika atcelta (Marketplace Refresh tika atkārtoti ielādēts vai noņemts)." }
+  }
+}

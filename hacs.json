@@ -1,8 +1,8 @@
 {
-  "name": "HACS Refresh",
+  "name": "Marketplace Refresh",
   "content_in_root": false,
   "render_readme": true,
   "zip_release": true,
-  "filename": "hacs_refresh.zip",
-  "homeassistant": "2024.12.0"
+  "filename": "marketplace_refresh.zip",
+  "homeassistant": "2026.11.0"
 }

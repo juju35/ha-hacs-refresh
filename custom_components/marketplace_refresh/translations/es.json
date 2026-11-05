@@ -1,0 +1,95 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Marketplace Refresh",
+        "description": "Busca actualizaciones de todos los repositorios descargados con Marketplace, en el servidor. Marketplace solo comprueba los repositorios personalizados cada 48 horas.",
+        "data": { "scan_interval": "Intervalo de comprobación" },
+        "data_description": { "scan_interval": "Horas entre dos comprobaciones automáticas. 0 desactiva la comprobación automática: usa el botón o la acción." }
+      }
+    },
+    "abort": {
+      "already_configured": "Marketplace Refresh ya está configurado.",
+      "single_instance_allowed": "Marketplace Refresh ya está configurado.",
+      "marketplace_not_loaded": "Marketplace no está cargado."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opciones de Marketplace Refresh",
+        "data": { "scan_interval": "Intervalo de comprobación" },
+        "data_description": { "scan_interval": "Horas entre dos comprobaciones automáticas. 0 desactiva la comprobación automática: usa el botón o la acción." }
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "check_updates": { "name": "Buscar actualizaciones" }
+    },
+    "sensor": {
+      "status": {
+        "name": "Estado",
+        "state": { "idle": "Inactivo", "running": "Comprobando", "error": "Error" },
+        "state_attributes": {
+          "done": { "name": "Comprobados" },
+          "total": { "name": "Repositorios" },
+          "updates": { "name": "Actualizaciones disponibles" },
+          "failed": { "name": "Fallidos" },
+          "error": { "name": "Error" },
+          "checking": { "name": "En comprobación" },
+          "installing": { "name": "Instalándose" },
+          "install_failed": { "name": "No se pudieron instalar" },
+          "github_connected": { "name": "GitHub conectado" }
+        }
+      },
+      "last_check": {
+        "name": "Última comprobación",
+        "state_attributes": {
+          "scan_interval": { "name": "Intervalo de comprobación" },
+          "next_check": { "name": "Próxima comprobación" }
+        }
+      }
+    }
+  },
+  "services": {
+    "check_updates": {
+      "name": "Buscar actualizaciones",
+      "description": "Busca actualizaciones de todos los repositorios descargados con Marketplace. Se ejecuta en segundo plano, salvo si esperar está activado.",
+      "fields": {
+        "wait": { "name": "Esperar", "description": "Esperar a que se hayan comprobado todos los repositorios antes de que termine la acción; la acción falla entonces si la comprobación falló o no se pudo comprobar un repositorio." }
+      }
+    },
+    "check_repository": {
+      "name": "Buscar actualizaciones de un repositorio",
+      "description": "Busca actualizaciones de los repositorios asociados a estas entidades de actualización de Marketplace y espera el resultado.",
+      "fields": {
+        "entity_id": { "name": "Entidades de actualización", "description": "Entidades de actualización de Marketplace de los repositorios que se van a comprobar." }
+      }
+    },
+    "install_updates": {
+      "name": "Instalar actualizaciones",
+      "description": "Instala las actualizaciones de los repositorios de Marketplace, una tras otra, en segundo plano salvo si se activa Esperar. Solo administradores.",
+      "fields": {
+        "entity_id": { "name": "Entidades de actualización", "description": "Entidades de actualización de Marketplace que actualizar; déjalo vacío para todos los repositorios con una actualización." },
+        "wait": { "name": "Esperar", "description": "Esperar a que se instalen todas las actualizaciones antes de que termine la acción; la acción falla entonces si no se pudo instalar alguna." }
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": { "message": "Marketplace Refresh no está cargado." },
+    "marketplace_not_loaded": { "message": "Marketplace no está cargado." },
+    "marketplace_not_supported": { "message": "Esta versión de Marketplace no es compatible (falta {path}); abre una incidencia en {issues}." },
+    "marketplace_disabled": { "message": "Marketplace está desactivado ({reason})." },
+    "marketplace_disabled_unknown": { "message": "Marketplace está desactivado." },
+    "not_marketplace_update_entity": { "message": "{entity_id} no es una entidad de actualización de Marketplace." },
+    "not_installed": { "message": "{entity_id} no es un repositorio descargado con Marketplace." },
+    "check_failed": { "message": "No se pudo comprobar {failed}." },
+    "check_cancelled": { "message": "La comprobación se canceló (Marketplace Refresh se recargó o se eliminó)." },
+    "full_check_failed": { "message": "La comprobación completa falló: {error}" },
+    "install_running": { "message": "Ya se están instalando actualizaciones." },
+    "check_while_installing": { "message": "Se están instalando actualizaciones: busca actualizaciones cuando terminen." },
+    "install_failed": { "message": "No se pudo instalar {failed}." },
+    "install_cancelled": { "message": "Las instalaciones se cancelaron (Marketplace Refresh se recargó o se eliminó)." }
+  }
+}

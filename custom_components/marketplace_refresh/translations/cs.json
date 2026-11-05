@@ -1,0 +1,95 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Marketplace Refresh",
+        "description": "Na serveru kontroluje aktualizace všech repozitářů stažených přes Marketplace. Samotný Marketplace kontroluje vlastní repozitáře jen jednou za 48 hodin.",
+        "data": { "scan_interval": "Interval kontroly" },
+        "data_description": { "scan_interval": "Počet hodin mezi dvěma automatickými kontrolami. 0 vypne automatickou kontrolu: použijte tlačítko nebo akci." }
+      }
+    },
+    "abort": {
+      "already_configured": "Marketplace Refresh je již nakonfigurován.",
+      "single_instance_allowed": "Marketplace Refresh je již nakonfigurován.",
+      "marketplace_not_loaded": "Marketplace není načten."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Možnosti Marketplace Refresh",
+        "data": { "scan_interval": "Interval kontroly" },
+        "data_description": { "scan_interval": "Počet hodin mezi dvěma automatickými kontrolami. 0 vypne automatickou kontrolu: použijte tlačítko nebo akci." }
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "check_updates": { "name": "Zkontrolovat aktualizace" }
+    },
+    "sensor": {
+      "status": {
+        "name": "Stav",
+        "state": { "idle": "Nečinný", "running": "Probíhá kontrola", "error": "Chyba" },
+        "state_attributes": {
+          "done": { "name": "Zkontrolováno" },
+          "total": { "name": "Repozitáře" },
+          "updates": { "name": "Dostupné aktualizace" },
+          "failed": { "name": "Neúspěšné" },
+          "error": { "name": "Chyba" },
+          "checking": { "name": "Kontrolují se" },
+          "installing": { "name": "Instalují se" },
+          "install_failed": { "name": "Nepodařilo se nainstalovat" },
+          "github_connected": { "name": "GitHub připojen" }
+        }
+      },
+      "last_check": {
+        "name": "Poslední kontrola",
+        "state_attributes": {
+          "scan_interval": { "name": "Interval kontroly" },
+          "next_check": { "name": "Další kontrola" }
+        }
+      }
+    }
+  },
+  "services": {
+    "check_updates": {
+      "name": "Zkontrolovat aktualizace",
+      "description": "Kontroluje aktualizace všech repozitářů stažených přes Marketplace. Běží na pozadí, pokud není nastaveno wait.",
+      "fields": {
+        "wait": { "name": "Čekat", "description": "Počkat, než budou zkontrolovány všechny repozitáře, a teprve pak akci ukončit; akce pak selže, pokud kontrola selhala nebo se některý repozitář nepodařilo zkontrolovat." }
+      }
+    },
+    "check_repository": {
+      "name": "Zkontrolovat aktualizace repozitáře",
+      "description": "Kontroluje aktualizace repozitářů za těmito entitami aktualizace Marketplace a čeká na výsledek.",
+      "fields": {
+        "entity_id": { "name": "Entity aktualizace", "description": "Entity aktualizace Marketplace repozitářů, které se mají zkontrolovat." }
+      }
+    },
+    "install_updates": {
+      "name": "Nainstalovat aktualizace",
+      "description": "Instaluje aktualizace repozitářů Marketplace jednu po druhé, na pozadí, pokud není nastaveno wait. Pouze pro správce.",
+      "fields": {
+        "entity_id": { "name": "Entity aktualizace", "description": "Entity aktualizace Marketplace, které se mají aktualizovat; ponechte prázdné pro všechny repozitáře s aktualizací." },
+        "wait": { "name": "Čekat", "description": "Počkat, než budou nainstalovány všechny aktualizace, a teprve pak akci ukončit; akce pak selže, pokud se některou aktualizaci nepodařilo nainstalovat." }
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": { "message": "Marketplace Refresh není načten." },
+    "marketplace_not_loaded": { "message": "Marketplace není načten." },
+    "marketplace_not_supported": { "message": "Tato verze Marketplace není podporována (chybí {path}); otevřete prosím issue na {issues}." },
+    "marketplace_disabled": { "message": "Marketplace je zakázán ({reason})." },
+    "marketplace_disabled_unknown": { "message": "Marketplace je zakázán." },
+    "not_marketplace_update_entity": { "message": "{entity_id} není entita aktualizace Marketplace." },
+    "not_installed": { "message": "{entity_id} není repozitář stažený přes Marketplace." },
+    "check_failed": { "message": "Nepodařilo se zkontrolovat {failed}." },
+    "check_cancelled": { "message": "Kontrola byla zrušena (Marketplace Refresh byl znovu načten nebo odebrán)." },
+    "full_check_failed": { "message": "Úplná kontrola selhala: {error}" },
+    "install_running": { "message": "Aktualizace se již instalují." },
+    "check_while_installing": { "message": "Probíhá instalace aktualizací: zkontrolujte aktualizace, až bude dokončena." },
+    "install_failed": { "message": "Nepodařilo se nainstalovat {failed}." },
+    "install_cancelled": { "message": "Instalace byly zrušeny (Marketplace Refresh byl znovu načten nebo odebrán)." }
+  }
+}

@@ -1,4 +1,4 @@
-"""Tests for HACS Refresh."""
+"""Tests for Marketplace Refresh."""
 
 from __future__ import annotations
 
@@ -18,13 +18,13 @@ from homeassistant.setup import async_setup_component
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import MockConfigEntry, async_fire_time_changed
 
-from custom_components.hacs_refresh.const import CARD_URL, CONF_SCAN_INTERVAL, DOMAIN
+from custom_components.marketplace_refresh.const import CARD_URL, CONF_SCAN_INTERVAL, DOMAIN
 
 from .conftest import make_repo
 
-STATUS = "sensor.hacs_refresh_status"
-LAST_CHECK = "sensor.hacs_refresh_last_check"
-BUTTON = "button.hacs_refresh_check_for_updates"
+STATUS = "sensor.marketplace_refresh_status"
+LAST_CHECK = "sensor.marketplace_refresh_last_check"
+BUTTON = "button.marketplace_refresh_check_for_updates"
 
 
 async def _setup(hass: HomeAssistant, hours: int = 24) -> MockConfigEntry:
@@ -35,7 +35,7 @@ async def _setup(hass: HomeAssistant, hours: int = 24) -> MockConfigEntry:
     return entry
 
 
-async def test_config_flow(hass, fake_hacs):
+async def test_config_flow(hass, fake_marketplace):
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
     assert result["type"] is FlowResultType.FORM
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_SCAN_INTERVAL: 12})
@@ -43,13 +43,13 @@ async def test_config_flow(hass, fake_hacs):
     assert result["options"] == {CONF_SCAN_INTERVAL: 12}
 
 
-async def test_config_flow_without_hacs(hass):
+async def test_config_flow_without_marketplace(hass):
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
     assert result["type"] is FlowResultType.ABORT
-    assert result["reason"] == "hacs_not_loaded"
+    assert result["reason"] == "marketplace_not_loaded"
 
 
-async def test_options_flow_changes_interval(hass, fake_hacs):
+async def test_options_flow_changes_interval(hass, fake_marketplace):
     entry = await _setup(hass)
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["type"] is FlowResultType.FORM
@@ -60,16 +60,18 @@ async def test_options_flow_changes_interval(hass, fake_hacs):
     assert entry.state is ConfigEntryState.LOADED
 
 
-async def test_check_updates_action(hass, fake_hacs):
+async def test_check_updates_action(hass, fake_marketplace):
     await _setup(hass)
     assert hass.states.get(STATUS).state == "idle"
     await hass.services.async_call(DOMAIN, "check_updates", {"wait": True}, blocking=True)
     await hass.async_block_till_done()
 
-    for repo in fake_hacs.repositories.list_downloaded:
+    for repo in fake_marketplace.repositories.list_installed:
         repo.update_repository.assert_awaited_once_with(ignore_issues=True, force=True)
-    fake_hacs.data.async_write.assert_awaited_once()
-    for coordinator in fake_hacs.coordinators.values():
+    # The catalog is read again first: it carries the latest version of every catalog repository.
+    fake_marketplace.async_get_all_category_repositories.assert_awaited_once()
+    fake_marketplace.data.async_write.assert_awaited_once()
+    for coordinator in fake_marketplace.coordinators.values():
         coordinator.async_update_listeners.assert_called_once()
 
     state = hass.states.get(STATUS)
@@ -78,11 +80,40 @@ async def test_check_updates_action(hass, fake_hacs):
     assert state.attributes["total"] == 3
     assert state.attributes["updates"] == 1
     assert state.attributes["failed"] == []
+    assert state.attributes["github_connected"] is True
     assert hass.states.get(LAST_CHECK).state not in ("unknown", "unavailable")
 
 
-async def test_button_and_failed_repository(hass, fake_hacs):
-    fake_hacs.repositories.list_downloaded.append(make_repo("someone/broken", fail=True))
+async def test_check_updates_without_github_reads_the_catalog_only(hass, fake_marketplace, caplog):
+    """No GitHub account connected: the catalog is the only source, custom repositories can't be checked."""
+    fake_marketplace.github_connected = False
+    custom = make_repo("someone/custom-card", category="plugin", custom=True)
+    fake_marketplace.repositories.list_installed.append(custom)
+    await _setup(hass)
+    # Waiting reports the repositories not checked, like the ones GitHub couldn't fetch.
+    with pytest.raises(HomeAssistantError, match="someone/custom-card"):
+        await hass.services.async_call(DOMAIN, "check_updates", {"wait": True}, blocking=True)
+    await hass.async_block_till_done()
+
+    fake_marketplace.async_get_all_category_repositories.assert_awaited_once()
+    for repo in fake_marketplace.repositories.list_installed:
+        repo.update_repository.assert_not_awaited()
+    fake_marketplace.data.async_write.assert_awaited_once()
+    for coordinator in fake_marketplace.coordinators.values():
+        coordinator.async_update_listeners.assert_called_once()
+
+    state = hass.states.get(STATUS)
+    assert state.state == "idle"
+    assert state.attributes["done"] == 4
+    assert state.attributes["total"] == 4
+    assert state.attributes["updates"] == 1
+    assert state.attributes["failed"] == ["someone/custom-card"]
+    assert state.attributes["github_connected"] is False
+    assert "no GitHub account connected" in caplog.text
+
+
+async def test_button_and_failed_repository(hass, fake_marketplace):
+    fake_marketplace.repositories.list_installed.append(make_repo("someone/broken", fail=True))
     entry = await _setup(hass)
     await hass.services.async_call("button", "press", {"entity_id": BUTTON}, blocking=True)
     # The check runs as a background task, which async_block_till_done doesn't wait for.
@@ -94,55 +125,55 @@ async def test_button_and_failed_repository(hass, fake_hacs):
     assert state.attributes["failed"] == ["someone/broken"]
 
 
-async def test_scheduled_check(hass, fake_hacs):
+async def test_scheduled_check(hass, fake_marketplace):
     entry = await _setup(hass, hours=2)
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(hours=2, seconds=1))
     await hass.async_block_till_done()
     await entry.runtime_data.async_wait()
-    fake_hacs.repositories.list_downloaded[0].update_repository.assert_awaited_once()
+    fake_marketplace.repositories.list_installed[0].update_repository.assert_awaited_once()
 
 
-async def test_scheduled_check_disabled(hass, fake_hacs):
+async def test_scheduled_check_disabled(hass, fake_marketplace):
     await _setup(hass, hours=0)
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(days=10))
     await hass.async_block_till_done()
-    fake_hacs.repositories.list_downloaded[0].update_repository.assert_not_awaited()
+    fake_marketplace.repositories.list_installed[0].update_repository.assert_not_awaited()
 
 
-async def test_hacs_disabled(hass, fake_hacs):
+async def test_marketplace_disabled(hass, fake_marketplace):
     await _setup(hass)
-    fake_hacs.system.disabled = True
-    fake_hacs.system.disabled_reason = "rate_limit"
+    fake_marketplace.system.disabled = True
+    fake_marketplace.system.disabled_reason = "rate_limit"
     with pytest.raises(ServiceValidationError, match="disabled"):
         await hass.services.async_call(DOMAIN, "check_updates", {}, blocking=True)
 
 
-async def test_unsupported_hacs_version(hass, fake_hacs):
+async def test_unsupported_marketplace_version(hass, fake_marketplace):
     await _setup(hass)
-    del fake_hacs.coordinators
+    del fake_marketplace.coordinators
     with pytest.raises(ServiceValidationError, match="not supported"):
         await hass.services.async_call(DOMAIN, "check_updates", {}, blocking=True)
 
 
-def _hacs_update_entity(hass: HomeAssistant, repo, platform: str = "hacs") -> str:
-    """Register the update entity HACS creates for a repository (unique_id = repository id)."""
+def _marketplace_update_entity(hass: HomeAssistant, repo, platform: str = "marketplace") -> str:
+    """Register the update entity the Marketplace creates for a repository (unique_id = repository id)."""
     entry = er.async_get(hass).async_get_or_create(
         "update", platform, str(repo.data.id), suggested_object_id=repo.data.full_name.split("/")[1]
     )
     return entry.entity_id
 
 
-async def test_check_repository(hass, fake_hacs):
+async def test_check_repository(hass, fake_marketplace):
     await _setup(hass)
-    parcel = fake_hacs.repositories.list_downloaded[1]
-    entity_id = _hacs_update_entity(hass, parcel)
+    parcel = fake_marketplace.repositories.list_installed[1]
+    entity_id = _marketplace_update_entity(hass, parcel)
     await hass.services.async_call(DOMAIN, "check_repository", {"entity_id": entity_id}, blocking=True)
 
     parcel.update_repository.assert_awaited_once_with(ignore_issues=True, force=True)
-    fake_hacs.repositories.list_downloaded[0].update_repository.assert_not_awaited()
-    fake_hacs.data.async_write.assert_awaited_once()
-    fake_hacs.coordinators["integration"].async_update_listeners.assert_called_once()
-    fake_hacs.coordinators["plugin"].async_update_listeners.assert_not_called()
+    fake_marketplace.repositories.list_installed[0].update_repository.assert_not_awaited()
+    fake_marketplace.data.async_write.assert_awaited_once()
+    fake_marketplace.coordinators["integration"].async_update_listeners.assert_called_once()
+    fake_marketplace.coordinators["plugin"].async_update_listeners.assert_not_called()
     state = hass.states.get(STATUS)
     assert state.state == "idle"
     assert state.attributes["checking"] == []
@@ -150,42 +181,42 @@ async def test_check_repository(hass, fake_hacs):
     assert hass.states.get(LAST_CHECK).state == "unknown"
 
 
-async def test_check_repository_rejects_other_entities(hass, fake_hacs):
+async def test_check_repository_rejects_other_entities(hass, fake_marketplace):
     await _setup(hass)
-    other = _hacs_update_entity(hass, fake_hacs.repositories.list_downloaded[0], platform="demo")
-    with pytest.raises(ServiceValidationError, match="not a HACS update entity"):
+    other = _marketplace_update_entity(hass, fake_marketplace.repositories.list_installed[0], platform="demo")
+    with pytest.raises(ServiceValidationError, match="not a Marketplace update entity"):
         await hass.services.async_call(DOMAIN, "check_repository", {"entity_id": other}, blocking=True)
-    with pytest.raises(ServiceValidationError, match="not a HACS update entity"):
+    with pytest.raises(ServiceValidationError, match="not a Marketplace update entity"):
         await hass.services.async_call(DOMAIN, "check_repository", {"entity_id": "update.missing"}, blocking=True)
 
 
-async def test_check_repository_failure(hass, fake_hacs):
+async def test_check_repository_failure(hass, fake_marketplace):
     broken = make_repo("someone/broken", fail=True)
-    fake_hacs.repositories.list_downloaded.append(broken)
+    fake_marketplace.repositories.list_installed.append(broken)
     await _setup(hass)
-    entity_id = _hacs_update_entity(hass, broken)
+    entity_id = _marketplace_update_entity(hass, broken)
     with pytest.raises(HomeAssistantError, match="someone/broken"):
         await hass.services.async_call(DOMAIN, "check_repository", {"entity_id": entity_id}, blocking=True)
     assert hass.states.get(STATUS).attributes["checking"] == []
 
 
-async def test_overdue_check_runs_at_startup(hass, fake_hacs, hass_storage):
+async def test_overdue_check_runs_at_startup(hass, fake_marketplace, hass_storage):
     """A restart doesn't postpone the automatic check: an overdue one runs once Home Assistant has started."""
     last = dt_util.utcnow() - timedelta(hours=25)
     hass_storage[DOMAIN] = {"version": 1, "key": DOMAIN, "data": {"last_check": last.isoformat(), "updates": 2}}
     entry = await _setup(hass)
     await entry.runtime_data.async_wait()
     await hass.async_block_till_done()
-    fake_hacs.repositories.list_downloaded[0].update_repository.assert_awaited_once()
+    fake_marketplace.repositories.list_installed[0].update_repository.assert_awaited_once()
     assert hass_storage[DOMAIN]["data"]["updates"] == 1
     assert dt_util.parse_datetime(hass_storage[DOMAIN]["data"]["last_check"]) > last
 
 
-async def test_recent_check_is_restored_and_next_one_kept(hass, fake_hacs, hass_storage, freezer):
+async def test_recent_check_is_restored_and_next_one_kept(hass, fake_marketplace, hass_storage, freezer):
     last = dt_util.utcnow() - timedelta(hours=20)
     hass_storage[DOMAIN] = {"version": 1, "key": DOMAIN, "data": {"last_check": last.isoformat(), "updates": 2}}
     entry = await _setup(hass)
-    repo = fake_hacs.repositories.list_downloaded[0]
+    repo = fake_marketplace.repositories.list_installed[0]
     repo.update_repository.assert_not_awaited()
     assert hass.states.get(STATUS).attributes["updates"] == 2
     assert dt_util.parse_datetime(hass.states.get(LAST_CHECK).state) == last.replace(microsecond=0)
@@ -207,9 +238,9 @@ async def test_recent_check_is_restored_and_next_one_kept(hass, fake_hacs, hass_
     assert repo.update_repository.await_count == 2
 
 
-async def test_first_install_waits_one_interval(hass, fake_hacs, hass_storage, freezer):
+async def test_first_install_waits_one_interval(hass, fake_marketplace, hass_storage, freezer):
     entry = await _setup(hass, hours=2)
-    repo = fake_hacs.repositories.list_downloaded[0]
+    repo = fake_marketplace.repositories.list_installed[0]
     repo.update_repository.assert_not_awaited()
     assert hass_storage[DOMAIN]["data"]["since"]
     # Restarted an hour later: still counts from the first setup.
@@ -225,13 +256,13 @@ async def test_first_install_waits_one_interval(hass, fake_hacs, hass_storage, f
     repo.update_repository.assert_awaited_once()
 
 
-async def test_unload_cancels_running_check(hass, fake_hacs):
+async def test_unload_cancels_running_check(hass, fake_marketplace):
     release = asyncio.Event()
 
     async def slow(**_kwargs):
         await release.wait()
 
-    fake_hacs.repositories.list_downloaded[0].update_repository.side_effect = slow
+    fake_marketplace.repositories.list_installed[0].update_repository.side_effect = slow
     entry = await _setup(hass, hours=0)
     old = entry.runtime_data
     assert old.async_start()
@@ -241,38 +272,38 @@ async def test_unload_cancels_running_check(hass, fake_hacs):
     assert await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
     assert task.cancelled()
-    fake_hacs.data.async_write.assert_not_awaited()
+    fake_marketplace.data.async_write.assert_not_awaited()
     release.set()
 
 
-async def test_check_updates_open_to_non_admin(hass, fake_hacs, hass_read_only_user):
+async def test_check_updates_open_to_non_admin(hass, fake_marketplace, hass_read_only_user):
     """Like the button, which runs the same check, the action is open to every user."""
     await _setup(hass, hours=0)
     await hass.services.async_call(
         DOMAIN, "check_updates", {"wait": True}, blocking=True, context=Context(user_id=hass_read_only_user.id)
     )
-    fake_hacs.repositories.list_downloaded[0].update_repository.assert_awaited_once()
+    fake_marketplace.repositories.list_installed[0].update_repository.assert_awaited_once()
 
 
-async def test_hacs_disabled_without_reason(hass, fake_hacs):
-    """A HACS version without disabled_reason still gives the clear error."""
+async def test_marketplace_disabled_without_reason(hass, fake_marketplace):
+    """A Marketplace version without disabled_reason still gives the clear error."""
     await _setup(hass)
-    fake_hacs.system.disabled = True
-    del fake_hacs.system.disabled_reason
-    with pytest.raises(ServiceValidationError, match="HACS is disabled"):
+    fake_marketplace.system.disabled = True
+    del fake_marketplace.system.disabled_reason
+    with pytest.raises(ServiceValidationError, match="Marketplace is disabled"):
         await hass.services.async_call(DOMAIN, "check_updates", {}, blocking=True)
 
 
-async def test_check_repository_waits_for_full_check(hass, fake_hacs):
+async def test_check_repository_waits_for_full_check(hass, fake_marketplace):
     release = asyncio.Event()
 
     async def slow(**_kwargs):
         await release.wait()
 
-    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel = fake_marketplace.repositories.list_installed[1]
     parcel.update_repository.side_effect = slow
     entry = await _setup(hass, hours=0)
-    entity_id = _hacs_update_entity(hass, parcel)
+    entity_id = _marketplace_update_entity(hass, parcel)
     assert entry.runtime_data.async_start()
     await hass.async_block_till_done()
     call = hass.async_create_task(
@@ -288,16 +319,16 @@ async def test_check_repository_waits_for_full_check(hass, fake_hacs):
     assert not entry.runtime_data.running
 
 
-async def test_check_repository_skips_entity_already_checking(hass, fake_hacs):
+async def test_check_repository_skips_entity_already_checking(hass, fake_marketplace):
     release = asyncio.Event()
 
     async def slow(**_kwargs):
         await release.wait()
 
-    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel = fake_marketplace.repositories.list_installed[1]
     parcel.update_repository.side_effect = slow
     await _setup(hass, hours=0)
-    entity_id = _hacs_update_entity(hass, parcel)
+    entity_id = _marketplace_update_entity(hass, parcel)
     first = hass.async_create_task(
         hass.services.async_call(DOMAIN, "check_repository", {"entity_id": entity_id}, blocking=True)
     )
@@ -314,7 +345,7 @@ async def test_check_repository_skips_entity_already_checking(hass, fake_hacs):
         await first
         await second
     parcel.update_repository.assert_awaited_once()
-    fake_hacs.data.async_write.assert_awaited_once()
+    fake_marketplace.data.async_write.assert_awaited_once()
 
 
 async def _await_service(call: asyncio.Task) -> None:
@@ -326,14 +357,14 @@ async def _await_service(call: asyncio.Task) -> None:
         pytest.fail("the action ended with a raw CancelledError")
 
 
-async def test_waiting_check_updates_fails_cleanly_on_unload(hass, fake_hacs):
+async def test_waiting_check_updates_fails_cleanly_on_unload(hass, fake_marketplace):
     """Unloading the entry cancels the check: an action waiting for it gets a Home Assistant error."""
     release = asyncio.Event()
 
     async def slow(**_kwargs):
         await release.wait()
 
-    fake_hacs.repositories.list_downloaded[0].update_repository.side_effect = slow
+    fake_marketplace.repositories.list_installed[0].update_repository.side_effect = slow
     entry = await _setup(hass, hours=0)
     call = hass.async_create_task(hass.services.async_call(DOMAIN, "check_updates", {"wait": True}, blocking=True))
     await asyncio.sleep(0.01)
@@ -344,16 +375,16 @@ async def test_waiting_check_updates_fails_cleanly_on_unload(hass, fake_hacs):
     release.set()
 
 
-async def test_waiting_check_repository_fails_cleanly_on_unload(hass, fake_hacs):
+async def test_waiting_check_repository_fails_cleanly_on_unload(hass, fake_marketplace):
     release = asyncio.Event()
 
     async def slow(**_kwargs):
         await release.wait()
 
-    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel = fake_marketplace.repositories.list_installed[1]
     parcel.update_repository.side_effect = slow
     entry = await _setup(hass, hours=0)
-    entity_id = _hacs_update_entity(hass, parcel)
+    entity_id = _marketplace_update_entity(hass, parcel)
     assert entry.runtime_data.async_start()
     await hass.async_block_till_done()
     call = hass.async_create_task(
@@ -366,7 +397,7 @@ async def test_waiting_check_repository_fails_cleanly_on_unload(hass, fake_hacs)
     release.set()
 
 
-async def test_full_check_waits_for_running_check_repository(hass, fake_hacs):
+async def test_full_check_waits_for_running_check_repository(hass, fake_marketplace):
     """A full check started while check_repository runs doesn't refresh that repository a second time."""
     release = asyncio.Event()
     running = 0
@@ -379,10 +410,10 @@ async def test_full_check_waits_for_running_check_repository(hass, fake_hacs):
         await release.wait()
         running -= 1
 
-    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel = fake_marketplace.repositories.list_installed[1]
     parcel.update_repository.side_effect = slow
     entry = await _setup(hass, hours=0)
-    entity_id = _hacs_update_entity(hass, parcel)
+    entity_id = _marketplace_update_entity(hass, parcel)
     single = hass.async_create_task(
         hass.services.async_call(DOMAIN, "check_repository", {"entity_id": entity_id}, blocking=True)
     )
@@ -403,17 +434,17 @@ async def test_full_check_waits_for_running_check_repository(hass, fake_hacs):
     assert state.attributes["failed"] == []
 
 
-async def test_full_check_reports_failure_of_awaited_check_repository(hass, fake_hacs):
+async def test_full_check_reports_failure_of_awaited_check_repository(hass, fake_marketplace):
     release = asyncio.Event()
 
     async def slow(**_kwargs):
         await release.wait()
         raise RuntimeError("GitHub down")
 
-    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel = fake_marketplace.repositories.list_installed[1]
     parcel.update_repository.side_effect = slow
     entry = await _setup(hass, hours=0)
-    entity_id = _hacs_update_entity(hass, parcel)
+    entity_id = _marketplace_update_entity(hass, parcel)
     single = hass.async_create_task(
         hass.services.async_call(DOMAIN, "check_repository", {"entity_id": entity_id}, blocking=True)
     )
@@ -428,17 +459,17 @@ async def test_full_check_reports_failure_of_awaited_check_repository(hass, fake
     parcel.update_repository.assert_awaited_once()
 
 
-async def test_second_check_repository_waits_for_the_first(hass, fake_hacs):
+async def test_second_check_repository_waits_for_the_first(hass, fake_marketplace):
     release = asyncio.Event()
 
     async def slow(**_kwargs):
         await release.wait()
         raise RuntimeError("GitHub down")
 
-    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel = fake_marketplace.repositories.list_installed[1]
     parcel.update_repository.side_effect = slow
     await _setup(hass, hours=0)
-    entity_id = _hacs_update_entity(hass, parcel)
+    entity_id = _marketplace_update_entity(hass, parcel)
     first = hass.async_create_task(
         hass.services.async_call(DOMAIN, "check_repository", {"entity_id": entity_id}, blocking=True)
     )
@@ -456,7 +487,7 @@ async def test_second_check_repository_waits_for_the_first(hass, fake_hacs):
     parcel.update_repository.assert_awaited_once()
 
 
-async def test_check_repository_during_failing_full_check(hass, fake_hacs):
+async def test_check_repository_during_failing_full_check(hass, fake_marketplace):
     """check_repository waiting for a full check fails when that check couldn't check its repository."""
     release = asyncio.Event()
 
@@ -464,11 +495,11 @@ async def test_check_repository_during_failing_full_check(hass, fake_hacs):
         await release.wait()
         raise RuntimeError("GitHub down")
 
-    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel = fake_marketplace.repositories.list_installed[1]
     parcel.update_repository.side_effect = slow
     entry = await _setup(hass, hours=0)
-    entity_id = _hacs_update_entity(hass, parcel)
-    other = _hacs_update_entity(hass, fake_hacs.repositories.list_downloaded[0])
+    entity_id = _marketplace_update_entity(hass, parcel)
+    other = _marketplace_update_entity(hass, fake_marketplace.repositories.list_installed[0])
     assert entry.runtime_data.async_start()
     await hass.async_block_till_done()
     failing = hass.async_create_task(
@@ -484,17 +515,17 @@ async def test_check_repository_during_failing_full_check(hass, fake_hacs):
     await _await_service(fine)
 
 
-async def test_check_repository_during_full_check_in_error(hass, fake_hacs):
+async def test_check_repository_during_full_check_in_error(hass, fake_marketplace):
     release = asyncio.Event()
 
     async def slow(**_kwargs):
         await release.wait()
 
-    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel = fake_marketplace.repositories.list_installed[1]
     parcel.update_repository.side_effect = slow
-    fake_hacs.data.async_write.side_effect = OSError("disk full")
+    fake_marketplace.data.async_write.side_effect = OSError("disk full")
     entry = await _setup(hass, hours=0)
-    entity_id = _hacs_update_entity(hass, parcel)
+    entity_id = _marketplace_update_entity(hass, parcel)
     assert entry.runtime_data.async_start()
     await hass.async_block_till_done()
     call = hass.async_create_task(
@@ -507,17 +538,17 @@ async def test_check_repository_during_full_check_in_error(hass, fake_hacs):
     assert hass.states.get(STATUS).state == "error"
 
 
-async def test_check_repository_calls_cancelled_together(hass, fake_hacs):
+async def test_check_repository_calls_cancelled_together(hass, fake_marketplace):
     """Two check_repository calls on one repository, cancelled in the same tick, both get CancelledError."""
     release = asyncio.Event()
 
     async def slow(**_kwargs):
         await release.wait()
 
-    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel = fake_marketplace.repositories.list_installed[1]
     parcel.update_repository.side_effect = slow
     entry = await _setup(hass, hours=0)
-    entity_id = _hacs_update_entity(hass, parcel)
+    entity_id = _marketplace_update_entity(hass, parcel)
     refresher = entry.runtime_data
     first = hass.async_create_task(refresher.async_check_repositories([entity_id]))
     await asyncio.sleep(0.01)
@@ -531,17 +562,17 @@ async def test_check_repository_calls_cancelled_together(hass, fake_hacs):
     release.set()
 
 
-async def test_full_check_cancelled_with_awaited_check_repository(hass, fake_hacs):
+async def test_full_check_cancelled_with_awaited_check_repository(hass, fake_marketplace):
     """A full check cancelled together with the check_repository it waits for stops, without refreshing again."""
     release = asyncio.Event()
 
     async def slow(**_kwargs):
         await release.wait()
 
-    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel = fake_marketplace.repositories.list_installed[1]
     parcel.update_repository.side_effect = slow
     entry = await _setup(hass, hours=0)
-    entity_id = _hacs_update_entity(hass, parcel)
+    entity_id = _marketplace_update_entity(hass, parcel)
     refresher = entry.runtime_data
     single = hass.async_create_task(refresher.async_check_repositories([entity_id]))
     await asyncio.sleep(0.01)
@@ -560,17 +591,17 @@ async def test_full_check_cancelled_with_awaited_check_repository(hass, fake_hac
     release.set()
 
 
-async def test_check_repository_checks_itself_when_the_awaited_call_is_cancelled(hass, fake_hacs):
+async def test_check_repository_checks_itself_when_the_awaited_call_is_cancelled(hass, fake_marketplace):
     """A check_repository waiting for another call's result checks the repository itself if that call is cancelled."""
     release = asyncio.Event()
 
     async def slow(**_kwargs):
         await release.wait()
 
-    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel = fake_marketplace.repositories.list_installed[1]
     parcel.update_repository.side_effect = slow
     entry = await _setup(hass, hours=0)
-    entity_id = _hacs_update_entity(hass, parcel)
+    entity_id = _marketplace_update_entity(hass, parcel)
     refresher = entry.runtime_data
     first = hass.async_create_task(refresher.async_check_repositories([entity_id]))
     await asyncio.sleep(0.01)
@@ -589,18 +620,18 @@ async def test_check_repository_checks_itself_when_the_awaited_call_is_cancelled
     assert refresher._single == {}
 
 
-async def test_waiting_check_repository_sees_the_write_failure(hass, fake_hacs):
-    """A check_repository waiting for another call must not report success when the HACS data write fails."""
+async def test_waiting_check_repository_sees_the_write_failure(hass, fake_marketplace):
+    """A check_repository waiting for another call must not report success when the Marketplace data write fails."""
     release = asyncio.Event()
 
     async def slow(**_kwargs):
         await release.wait()
 
-    parcel = fake_hacs.repositories.list_downloaded[1]
+    parcel = fake_marketplace.repositories.list_installed[1]
     parcel.update_repository.side_effect = slow
-    fake_hacs.data.async_write.side_effect = OSError("disk full")
+    fake_marketplace.data.async_write.side_effect = OSError("disk full")
     entry = await _setup(hass, hours=0)
-    entity_id = _hacs_update_entity(hass, parcel)
+    entity_id = _marketplace_update_entity(hass, parcel)
     refresher = entry.runtime_data
     first = hass.async_create_task(refresher.async_check_repositories([entity_id]))
     await asyncio.sleep(0.01)
@@ -615,9 +646,9 @@ async def test_waiting_check_repository_sees_the_write_failure(hass, fake_hacs):
     assert refresher._single == {}
 
 
-async def test_check_updates_wait_fails_on_failed_repository(hass, fake_hacs):
+async def test_check_updates_wait_fails_on_failed_repository(hass, fake_marketplace):
     """With wait: true, the action fails like check_repository when a repository could not be checked."""
-    fake_hacs.repositories.list_downloaded.append(make_repo("someone/broken", fail=True))
+    fake_marketplace.repositories.list_installed.append(make_repo("someone/broken", fail=True))
     await _setup(hass, hours=0)
     with pytest.raises(HomeAssistantError, match="someone/broken"):
         await hass.services.async_call(DOMAIN, "check_updates", {"wait": True}, blocking=True)
@@ -625,17 +656,17 @@ async def test_check_updates_wait_fails_on_failed_repository(hass, fake_hacs):
     await hass.services.async_call(DOMAIN, "check_updates", {}, blocking=True)
 
 
-async def test_check_updates_wait_fails_when_full_check_fails(hass, fake_hacs):
-    fake_hacs.data.async_write.side_effect = OSError("disk full")
+async def test_check_updates_wait_fails_when_full_check_fails(hass, fake_marketplace):
+    fake_marketplace.data.async_write.side_effect = OSError("disk full")
     await _setup(hass, hours=0)
     with pytest.raises(HomeAssistantError, match="disk full"):
         await hass.services.async_call(DOMAIN, "check_updates", {"wait": True}, blocking=True)
     assert hass.states.get(STATUS).state == "error"
 
 
-async def test_failed_attribute_is_a_copy(hass, fake_hacs):
+async def test_failed_attribute_is_a_copy(hass, fake_marketplace):
     """The published `failed` attribute is not the list the running check appends to."""
-    fake_hacs.repositories.list_downloaded.append(make_repo("someone/broken", fail=True))
+    fake_marketplace.repositories.list_installed.append(make_repo("someone/broken", fail=True))
     entry = await _setup(hass, hours=0)
     await hass.services.async_call(DOMAIN, "check_updates", {"wait": True}, blocking=False)
     await entry.runtime_data.async_wait()
@@ -645,17 +676,17 @@ async def test_failed_attribute_is_a_copy(hass, fake_hacs):
     assert failed is not entry.runtime_data.failed
 
 
-async def test_skipped_scheduled_check_retried_within_the_hour(hass, fake_hacs, freezer):
-    """A scheduled check skipped because HACS is disabled is tried again after an hour, not a full interval."""
+async def test_skipped_scheduled_check_retried_within_the_hour(hass, fake_marketplace, freezer):
+    """A scheduled check skipped because the Marketplace is disabled is retried after an hour, not a full interval."""
     entry = await _setup(hass, hours=24)
-    repo = fake_hacs.repositories.list_downloaded[0]
-    fake_hacs.system.disabled = True
-    fake_hacs.system.disabled_reason = "rate_limit"
+    repo = fake_marketplace.repositories.list_installed[0]
+    fake_marketplace.system.disabled = True
+    fake_marketplace.system.disabled_reason = "rate_limit"
     freezer.tick(timedelta(hours=24, seconds=1))
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
     repo.update_repository.assert_not_awaited()
-    fake_hacs.system.disabled = False
+    fake_marketplace.system.disabled = False
     freezer.tick(timedelta(minutes=59))
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
@@ -667,27 +698,27 @@ async def test_skipped_scheduled_check_retried_within_the_hour(hass, fake_hacs, 
     repo.update_repository.assert_awaited_once()
 
 
-async def test_hacs_disabled_without_reason_has_no_placeholder(hass, fake_hacs):
+async def test_marketplace_disabled_without_reason_has_no_placeholder(hass, fake_marketplace):
     await _setup(hass)
-    fake_hacs.system.disabled = True
+    fake_marketplace.system.disabled = True
     with pytest.raises(ServiceValidationError) as err:
         await hass.services.async_call(DOMAIN, "check_updates", {}, blocking=True)
-    assert err.value.translation_key == "hacs_disabled_unknown"
+    assert err.value.translation_key == "marketplace_disabled_unknown"
     assert "unknown" not in str(err.value)
 
 
-async def test_check_repository_during_full_check_outside_its_categories(hass, fake_hacs):
+async def test_check_repository_during_full_check_outside_its_categories(hass, fake_marketplace):
     """A repository whose category the full check leaves out is checked by check_repository itself."""
     release = asyncio.Event()
 
     async def slow(**_kwargs):
         await release.wait()
 
-    fake_hacs.repositories.list_downloaded[1].update_repository.side_effect = slow
+    fake_marketplace.repositories.list_installed[1].update_repository.side_effect = slow
     script = make_repo("someone/script", category="python_script")
-    fake_hacs.repositories.list_downloaded.append(script)
+    fake_marketplace.repositories.list_installed.append(script)
     entry = await _setup(hass, hours=0)
-    entity_id = _hacs_update_entity(hass, script)
+    entity_id = _marketplace_update_entity(hass, script)
     assert entry.runtime_data.async_start()
     await hass.async_block_till_done()
     call = hass.async_create_task(
@@ -710,7 +741,7 @@ def _card_urls(resources) -> list[str]:
     return [i["url"] for i in resources.async_items() if i["url"].split("?")[0] == CARD_URL]
 
 
-async def test_next_check_for_the_card(hass, fake_hacs):
+async def test_next_check_for_the_card(hass, fake_marketplace):
     """The last check sensor gives the interval and when the next automatic check is due."""
     await _setup(hass, hours=6)
     attrs = hass.states.get(LAST_CHECK).attributes
@@ -726,22 +757,22 @@ async def test_next_check_for_the_card(hass, fake_hacs):
     assert due == dt_util.parse_datetime(state.state) + timedelta(hours=6)
 
 
-async def test_next_check_when_automatic_check_is_off(hass, fake_hacs):
+async def test_next_check_when_automatic_check_is_off(hass, fake_marketplace):
     await _setup(hass, hours=0)
     attrs = hass.states.get(LAST_CHECK).attributes
     assert attrs["scan_interval"] == 0
     assert attrs["next_check"] is None
 
 
-async def test_card_is_served(hass, fake_hacs, hass_client):
+async def test_card_is_served(hass, fake_marketplace, hass_client):
     await _setup(hass)
     client = await hass_client()
     response = await client.get(CARD_URL)
     assert response.status == 200
-    assert "hacs-refresh-card" in await response.text()
+    assert "marketplace-refresh-card" in await response.text()
 
 
-async def test_card_resource_back_after_remove_and_add(hass, fake_hacs):
+async def test_card_resource_back_after_remove_and_add(hass, fake_marketplace):
     """Removing the entry drops the card resource; adding it again without a restart brings it back."""
     assert await async_setup_component(hass, "lovelace", {})
     resources = _resources(hass)
@@ -760,7 +791,7 @@ async def test_card_resource_back_after_remove_and_add(hass, fake_hacs):
     ("key", "container"),
     [("mode", dict), ("resource_mode", dict), ("mode", SimpleNamespace), ("resource_mode", SimpleNamespace)],
 )
-async def test_card_resource_with_lovelace_data_variants(hass, fake_hacs, key: str, container: type):
+async def test_card_resource_with_lovelace_data_variants(hass, fake_marketplace, key: str, container: type):
     """hass.data["lovelace"]: a dict before 2025.2, then a dataclass with `mode`, renamed `resource_mode` in 2026.2."""
     assert await async_setup_component(hass, "lovelace", {})
     resources = _resources(hass)
@@ -772,23 +803,23 @@ async def test_card_resource_with_lovelace_data_variants(hass, fake_hacs, key: s
     assert _card_urls(resources) == []
 
 
-async def test_card_resource_yaml_mode_untouched(hass, fake_hacs):
+async def test_card_resource_yaml_mode_untouched(hass, fake_marketplace):
     """Resources in YAML mode are not edited (the card is loaded on every page instead)."""
     from homeassistant.components.lovelace.resources import ResourceYAMLCollection
 
     assert await async_setup_component(hass, "lovelace", {})
     hass.data["lovelace"] = {"mode": "yaml", "resources": ResourceYAMLCollection([]), "dashboards": {}}
-    with patch("custom_components.hacs_refresh.add_extra_js_url") as add_js:
+    with patch("custom_components.marketplace_refresh.add_extra_js_url") as add_js:
         await _setup(hass)
         await hass.async_block_till_done()
     add_js.assert_called_once()
 
 
-def _hacs_update_entities(hass: HomeAssistant, states: dict[str, str]) -> None:
-    """HACS update entities in the registry, with these states."""
+def _marketplace_update_entities(hass: HomeAssistant, states: dict[str, str]) -> None:
+    """Marketplace update entities in the registry, with these states."""
     registry = er.async_get(hass)
     for object_id, state in states.items():
-        registry.async_get_or_create("update", "hacs", object_id, suggested_object_id=object_id)
+        registry.async_get_or_create("update", "marketplace", object_id, suggested_object_id=object_id)
         hass.states.async_set(f"update.{object_id}", state, {"title": object_id.replace("_", " ").title()})
 
 
@@ -808,9 +839,9 @@ def _fake_update_install(hass: HomeAssistant, fail: set[str] | None = None) -> l
     return calls
 
 
-async def test_install_updates_installs_every_update_one_by_one(hass, fake_hacs):
+async def test_install_updates_installs_every_update_one_by_one(hass, fake_marketplace):
     await _setup(hass)
-    _hacs_update_entities(hass, {"mushroom": "on", "card_mod": "on", "parcel": "off"})
+    _marketplace_update_entities(hass, {"mushroom": "on", "card_mod": "on", "parcel": "off"})
     calls = _fake_update_install(hass)
     await hass.services.async_call(DOMAIN, "install_updates", {"wait": True}, blocking=True)
     await hass.async_block_till_done()
@@ -821,9 +852,9 @@ async def test_install_updates_installs_every_update_one_by_one(hass, fake_hacs)
     assert hass.states.get(BUTTON).state != "unavailable"
 
 
-async def test_install_updates_only_the_entities_given(hass, fake_hacs):
+async def test_install_updates_only_the_entities_given(hass, fake_marketplace):
     await _setup(hass)
-    _hacs_update_entities(hass, {"mushroom": "on", "card_mod": "on"})
+    _marketplace_update_entities(hass, {"mushroom": "on", "card_mod": "on"})
     calls = _fake_update_install(hass)
     await hass.services.async_call(
         DOMAIN, "install_updates", {"entity_id": "update.mushroom", "wait": True}, blocking=True
@@ -831,9 +862,9 @@ async def test_install_updates_only_the_entities_given(hass, fake_hacs):
     assert calls == ["update.mushroom"]
 
 
-async def test_install_updates_reports_failures_and_goes_on(hass, fake_hacs):
+async def test_install_updates_reports_failures_and_goes_on(hass, fake_marketplace):
     await _setup(hass)
-    _hacs_update_entities(hass, {"mushroom": "on", "card_mod": "on"})
+    _marketplace_update_entities(hass, {"mushroom": "on", "card_mod": "on"})
     calls = _fake_update_install(hass, fail={"update.card_mod"})
     with pytest.raises(HomeAssistantError, match="Card Mod: download failed"):
         await hass.services.async_call(DOMAIN, "install_updates", {"wait": True}, blocking=True)
@@ -841,9 +872,9 @@ async def test_install_updates_reports_failures_and_goes_on(hass, fake_hacs):
     assert hass.states.get(STATUS).attributes["install_failed"] == ["Card Mod: download failed"]
 
 
-async def test_install_updates_progress_and_no_second_run(hass, fake_hacs):
+async def test_install_updates_progress_and_no_second_run(hass, fake_marketplace):
     await _setup(hass)
-    _hacs_update_entities(hass, {"mushroom": "on", "card_mod": "on"})
+    _marketplace_update_entities(hass, {"mushroom": "on", "card_mod": "on"})
     release = asyncio.Event()
 
     async def install(call) -> None:
@@ -862,14 +893,14 @@ async def test_install_updates_progress_and_no_second_run(hass, fake_hacs):
     assert hass.states.get(STATUS).attributes["installing"] == []
 
 
-async def test_install_updates_rejects_other_entities(hass, fake_hacs):
+async def test_install_updates_rejects_other_entities(hass, fake_marketplace):
     await _setup(hass)
     hass.states.async_set("update.core", "on")
     with pytest.raises(ServiceValidationError):
         await hass.services.async_call(DOMAIN, "install_updates", {"entity_id": "update.core"}, blocking=True)
 
 
-async def test_install_updates_admin_only(hass, fake_hacs, hass_read_only_user):
+async def test_install_updates_admin_only(hass, fake_marketplace, hass_read_only_user):
     from homeassistant.exceptions import Unauthorized
 
     await _setup(hass)
@@ -880,8 +911,8 @@ async def test_install_updates_admin_only(hass, fake_hacs, hass_read_only_user):
 
 
 async def _blocked_install(hass: HomeAssistant) -> asyncio.Event:
-    """Start install_updates on two HACS updates whose install waits for the event returned."""
-    _hacs_update_entities(hass, {"mushroom": "on", "card_mod": "on"})
+    """Start install_updates on two Marketplace updates whose install waits for the event returned."""
+    _marketplace_update_entities(hass, {"mushroom": "on", "card_mod": "on"})
     release = asyncio.Event()
 
     async def install(call) -> None:
@@ -895,7 +926,7 @@ async def _blocked_install(hass: HomeAssistant) -> asyncio.Event:
     return release
 
 
-async def test_check_updates_refused_while_installing(hass, fake_hacs):
+async def test_check_updates_refused_while_installing(hass, fake_marketplace):
     """check_updates doesn't start a full check (refreshing the repositories being downloaded) during installs."""
     await _setup(hass)
     release = await _blocked_install(hass)
@@ -903,18 +934,18 @@ async def test_check_updates_refused_while_installing(hass, fake_hacs):
         await hass.services.async_call(DOMAIN, "check_updates", {}, blocking=True)
     assert hass.states.get(STATUS).state == "idle"
     assert hass.states.get(STATUS).attributes["installing"] == ["update.card_mod", "update.mushroom"]
-    fake_hacs.repositories.list_downloaded[0].update_repository.assert_not_awaited()
+    fake_marketplace.repositories.list_installed[0].update_repository.assert_not_awaited()
     release.set()
     await hass.async_block_till_done(wait_background_tasks=True)
     # Once the installs are done, a check starts again.
     await hass.services.async_call(DOMAIN, "check_updates", {"wait": True}, blocking=True)
-    fake_hacs.repositories.list_downloaded[0].update_repository.assert_awaited_once()
+    fake_marketplace.repositories.list_installed[0].update_repository.assert_awaited_once()
 
 
-async def test_scheduled_check_due_during_installs_runs_after_them(hass, fake_hacs, freezer):
+async def test_scheduled_check_due_during_installs_runs_after_them(hass, fake_marketplace, freezer):
     """A scheduled check due while updates are installed runs once they are done, not during them."""
     entry = await _setup(hass, hours=2)
-    repo = fake_hacs.repositories.list_downloaded[0]
+    repo = fake_marketplace.repositories.list_installed[0]
     release = await _blocked_install(hass)
     freezer.tick(timedelta(hours=2, seconds=1))
     async_fire_time_changed(hass)
@@ -935,10 +966,10 @@ async def test_scheduled_check_due_during_installs_runs_after_them(hass, fake_ha
     assert repo.update_repository.await_count == 2
 
 
-async def test_unload_during_installs_leaves_no_scheduled_check(hass, fake_hacs, freezer):
+async def test_unload_during_installs_leaves_no_scheduled_check(hass, fake_marketplace, freezer):
     """Unloading while installing cancels the installs without scheduling a check on the unloaded entry."""
     entry = await _setup(hass, hours=2)
-    repo = fake_hacs.repositories.list_downloaded[0]
+    repo = fake_marketplace.repositories.list_installed[0]
     await _blocked_install(hass)
     freezer.tick(timedelta(hours=2, seconds=1))
     async_fire_time_changed(hass)

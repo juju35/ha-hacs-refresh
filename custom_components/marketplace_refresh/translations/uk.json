@@ -1,0 +1,95 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Marketplace Refresh",
+        "description": "Перевіряє на сервері наявність оновлень для всіх репозиторіїв, завантажених через Marketplace. Сам Marketplace перевіряє користувацькі репозиторії лише раз на 48 годин.",
+        "data": { "scan_interval": "Інтервал перевірки" },
+        "data_description": { "scan_interval": "Години між двома автоматичними перевірками. 0 вимикає автоматичну перевірку: скористайтеся кнопкою або дією." }
+      }
+    },
+    "abort": {
+      "already_configured": "Marketplace Refresh уже налаштовано.",
+      "single_instance_allowed": "Marketplace Refresh уже налаштовано.",
+      "marketplace_not_loaded": "Marketplace не завантажено."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Параметри Marketplace Refresh",
+        "data": { "scan_interval": "Інтервал перевірки" },
+        "data_description": { "scan_interval": "Години між двома автоматичними перевірками. 0 вимикає автоматичну перевірку: скористайтеся кнопкою або дією." }
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "check_updates": { "name": "Перевірити оновлення" }
+    },
+    "sensor": {
+      "status": {
+        "name": "Стан",
+        "state": { "idle": "Очікування", "running": "Перевірка", "error": "Помилка" },
+        "state_attributes": {
+          "done": { "name": "Перевірено" },
+          "total": { "name": "Репозиторії" },
+          "updates": { "name": "Доступні оновлення" },
+          "failed": { "name": "З помилкою" },
+          "error": { "name": "Помилка" },
+          "checking": { "name": "Перевіряються" },
+          "installing": { "name": "Встановлюються" },
+          "install_failed": { "name": "Не вдалося встановити" },
+          "github_connected": { "name": "GitHub підключено" }
+        }
+      },
+      "last_check": {
+        "name": "Остання перевірка",
+        "state_attributes": {
+          "scan_interval": { "name": "Інтервал перевірки" },
+          "next_check": { "name": "Наступна перевірка" }
+        }
+      }
+    }
+  },
+  "services": {
+    "check_updates": {
+      "name": "Перевірити оновлення",
+      "description": "Перевіряє наявність оновлень для всіх репозиторіїв, завантажених через Marketplace. Виконується у фоні, якщо не задано wait.",
+      "fields": {
+        "wait": { "name": "Чекати", "description": "Дочекатися перевірки всіх репозиторіїв до завершення дії; тоді дія завершується помилкою, якщо перевірка не вдалася або якийсь репозиторій не вдалося перевірити." }
+      }
+    },
+    "check_repository": {
+      "name": "Перевірити оновлення репозиторію",
+      "description": "Перевіряє наявність оновлень для репозиторіїв, що стоять за цими сутностями оновлення Marketplace, і чекає на результат.",
+      "fields": {
+        "entity_id": { "name": "Сутності оновлення", "description": "Сутності оновлення Marketplace репозиторіїв, які потрібно перевірити." }
+      }
+    },
+    "install_updates": {
+      "name": "Встановити оновлення",
+      "description": "Встановлює оновлення репозиторіїв Marketplace одне за одним, у фоні, якщо не задано wait. Лише для адміністраторів.",
+      "fields": {
+        "entity_id": { "name": "Сутності оновлення", "description": "Сутності оновлення Marketplace, які потрібно оновити; залиште порожнім для всіх репозиторіїв з оновленням." },
+        "wait": { "name": "Чекати", "description": "Дочекатися встановлення всіх оновлень до завершення дії; тоді дія завершується помилкою, якщо якесь оновлення не вдалося встановити." }
+      }
+    }
+  },
+  "exceptions": {
+    "not_loaded": { "message": "Marketplace Refresh не завантажено." },
+    "marketplace_not_loaded": { "message": "Marketplace не завантажено." },
+    "marketplace_not_supported": { "message": "Ця версія Marketplace не підтримується (відсутній {path}); будь ласка, створіть issue на {issues}." },
+    "marketplace_disabled": { "message": "Marketplace вимкнено ({reason})." },
+    "marketplace_disabled_unknown": { "message": "Marketplace вимкнено." },
+    "not_marketplace_update_entity": { "message": "{entity_id} не є сутністю оновлення Marketplace." },
+    "not_installed": { "message": "{entity_id} не є репозиторієм, завантаженим через Marketplace." },
+    "check_failed": { "message": "Не вдалося перевірити {failed}." },
+    "check_cancelled": { "message": "Перевірку скасовано (Marketplace Refresh було перезавантажено або видалено)." },
+    "full_check_failed": { "message": "Повна перевірка не вдалася: {error}" },
+    "install_running": { "message": "Оновлення вже встановлюються." },
+    "check_while_installing": { "message": "Триває встановлення оновлень: перевірте оновлення після його завершення." },
+    "install_failed": { "message": "Не вдалося встановити {failed}." },
+    "install_cancelled": { "message": "Встановлення скасовано (Marketplace Refresh було перезавантажено або видалено)." }
+  }
+}
