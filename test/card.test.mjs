@@ -836,3 +836,16 @@ test('hide_when_ok: the hidden card shows again in edit mode and in the editor p
   assert.equal(card.style.display, '');
   assert.deepEqual(events, ['card-visibility-changed', 'card-visibility-changed', 'card-visibility-changed']);
 });
+
+test('an update without a title is named after its device, not its bare friendly_name', () => {
+  const hass = makeHass();
+  const id = 'update.mushroom_update';
+  hass.states[id].attributes = { ...hass.states[id].attributes, title: undefined, friendly_name: 'Update' };
+  hass.entities = { ...hass.entities, [id]: { ...hass.entities[id], device_id: 'dm' } };
+  hass.devices = { dm: { name: 'Mushroom' } };
+  assert.match(html(render({}, hass)), /Mushroom/);
+  hass.devices = { dm: { name: 'Mushroom', name_by_user: 'Mushroom cards' } };
+  assert.match(html(render({}, hass)), /Mushroom cards/);
+  hass.devices = {};
+  assert.match(html(render({}, hass)), /Update/);
+});
