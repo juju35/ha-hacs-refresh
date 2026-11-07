@@ -4,7 +4,7 @@
  * Served and added to the dashboard resources by the integration.
  * https://github.com/juju35/ha-marketplace-refresh
  */
-var MARKETPLACE_REFRESH_CARD_VERSION = '2.0.0';
+var MARKETPLACE_REFRESH_CARD_VERSION = '2.0.1';
 
 const HR_I18N = {
   en: {
@@ -1210,6 +1210,28 @@ class MarketplaceRefreshCard extends HTMLElement {
     this._render();
   }
 
+  // Set by Lovelace while the dashboard is edited (editMode) and in the card editor's preview (preview): a card
+  // hidden by hide_when_ok shows again there, so that it can still be edited.
+  set editMode(value) {
+    this._editMode = value;
+    this._sig = null;
+    this._render();
+  }
+
+  set preview(value) {
+    this._preview = value;
+    this._sig = null;
+    this._render();
+  }
+
+  // Hides the host and tells Lovelace (card-visibility-changed), so that a sections view drops the card's slot too.
+  _setHidden(hidden) {
+    const changed = !!this._hidden !== hidden;
+    this._hidden = hidden;
+    this.style.display = hidden ? 'none' : '';
+    if (changed) this.dispatchEvent(new CustomEvent('card-visibility-changed', { bubbles: true, composed: true }));
+  }
+
   getCardSize() {
     return 2 + (this._rows || 0);
   }
@@ -1342,8 +1364,8 @@ class MarketplaceRefreshCard extends HTMLElement {
     const count = known ? updates.length : Number(a.updates) || 0;
     const level = !st ? 'na' : error ? 'alert' : failed.length || installFailed.length ? 'warn' : running || installing.length || count ? 'info' : 'ok';
 
-    const hidden = c.hide_when_ok && st && level === 'ok';
-    this.style.display = hidden ? 'none' : '';
+    const hidden = c.hide_when_ok && st && level === 'ok' && !this._editMode && !this._preview;
+    this._setHidden(hidden);
     if (hidden) return;
 
     const shownUpdates = c.show_updates && st ? updates : [];

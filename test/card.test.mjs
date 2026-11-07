@@ -822,3 +822,17 @@ test("a phone's 6 columns: the version and Update all wrap instead of being cut"
   // The version breaks around its arrow ("v1.13.0 →" / "v1.14.1"), never inside a version unless it can't fit.
   assert.match(block, /\.sub \{[^}]*overflow-wrap: anywhere/);
 });
+
+test('hide_when_ok: the hidden card shows again in edit mode and in the editor preview', () => {
+  const card = render({ hide_when_ok: true }, makeHass({ updates: [] }));
+  const events = [];
+  card.dispatchEvent = (ev) => events.push(ev.type);
+  assert.equal(card.style.display, 'none');
+  card.editMode = true;
+  assert.equal(card.style.display, '');
+  card.editMode = false;
+  assert.equal(card.style.display, 'none');
+  card.preview = true;
+  assert.equal(card.style.display, '');
+  assert.deepEqual(events, ['card-visibility-changed', 'card-visibility-changed', 'card-visibility-changed']);
+});
