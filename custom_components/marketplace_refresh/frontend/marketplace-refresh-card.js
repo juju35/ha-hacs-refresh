@@ -4,7 +4,7 @@
  * Served and added to the dashboard resources by the integration.
  * https://github.com/juju35/ha-marketplace-refresh
  */
-var MARKETPLACE_REFRESH_CARD_VERSION = '2.0.1';
+var MARKETPLACE_REFRESH_CARD_VERSION = '2.0.2';
 
 const HR_I18N = {
   en: {
@@ -1262,6 +1262,14 @@ class MarketplaceRefreshCard extends HTMLElement {
     return { columns: 12, min_columns: 6, rows: 'auto' };
   }
 
+  // An update entity without a title: its device's name (the repository) rather than its friendly_name, which can be
+  // the entity's own name alone ("Update", "Firmware") with the newer entity naming.
+  _deviceName(id) {
+    const deviceId = this._hass.entities?.[id]?.device_id;
+    const device = deviceId && this._hass.devices?.[deviceId];
+    return device ? device.name_by_user || device.name || '' : '';
+  }
+
   _t(key, vars) {
     return hrT(hrLang(this._hass, this._config), key, vars);
   }
@@ -1353,7 +1361,7 @@ class MarketplaceRefreshCard extends HTMLElement {
     const updates = updateStates
       .map((s) => ({
         id: s.entity_id,
-        title: s.attributes.title || s.attributes.friendly_name || s.entity_id,
+        title: s.attributes.title || this._deviceName(s.entity_id) || s.attributes.friendly_name || s.entity_id,
         from: s.attributes.installed_version,
         to: s.attributes.latest_version,
         picture: s.attributes.entity_picture,

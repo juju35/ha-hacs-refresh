@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.2 - 2026-11-07
+
+### Fixes
+- Card: an update without a `title` is named after its device (the repository, its name set by the user first) instead of its `friendly_name`, which the newer entity naming can reduce to the entity's own name ("Update").
+
 ## 2.0.1 - 2026-11-07
 
 ### Fixes
