@@ -161,7 +161,7 @@ Every option is in the visual editor:
 | `show_failed` | `true` | Repositories that couldn't be checked, and the error of a failed check |
 | `check_button` | `true` | **Check for updates** button in the header |
 | `install_button` | `true` | **Update all** button on the updates available (administrators only) |
-| `hide_when_ok` | `false` | Hide the card while everything is up to date (it shows while checking, and with an update or an error) |
+| `hide_when_ok` | `false` | Hide the card while everything is up to date (it shows while checking, with an update or an error, and always while editing the dashboard) |
 | `language` | Home Assistant's | `en`, `fr`, `de`, `es`, `sr`, `sr-Latn`, `it`, `nl`, `pt`, `pl`, `ro`, `da`, `sv`, `bg`, `ru`, `uk`, `hu`, `sk`, `cs`, `sl`, `lv` or `el` |
 
 The [System Monitor Card](https://github.com/juju35/ha-system-monitor-card) also shows the Marketplace extensions with their update status, and its **Check for updates** button presses this integration's button.
